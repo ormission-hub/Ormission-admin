@@ -30,6 +30,8 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  Video,
+  FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dbService } from "@/lib/supabase/db-service";
@@ -62,38 +64,30 @@ interface HeroSettings {
 
 const defaultSettings: HeroSettings = {
   badge_text: "🔥 নতুন একাডেমিক ও এডমিশন ব্যাচে ভর্তি চলছে",
-  title_line_1: "স্বপ্ন যেখানে শীর্ষ বিশ্ববিদ্যালয় ও মেডিকেল",
-  title_line_2: "প্রস্তুতি হোক শতভাগ নিখুঁত ও আত্মবিশ্বাসী",
-  subtitle:
-    "অভিজ্ঞ মেন্টরদের লাইভ ক্লাস, বিগত ২০ বছরের প্রশ্নব্যাংক সলভিং ও সার্বক্ষণিক ডাউট সলভিং নিয়ে ঘরে বসেই নিন সেরা প্রস্তুতি।",
-  primary_cta_text: "কোর্সগুলো এক্সপ্লোর করুন",
+  title_line_1: "Learn Today.",
+  title_line_2: "Lead Tomorrow.",
+  subtitle: "আজ শিখুন। আগামীকাল নেতৃত্ব দিন।",
+  primary_cta_text: "Browse Course",
   primary_cta_url: "/courses",
-  secondary_cta_text: "ফ্রি নোট ও প্রশ্নব্যাংক",
-  secondary_cta_url: "/free-resources",
-  active_image_url: "/images/hero-student.jpg",
-  card_1_title: "প্রশ্নব্যাংক হ্যাক্স",
-  card_1_text: "২০ বছরের নির্ভুল সলভিং",
-  card_2_title: "স্টাডি রুটিন",
-  card_2_text: "১৪ ঘণ্টার সেরা প্ল্যান",
+  secondary_cta_text: "Buy Book",
+  secondary_cta_url: "/courses",
+  active_image_url: "/images/hero-student-model.jpg",
+  card_1_title: "লাইভ ক্লাস",
+  card_1_text: "ইন্টারেক্টিভ লার্নিং",
+  card_2_title: "PDF নোটস",
+  card_2_text: "হ্যান্ডনোট ও প্রশ্নব্যাংক",
   photos: [
     {
-      id: "hero-1",
-      title: "লাইব্রেরিতে অধ্যয়নরত শিক্ষার্থী (অফিশিয়াল)",
-      url: "/images/hero-student.jpg",
+      id: "hero-model-student",
+      title: "Learn Today. Lead Tomorrow. Student Hero (অফিশিয়াল)",
+      url: "/images/hero-student-model.jpg",
       is_active: true,
       created_at: new Date().toISOString(),
     },
     {
-      id: "hero-2",
-      title: "গ্রুপ স্টাডি ও ডিসকাশন সেশন",
-      url: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1000&q=80",
-      is_active: false,
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: "hero-3",
-      title: "কম্পিউটার ল্যাব ও কোডিং প্র্যাকটিস",
-      url: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=1000&q=80",
+      id: "hero-1",
+      title: "লাইব্রেরিতে অধ্যয়নরত শিক্ষার্থী",
+      url: "/images/hero-student.jpg",
       is_active: false,
       created_at: new Date().toISOString(),
     },
@@ -101,6 +95,11 @@ const defaultSettings: HeroSettings = {
 };
 
 const presetPhotos = [
+  {
+    title: "অফিশিয়াল স্টুডেন্ট মডেল (Learn Today. Lead Tomorrow.)",
+    url: "/images/hero-student-model.jpg",
+    category: "Student",
+  },
   {
     title: "আধুনিক ডিজিটাল ক্লাসরুম",
     url: "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1000&q=80",
@@ -867,105 +866,116 @@ export default function HeroSettingsPage() {
             </div>
 
             {/* Browser Window View */}
-            {/* Browser Window View: Netflix-Style Billboard Preview */}
-            <div className="rounded-2xl border border-border/60 bg-background p-3 relative overflow-hidden shadow-inner space-y-2">
+            {/* Browser Window View: Learn Today. Lead Tomorrow. 2-Column Live Preview */}
+            <div className="rounded-2xl border border-border/60 bg-background p-4 relative overflow-hidden shadow-inner space-y-3">
               <div className="flex items-center justify-between text-[11px] font-bold text-text-muted px-1">
                 <span className="flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                  <span>Hero Banner Billboard</span>
+                  <span>Hero Panel Live Preview</span>
                 </span>
-                <span className="text-[10px] text-text-muted/70">16:9 Full Slider</span>
+                <span className="text-[10px] text-text-muted/70">2-Column Layout</span>
               </div>
 
-              {/* Active Image with Auto Carousel Preview (16:9 Aspect Video) */}
-              <div className="relative rounded-xl overflow-hidden aspect-video w-full border border-border shadow-md group bg-slate-950">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={previewSlides[previewSlideIndex]?.id || previewSlideIndex}
-                    initial={{ opacity: 0, scale: 1.01 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.99 }}
-                    transition={{ duration: 0.4 }}
-                    className="absolute inset-0 w-full h-full"
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={previewSlides[previewSlideIndex]?.url || "/images/hero-student.jpg"}
-                      alt="Active Hero Preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/hero-student.jpg";
-                      }}
-                    />
-
-                    {/* Dark gradient overlay for contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
-
-                    {/* Over-Image CTA Buttons (Netflix Style Preview) */}
-                    <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 pointer-events-none">
-                      <span className="px-2.5 py-1 rounded-full bg-primary text-white text-[9px] font-bold shadow-md shadow-primary/30 flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" />
-                        <span>{settings.primary_cta_text || "Start Courses"}</span>
+              {/* 2-Column Hero Preview Card */}
+              <div className="relative rounded-xl overflow-hidden w-full border border-border shadow-md bg-gradient-to-b from-purple-50/40 via-background to-purple-50/20 dark:from-slate-900/50 dark:via-background dark:to-slate-900/30 p-4 sm:p-5">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  {/* Left Column Preview: Text & Buttons */}
+                  <div className="sm:col-span-7 flex flex-col justify-center text-left space-y-2.5">
+                    {/* Badge */}
+                    {settings.badge_text && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-semibold self-start font-bengali">
+                        <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                        <span className="truncate max-w-[200px]">{settings.badge_text}</span>
                       </span>
-                      <span className="px-2.5 py-1 rounded-full bg-black/50 text-white text-[9px] font-bold border border-white/30 backdrop-blur-xs flex items-center gap-1">
-                        <BookOpen className="w-2.5 h-2.5" />
-                        <span>{settings.secondary_cta_text || "Free Learning"}</span>
+                    )}
+
+                    {/* Headlines */}
+                    <div className="font-sans font-black tracking-tight leading-tight text-slate-950 dark:text-white">
+                      <div className="text-base sm:text-xl font-black">
+                        {settings.title_line_1 || "Learn Today."}
+                      </div>
+                      <div className="text-base sm:text-xl font-black text-slate-800 dark:text-slate-200">
+                        {settings.title_line_2 || "Lead Tomorrow."}
+                      </div>
+                    </div>
+
+                    {/* Subtitle */}
+                    <p className="text-xs sm:text-sm font-bold font-bengali text-purple-600 dark:text-purple-400 line-clamp-2">
+                      {settings.subtitle || "আজ শিখুন। আগামীকাল নেতৃত্ব দিন।"}
+                    </p>
+
+                    {/* Buttons: Browse Course & Buy Book */}
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="px-3.5 py-1.5 rounded-full bg-[#ff5f00] text-white text-[11px] font-bold shadow-md shadow-[#ff5f00]/30 flex items-center gap-1">
+                        <span>{settings.primary_cta_text || "Browse Course"}</span>
+                      </span>
+
+                      <span className="px-3.5 py-1.5 rounded-full border-2 border-[#ff5f00] text-[#ff5f00] dark:text-white text-[11px] font-bold flex items-center gap-1">
+                        <span>{settings.secondary_cta_text || "Buy Book"}</span>
                       </span>
                     </div>
-                  </motion.div>
-                </AnimatePresence>
+                  </div>
 
-                {previewSlides.length > 1 && (
-                  <>
-                    {/* Top Right Counter */}
-                    <div className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded-full text-[10px] font-bold bg-black/60 text-white backdrop-blur-xs flex items-center gap-1">
-                      <span>{previewSlideIndex + 1}</span>
-                      <span className="opacity-50">/</span>
-                      <span>{previewSlides.length}</span>
+                  {/* Right Column Preview: Student Model with Floating Badges */}
+                  <div className="sm:col-span-5 relative flex items-center justify-center">
+                    <div className="relative w-full max-w-[160px] aspect-[3/4] rounded-2xl overflow-hidden border border-border/70 shadow-lg bg-slate-950 group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previewSlides[previewSlideIndex]?.url || settings.active_image_url || "/images/hero-student-model.jpg"}
+                        alt="Active Hero Preview"
+                        className="w-full h-full object-cover object-top"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/hero-student-model.jpg";
+                        }}
+                      />
+
+                      {previewSlides.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPreviewSlideIndex((prev) => (prev - 1 + previewSlides.length) % previewSlides.length);
+                            }}
+                            className="absolute left-1 top-1/2 -translate-y-1/2 z-20 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronLeft className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setPreviewSlideIndex((prev) => (prev + 1) % previewSlides.length);
+                            }}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 z-20 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <ChevronRight className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
                     </div>
 
-                    {/* Prev / Next Chevrons */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setPreviewSlideIndex(
-                          (prev) => (prev - 1 + previewSlides.length) % previewSlides.length
-                        );
-                      }}
-                      className="absolute left-1.5 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setPreviewSlideIndex((prev) => (prev + 1) % previewSlides.length);
-                      }}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 z-10 w-6 h-6 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    >
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-
-                    {/* Bottom Right Dots */}
-                    <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-xs border border-white/15">
-                      {previewSlides.map((_, idx) => (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => setPreviewSlideIndex(idx)}
-                          className={`transition-all rounded-full cursor-pointer ${
-                            idx === previewSlideIndex
-                              ? "w-3.5 h-1 bg-primary"
-                              : "w-1 h-1 bg-white/50 hover:bg-white/80"
-                          }`}
-                        />
-                      ))}
+                    {/* Live Classes Floating Badge */}
+                    <div className="absolute top-2 -right-1 z-10 px-2 py-1 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-white/70 dark:border-slate-700/70 shadow-md flex items-center gap-1.5 backdrop-blur-xs">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 flex items-center justify-center text-white shrink-0">
+                        <Video className="w-2.5 h-2.5" />
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-900 dark:text-white font-sans">
+                        Live Classes
+                      </span>
                     </div>
-                  </>
-                )}
+
+                    {/* PDF Notes Floating Badge */}
+                    <div className="absolute top-11 -right-2 z-10 px-2 py-1 rounded-xl bg-white/95 dark:bg-slate-900/95 border border-white/70 dark:border-slate-700/70 shadow-md flex items-center gap-1.5 backdrop-blur-xs">
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0">
+                        <FileText className="w-2.5 h-2.5" />
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-900 dark:text-white font-sans">
+                        PDF Notes
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1044,15 +1054,15 @@ export default function HeroSettingsPage() {
             <div className="space-y-3 pt-3 border-t border-border/60">
               <div className="text-xs font-bold text-text flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span>Hero Slider Buttons (হিরো স্লাইডারের বাটনসমূহ)</span>
+                <span>Hero Action Buttons (হিরো বাটনসমূহ: Browse Course & Buy Book)</span>
               </div>
 
               <div className="grid sm:grid-cols-2 gap-3">
-                {/* Primary CTA (Start Courses) */}
+                {/* Primary CTA (Browse Course) */}
                 <div className="p-3 rounded-2xl bg-surface-secondary/40 border border-border/60 space-y-2">
                   <div className="text-[11px] font-bold text-primary flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                    <span>Primary Button (প্রধান বাটন)</span>
+                    <span>Primary Button (প্রধান বাটন - Browse Course)</span>
                   </div>
                   <div>
                     <label className="block text-[10px] font-semibold text-text-muted mb-1">
@@ -1064,7 +1074,7 @@ export default function HeroSettingsPage() {
                       onChange={(e) =>
                         setSettings((prev) => ({ ...prev, primary_cta_text: e.target.value }))
                       }
-                      placeholder="Start Courses"
+                      placeholder="Browse Course"
                       className="input w-full text-xs font-bengali"
                     />
                   </div>
@@ -1084,11 +1094,11 @@ export default function HeroSettingsPage() {
                   </div>
                 </div>
 
-                {/* Secondary CTA (Free Learning) */}
+                {/* Secondary CTA (Buy Book) */}
                 <div className="p-3 rounded-2xl bg-surface-secondary/40 border border-border/60 space-y-2">
                   <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
-                    <span>Secondary Button (দ্বিতীয় বাটন)</span>
+                    <span>Secondary Button (দ্বিতীয় বাটন - Buy Book)</span>
                   </div>
                   <div>
                     <label className="block text-[10px] font-semibold text-text-muted mb-1">
@@ -1100,7 +1110,7 @@ export default function HeroSettingsPage() {
                       onChange={(e) =>
                         setSettings((prev) => ({ ...prev, secondary_cta_text: e.target.value }))
                       }
-                      placeholder="Free Learning"
+                      placeholder="Buy Book"
                       className="input w-full text-xs font-bengali"
                     />
                   </div>
@@ -1114,7 +1124,7 @@ export default function HeroSettingsPage() {
                       onChange={(e) =>
                         setSettings((prev) => ({ ...prev, secondary_cta_url: e.target.value }))
                       }
-                      placeholder="/free-resources"
+                      placeholder="/courses"
                       className="input w-full text-xs"
                     />
                   </div>
