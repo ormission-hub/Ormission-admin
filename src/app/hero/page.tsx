@@ -29,6 +29,7 @@ import {
   Laptop,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { dbService } from "@/lib/supabase/db-service";
@@ -866,41 +867,24 @@ export default function HeroSettingsPage() {
             </div>
 
             {/* Browser Window View */}
-            <div className="rounded-2xl border border-border/60 bg-background p-4 space-y-3 relative overflow-hidden shadow-inner">
-              {/* Badge Preview */}
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-                <span>{settings.badge_text}</span>
-              </div>
-
-              {/* Headline */}
-              <div className="text-xs sm:text-sm font-extrabold text-text leading-snug font-bengali">
-                {settings.title_line_1} <br />
-                <span className="text-primary">{settings.title_line_2}</span>
-              </div>
-
-              {/* Subtitle */}
-              <p className="text-[10px] text-text-muted line-clamp-2 leading-relaxed font-bengali">
-                {settings.subtitle}
-              </p>
-
-              {/* Buttons Preview */}
-              <div className="flex items-center gap-2 pt-1">
-                <span className="px-2.5 py-1 rounded-lg bg-primary text-white text-[9px] font-bold shadow-xs">
-                  {settings.primary_cta_text}
+            {/* Browser Window View: Netflix-Style Billboard Preview */}
+            <div className="rounded-2xl border border-border/60 bg-background p-3 relative overflow-hidden shadow-inner space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-text-muted px-1">
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  <span>Hero Banner Billboard</span>
                 </span>
-                <span className="px-2.5 py-1 rounded-lg bg-surface-secondary text-text text-[9px] font-bold border border-border">
-                  {settings.secondary_cta_text}
-                </span>
+                <span className="text-[10px] text-text-muted/70">16:9 Full Slider</span>
               </div>
 
               {/* Active Image with Auto Carousel Preview (16:9 Aspect Video) */}
-              <div className="relative rounded-xl overflow-hidden aspect-video w-full border border-primary/20 shadow-md mt-2 group bg-slate-950">
+              <div className="relative rounded-xl overflow-hidden aspect-video w-full border border-border shadow-md group bg-slate-950">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={previewSlides[previewSlideIndex]?.id || previewSlideIndex}
-                    initial={{ opacity: 0, scale: 1.02 }}
+                    initial={{ opacity: 0, scale: 1.01 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
+                    exit={{ opacity: 0, scale: 0.99 }}
                     transition={{ duration: 0.4 }}
                     className="absolute inset-0 w-full h-full"
                   >
@@ -913,6 +897,21 @@ export default function HeroSettingsPage() {
                         (e.target as HTMLImageElement).src = "/images/hero-student.jpg";
                       }}
                     />
+
+                    {/* Dark gradient overlay for contrast */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent pointer-events-none" />
+
+                    {/* Over-Image CTA Buttons (Netflix Style Preview) */}
+                    <div className="absolute bottom-2.5 left-2.5 z-10 flex items-center gap-1.5 pointer-events-none">
+                      <span className="px-2.5 py-1 rounded-full bg-primary text-white text-[9px] font-bold shadow-md shadow-primary/30 flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" />
+                        <span>{settings.primary_cta_text || "Start Courses"}</span>
+                      </span>
+                      <span className="px-2.5 py-1 rounded-full bg-black/50 text-white text-[9px] font-bold border border-white/30 backdrop-blur-xs flex items-center gap-1">
+                        <BookOpen className="w-2.5 h-2.5" />
+                        <span>{settings.secondary_cta_text || "Free Learning"}</span>
+                      </span>
+                    </div>
                   </motion.div>
                 </AnimatePresence>
 
@@ -950,8 +949,8 @@ export default function HeroSettingsPage() {
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
 
-                    {/* Bottom Dots */}
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 px-2 py-1 rounded-full bg-black/50 backdrop-blur-xs">
+                    {/* Bottom Right Dots */}
+                    <div className="absolute bottom-2.5 right-2.5 z-10 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-xs border border-white/15">
                       {previewSlides.map((_, idx) => (
                         <button
                           key={idx}
@@ -959,8 +958,8 @@ export default function HeroSettingsPage() {
                           onClick={() => setPreviewSlideIndex(idx)}
                           className={`transition-all rounded-full cursor-pointer ${
                             idx === previewSlideIndex
-                              ? "w-4 h-1.5 bg-primary"
-                              : "w-1.5 h-1.5 bg-white/60 hover:bg-white/90"
+                              ? "w-3.5 h-1 bg-primary"
+                              : "w-1 h-1 bg-white/50 hover:bg-white/80"
                           }`}
                         />
                       ))}
@@ -1041,33 +1040,85 @@ export default function HeroSettingsPage() {
               />
             </div>
 
-            {/* CTA Buttons Row */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <div>
-                <label className="block text-xs font-bold text-text-muted mb-1">
-                  Primary CTA Text
-                </label>
-                <input
-                  type="text"
-                  value={settings.primary_cta_text}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, primary_cta_text: e.target.value }))
-                  }
-                  className="input w-full text-xs font-bengali"
-                />
+            {/* CTA Buttons Row: Primary (Start Courses) & Secondary (Free Learning) */}
+            <div className="space-y-3 pt-3 border-t border-border/60">
+              <div className="text-xs font-bold text-text flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span>Hero Slider Buttons (হিরো স্লাইডারের বাটনসমূহ)</span>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-text-muted mb-1">
-                  Primary CTA Link
-                </label>
-                <input
-                  type="text"
-                  value={settings.primary_cta_url}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, primary_cta_url: e.target.value }))
-                  }
-                  className="input w-full text-xs"
-                />
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                {/* Primary CTA (Start Courses) */}
+                <div className="p-3 rounded-2xl bg-surface-secondary/40 border border-border/60 space-y-2">
+                  <div className="text-[11px] font-bold text-primary flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                    <span>Primary Button (প্রধান বাটন)</span>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-text-muted mb-1">
+                      Button Label (বাটন টেক্সট)
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.primary_cta_text}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, primary_cta_text: e.target.value }))
+                      }
+                      placeholder="Start Courses"
+                      className="input w-full text-xs font-bengali"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-text-muted mb-1">
+                      Button Link (বাটন লিঙ্ক)
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.primary_cta_url}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, primary_cta_url: e.target.value }))
+                      }
+                      placeholder="/courses"
+                      className="input w-full text-xs"
+                    />
+                  </div>
+                </div>
+
+                {/* Secondary CTA (Free Learning) */}
+                <div className="p-3 rounded-2xl bg-surface-secondary/40 border border-border/60 space-y-2">
+                  <div className="text-[11px] font-bold text-slate-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                    <span>Secondary Button (দ্বিতীয় বাটন)</span>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-text-muted mb-1">
+                      Button Label (বাটন টেক্সট)
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.secondary_cta_text}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, secondary_cta_text: e.target.value }))
+                      }
+                      placeholder="Free Learning"
+                      className="input w-full text-xs font-bengali"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-semibold text-text-muted mb-1">
+                      Button Link (বাটন লিঙ্ক)
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.secondary_cta_url}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, secondary_cta_url: e.target.value }))
+                      }
+                      placeholder="/free-resources"
+                      className="input w-full text-xs"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
