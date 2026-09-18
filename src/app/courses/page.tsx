@@ -6,7 +6,6 @@ import {
   PlusCircle,
   Search,
   Trash2,
-  ExternalLink,
   BookOpen,
   Users,
   Eye,
@@ -19,6 +18,17 @@ import {
   Save,
   Image as ImageIcon,
   Loader2,
+  Pin,
+  Layers,
+  Check,
+  Copy,
+  LayoutGrid,
+  Table as TableIcon,
+  GraduationCap,
+  Clock,
+  Tag,
+  ArrowUpRight,
+  Filter,
 } from "lucide-react";
 import {
   dbService,
@@ -34,6 +44,16 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "published" | "draft" | "pinned">("all");
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [pinnedCourseIds, setPinnedCourseIds] = useState<(number | string)[]>([]);
+  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [copiedId, setCopiedId] = useState<string | number | null>(null);
+
+  const showNotification = (message: string, type: "success" | "error" = "success") => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3500);
+  };
 
   // Edit Modal State
   const [editingCourse, setEditingCourse] = useState<DbCourse | null>(null);
@@ -48,6 +68,9 @@ export default function AdminCoursesPage() {
     is_featured: false,
     status: "published" as DbCourse["status"],
     short_description: "",
+    enrollment_count: 1250,
+    total_lessons: 0,
+    total_duration: 0,
   });
   const [isUploadingEditThumb, setIsUploadingEditThumb] = useState(false);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -55,33 +78,45 @@ export default function AdminCoursesPage() {
 
   const loadData = async () => {
     setLoading(true);
-    const [cData, catData, instData] = await Promise.all([
-      dbService.getCourses(),
-      dbService.getCategories(),
-      dbService.getInstructors(),
-    ]);
-    setCoursesList(cData);
-    setCategories(catData);
-    setInstructors(instData);
-    setLoading(false);
+    try {
+      const [cData, catData, instData, settings] = await Promise.all([
+        dbService.getCourses(),
+        dbService.getCategories(),
+        dbService.getInstructors(),
+        dbService.getSiteSettings(),
+      ]);
+      setCoursesList(cData || []);
+      setCategories(catData || []);
+      setInstructors(instData || []);
+      if (Array.isArray(settings?.homepage_pinned_courses)) {
+        setPinnedCourseIds(settings.homepage_pinned_courses);
+      }
+    } catch (err) {
+      console.error("Failed to load courses data:", err);
+      showNotification("ডাটা লোড করতে সমস্যা হয়েছে", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const handleToggleFeatured = async (id: number | string, currentFeatured: boolean) => {
-    const nextVal = !currentFeatured;
-    // Optimistic UI update
-    setCoursesList((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, is_featured: nextVal } : c))
-    );
-    const ok = await dbService.updateCourse(id, { is_featured: nextVal });
+  const handleTogglePin = async (id: number | string) => {
+    const numId = Number(id);
+    const isCurrentlyPinned = pinnedCourseIds.some((pId) => Number(pId) === numId);
+    const nextPinned = isCurrentlyPinned
+      ? pinnedCourseIds.filter((pId) => Number(pId) !== numId)
+      : [...pinnedCourseIds, numId];
+
+    setPinnedCourseIds(nextPinned);
+    const ok = await dbService.updateSiteSetting("homepage_pinned_courses", nextPinned);
     if (!ok) {
-      setCoursesList((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, is_featured: currentFeatured } : c))
-      );
-      alert("ফিচার্ড স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।");
+      setPinnedCourseIds(pinnedCourseIds);
+      showNotification("হোমপেজে পিন স্ট্যাটাস সংরক্ষণ করতে সমস্যা হয়েছে।", "error");
+    } else {
+      showNotification(isCurrentlyPinned ? "হোমপেজ থেকে আনপিন করা হয়েছে" : "হোমপেজে পিন করা হয়েছে");
     }
   };
 
@@ -95,7 +130,9 @@ export default function AdminCoursesPage() {
       setCoursesList((prev) =>
         prev.map((c) => (c.id === id ? { ...c, status: currentStatus as any } : c))
       );
-      alert("স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।");
+      showNotification("স্ট্যাটাস আপডেট করতে সমস্যা হয়েছে।", "error");
+    } else {
+      showNotification(nextStatus === "published" ? "কোর্সটি লাইভ পাবলিশ করা হয়েছে" : "কোর্সটি ড্রাফট করা হয়েছে");
     }
   };
 
@@ -104,10 +141,20 @@ export default function AdminCoursesPage() {
       const ok = await dbService.deleteCourse(id);
       if (ok) {
         setCoursesList((prev) => prev.filter((c) => c.id !== id));
+        showNotification(`'${titleBn}' কোর্সটি সফলভাবে মুছে ফেলা হয়েছে।`);
       } else {
-        alert("কোর্স মুছতে সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+        showNotification("কোর্স মুছতে সমস্যা হয়েছে। আবার চেষ্টা করুন।", "error");
       }
     }
+  };
+
+  const handleCopyLink = (slug: string, id: string | number) => {
+    const baseUrl = process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000";
+    const fullUrl = `${baseUrl}/course/${slug}`;
+    navigator.clipboard.writeText(fullUrl);
+    setCopiedId(id);
+    showNotification("কোর্সের লিংক কপি করা হয়েছে!");
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleOpenEdit = (c: DbCourse) => {
@@ -123,6 +170,9 @@ export default function AdminCoursesPage() {
       is_featured: !!c.is_featured,
       status: c.status || "published",
       short_description: c.short_description || "",
+      enrollment_count: c.enrollment_count !== undefined && c.enrollment_count !== null ? c.enrollment_count : 1250,
+      total_lessons: c.total_lessons || 0,
+      total_duration: c.total_duration || 0,
     });
   };
 
@@ -152,6 +202,7 @@ export default function AdminCoursesPage() {
         throw new Error(data.error || "আপলোড ব্যর্থ হয়েছে।");
       }
       setEditForm((prev) => ({ ...prev, thumbnail_url: data.url }));
+      showNotification("ছবি সফলভাবে আপলোড হয়েছে");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "ছবি আপলোড ব্যর্থ হয়েছে";
       alert(msg);
@@ -173,6 +224,9 @@ export default function AdminCoursesPage() {
         is_featured: editForm.is_featured,
         status: editForm.status,
         short_description: editForm.short_description,
+        enrollment_count: Number(editForm.enrollment_count) || 0,
+        total_lessons: Number(editForm.total_lessons) || 0,
+        total_duration: Number(editForm.total_duration) || 0,
       };
 
       if (editForm.thumbnail_url) {
@@ -192,318 +246,775 @@ export default function AdminCoursesPage() {
       if (ok) {
         await loadData();
         setEditingCourse(null);
-        alert("কোর্স ও থাম্বনেইল সফলভাবে আপডেট করা হয়েছে!");
+        showNotification("কোর্স ও থাম্বনেইল সফলভাবে আপডেট করা হয়েছে!");
       } else {
-        alert("আপডেট ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
+        showNotification("আপডেট ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।", "error");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "আপডেট ত্রুটি";
-      alert("ত্রুটি: " + msg);
+      showNotification("ত্রুটি: " + msg, "error");
     } finally {
       setIsSavingEdit(false);
     }
   };
 
+  // Computations for KPI cards
   const totalCourses = coursesList.length;
-  const featuredCount = coursesList.filter((c) => c.is_featured).length;
   const publishedCount = coursesList.filter((c) => c.status === "published").length;
+  const draftCount = coursesList.filter((c) => c.status !== "published").length;
   const totalStudents = coursesList.reduce((acc, c) => acc + (c.enrollment_count || 0), 0);
+  const totalLessons = coursesList.reduce((acc, c) => acc + (c.total_lessons || 0), 0);
+  const totalDuration = coursesList.reduce((acc, c) => acc + (c.total_duration || 0), 0);
 
+  // Filtering Logic
   const filteredCourses = coursesList.filter((c) => {
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.toLowerCase().trim();
     const matchesSearch =
       !q ||
       (c.title_bn && c.title_bn.toLowerCase().includes(q)) ||
-      (c.title && c.title.toLowerCase().includes(q));
+      (c.title && c.title.toLowerCase().includes(q)) ||
+      (c.slug && c.slug.toLowerCase().includes(q));
+
     const matchesCat =
       filterCategory === "all" ||
       c.category_id?.toString() === filterCategory ||
       c.categories?.slug === filterCategory;
-    return matchesSearch && matchesCat;
+
+    let matchesStatus = true;
+    if (statusFilter === "published") matchesStatus = c.status === "published";
+    if (statusFilter === "draft") matchesStatus = c.status !== "published";
+    if (statusFilter === "pinned") matchesStatus = pinnedCourseIds.some((pId) => Number(pId) === Number(c.id));
+
+    return matchesSearch && matchesCat && matchesStatus;
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text font-bengali">
-              কোর্স ব্যবস্থাপনা ({filteredCourses.length})
-            </h1>
-            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-              Supabase DB Live
-            </span>
-          </div>
-          <p className="text-xs text-text-muted font-bengali mt-0.5">
-            অনলাইন কোর্স ক্যাটালগ, লাইভ পাবলিশ স্ট্যাটাস, মূল্য এবং কন্টেন্ট পরিচালনা
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={loadData}
-            disabled={loading}
-            className="btn btn-outline btn-sm font-bengali text-xs flex items-center gap-1.5"
-            title="রিফ্রেশ করুন"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            <span>রিফ্রেশ</span>
-          </button>
-
-          <Link
-            href="/courses/new"
-            className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 shadow-xs"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>নতুন কোর্স তৈরি করুন</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* KPI Stats Bar */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-xs">
-          <span className="text-[11px] font-medium text-text-muted font-bengali">মোট কোর্স</span>
-          <div className="text-xl font-extrabold text-text mt-1">{totalCourses}টি</div>
-        </div>
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-xs">
-          <span className="text-[11px] font-medium text-text-muted font-bengali">হোমপেজে জনপ্রিয়</span>
-          <div className="text-xl font-extrabold text-amber-500 mt-1 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4" />
-            <span>{featuredCount}টি</span>
-          </div>
-        </div>
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-xs">
-          <span className="text-[11px] font-medium text-text-muted font-bengali">লাইভ পাবলিশড</span>
-          <div className="text-xl font-extrabold text-emerald-500 mt-1">{publishedCount}টি</div>
-        </div>
-        <div className="bg-surface p-4 rounded-xl border border-border shadow-xs">
-          <span className="text-[11px] font-medium text-text-muted font-bengali">মোট শিক্ষার্থী</span>
-          <div className="text-xl font-extrabold text-primary mt-1">{totalStudents.toLocaleString()} জন</div>
-        </div>
-      </div>
-
-      {/* Filters Bar */}
-      <div className="bg-surface rounded-xl border border-border p-4 shadow-xs flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
-          <input
-            type="text"
-            placeholder="কোর্সের নাম দিয়ে খুঁজুন..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="input w-full pl-9 text-xs font-bengali"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="input text-xs font-bengali py-1.5"
-          >
-            <option value="all">সকল ক্যাটাগরি</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id.toString()}>
-                {cat.name_bn || cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Courses Table / Cards */}
-      {loading ? (
-        <div className="bg-surface rounded-xl border border-border p-12 text-center text-xs text-text-muted font-bengali">
-          <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-primary" />
-          ডাটাবেজ থেকে কোর্স লোড হচ্ছে...
-        </div>
-      ) : filteredCourses.length === 0 ? (
-        <div className="bg-surface rounded-xl border border-border p-12 text-center">
-          <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-30 text-text-muted" />
-          <h3 className="text-base font-bold text-text font-bengali mb-1">
-            কোনো কোর্স পাওয়া যায়নি
-          </h3>
-          <p className="text-xs text-text-muted font-bengali mb-4">
-            আপনার অনুসন্ধান মেলেনি অথবা ডাটাবেজে এখনো কোনো কোর্স তৈরি করা হয়নি।
-          </p>
-          <Link href="/courses/new" className="btn btn-primary btn-sm font-bengali font-bold">
-            <PlusCircle className="w-4 h-4 mr-1.5" />
-            প্রথম কোর্সটি তৈরি করুন
-          </Link>
-        </div>
-      ) : (
-        <div className="bg-surface rounded-xl border border-border overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-surface-secondary/60 border-b border-border text-text-muted uppercase tracking-wider text-[10px]">
-                <tr>
-                  <th className="py-3 px-4 font-semibold">কোর্স</th>
-                  <th className="py-3 px-4 font-semibold">ক্যাটাগরি</th>
-                  <th className="py-3 px-4 font-semibold">ইন্সট্রাক্টর</th>
-                  <th className="py-3 px-4 font-semibold">মূল্য</th>
-                  <th className="py-3 px-4 font-semibold">হোমপেজ ফিচার্ড</th>
-                  <th className="py-3 px-4 font-semibold">স্ট্যাটাস</th>
-                  <th className="py-3 px-4 font-semibold text-right">অ্যাকশন</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border font-bengali">
-                {filteredCourses.map((c) => (
-                  <tr key={c.id} className="hover:bg-surface-secondary/40 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-9 rounded-lg bg-surface-secondary border border-border overflow-hidden flex items-center justify-center flex-shrink-0 text-primary">
-                          {c.thumbnail_url ? (
-                            <img
-                              src={c.thumbnail_url}
-                              alt=""
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <BookOpen className="w-4 h-4 opacity-70" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-bold text-text text-sm hover:text-primary transition-colors line-clamp-1">
-                            {c.title_bn || c.title}
-                          </div>
-                          <div className="text-[11px] text-text-muted font-sans line-clamp-1">
-                            /{c.slug}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-text-muted">
-                      <span className="px-2 py-0.5 rounded text-[11px] bg-surface-secondary border border-border text-text">
-                        {c.categories?.name_bn || c.categories?.name || "সাধারণ"}
-                      </span>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-text font-medium">
-                      {c.instructors?.name_bn || c.instructors?.name || "অনলাইন শিক্ষক"}
-                    </td>
-
-                    <td className="py-3.5 px-4 font-sans">
-                      <div className="font-bold text-text">
-                        {c.price === 0 ? (
-                          <span className="text-secondary font-bengali">ফ্রি</span>
-                        ) : (
-                          `৳${c.price.toLocaleString()}`
-                        )}
-                      </div>
-                      {c.original_price && c.original_price > c.price && (
-                        <div className="text-[10px] text-text-muted line-through">
-                          ৳{c.original_price.toLocaleString()}
-                        </div>
-                      )}
-                    </td>
-
-                    {/* 1-Click Toggle for Featured status on Homepage */}
-                    <td className="py-3.5 px-4">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleFeatured(c.id, !!c.is_featured)}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                          c.is_featured
-                            ? "bg-amber-500/15 text-amber-500 border-amber-500/30 hover:bg-amber-500/25 shadow-xs"
-                            : "bg-surface-secondary text-text-muted border-border hover:text-text hover:border-text-muted"
-                        }`}
-                        title="ক্লিক করে হোমপেজে ফিচার্ড অন বা অফ করুন"
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        <span>{c.is_featured ? "⭐ জনপ্রিয় (Live)" : "সাধারণ"}</span>
-                      </button>
-                    </td>
-
-                    {/* 1-Click Toggle for Publish / Draft status */}
-                    <td className="py-3.5 px-4">
-                      <button
-                        type="button"
-                        onClick={() => handleToggleStatus(c.id, c.status)}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border ${
-                          c.status === "published"
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/20"
-                            : "bg-amber-500/10 text-amber-500 border-amber-500/20 hover:bg-amber-500/20"
-                        }`}
-                        title="ক্লিক করে স্ট্যাটাস পরিবর্তন করুন"
-                      >
-                        <CheckCircle2 className="w-3 h-3" />
-                        <span>{c.status === "published" ? "পাবলিশড" : "ড্রাফট"}</span>
-                      </button>
-                    </td>
-
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(c)}
-                          className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
-                          title="কোর্স ও থাম্বনেইল এডিট করুন"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-
-                        <a
-                          href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${c.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
-                          title="লাইভ প্রিভিউ দেখুন"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </a>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(c.id, c.title_bn || c.title)}
-                          className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors"
-                          title="মুছে ফেলুন"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+    <div className="space-y-5 sm:space-y-6 max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-16 font-bengali">
+      {/* Floating Notification Toast */}
+      {notification && (
+        <div
+          className={`fixed top-4 right-4 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-2xl border text-xs sm:text-sm font-bold backdrop-blur-md transition-all duration-300 animate-in fade-in slide-in-from-top-4 ${
+            notification.type === "success"
+              ? "bg-emerald-950/90 border-emerald-500/40 text-emerald-300"
+              : "bg-rose-950/90 border-rose-500/40 text-rose-300"
+          }`}
+        >
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{notification.message}</span>
         </div>
       )}
 
-      {/* Edit Course Modal */}
+      {/* ========================================================================= */}
+      {/* 1. EXECUTIVE HEADER & ACTIONS (Mobile Responsive)                        */}
+      {/* ========================================================================= */}
+      <div className="bg-surface/80 backdrop-blur-md rounded-2xl border border-border/80 p-4 sm:p-6 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Left Title & Status */}
+          <div className="flex items-start gap-3 sm:gap-3.5">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent border border-primary/20 text-primary flex items-center justify-center shrink-0 shadow-xs">
+              <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-text tracking-tight">
+                  কোর্স ব্যবস্থাপনা
+                </h1>
+                <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                  {filteredCourses.length}টি কোর্স
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Supabase Live
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-text-muted mt-1 leading-relaxed">
+                অনলাইন কোর্স ক্যাটালগ, লাইভ পাবলিশ স্ট্যাটাস, মূল্য এবং কারিকুলাম পরিচালনা করুন
+              </p>
+            </div>
+          </div>
+
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 self-stretch sm:self-auto">
+            <button
+              type="button"
+              onClick={loadData}
+              disabled={loading}
+              className="btn btn-outline flex-1 sm:flex-initial h-10 px-3.5 text-xs font-bold rounded-xl border-border hover:bg-surface-secondary flex items-center justify-center gap-2 transition-all cursor-pointer"
+              title="ডাটাবেজ রিফ্রেশ করুন"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : "text-text-muted"}`} />
+              <span>রিফ্রেশ</span>
+            </button>
+
+            <Link
+              href="/courses/new"
+              className="btn btn-primary flex-1 sm:flex-initial h-10 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white shadow-md shadow-primary/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>নতুন কোর্স তৈরি</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 2. KPI STATS CARDS (Phone 2-Col, Desktop 4-Col Grid)                       */}
+      {/* ========================================================================= */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        {/* Card 1: Total Courses */}
+        <div className="bg-surface rounded-2xl border border-border/80 p-3 sm:p-4.5 shadow-xs hover:border-primary/40 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-text-muted">মোট কোর্স</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-500/10 text-blue-500 flex items-center justify-center">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-text mt-1.5 sm:mt-2 font-sans">
+            {totalCourses}টি
+          </div>
+          <div className="flex items-center gap-1.5 mt-1 sm:mt-1.5 text-[10px] sm:text-[11px] text-text-muted font-medium">
+            <span className="text-emerald-500 font-bold">{publishedCount} লাইভ</span>
+            <span>•</span>
+            <span className="text-amber-500 font-bold">{draftCount} ড্রাফট</span>
+          </div>
+        </div>
+
+        {/* Card 2: Pinned on Homepage */}
+        <div className="bg-surface rounded-2xl border border-border/80 p-3 sm:p-4.5 shadow-xs hover:border-amber-500/40 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-text-muted">হোমপেজে পিন</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+              <Pin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-amber-500 mt-1.5 sm:mt-2 font-sans flex items-center gap-1">
+            <span>{pinnedCourseIds.length}টি</span>
+          </div>
+          <p className="text-[10px] sm:text-[11px] text-text-muted mt-1 sm:mt-1.5 font-medium">
+            হোমপেজ টপ কার্ড সেকশনে দৃশ্যমান
+          </p>
+        </div>
+
+        {/* Card 3: Total Students */}
+        <div className="bg-surface rounded-2xl border border-border/80 p-3 sm:p-4.5 shadow-xs hover:border-pink-500/40 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-text-muted">ভর্তি শিক্ষার্থী</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-pink-500/10 text-pink-500 flex items-center justify-center">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-pink-500 mt-1.5 sm:mt-2 font-sans">
+            {totalStudents.toLocaleString()}
+          </div>
+          <p className="text-[10px] sm:text-[11px] text-text-muted mt-1 sm:mt-1.5 font-medium">
+            কার্ডে লাইভ ডিসপ্লে ব্যাজ
+          </p>
+        </div>
+
+        {/* Card 4: Curriculum Stats */}
+        <div className="bg-surface rounded-2xl border border-border/80 p-3 sm:p-4.5 shadow-xs hover:border-emerald-500/40 transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] sm:text-xs font-semibold text-text-muted">মোট ক্লাস ও ঘণ্টা</span>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+              <Layers className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </div>
+          </div>
+          <div className="text-lg sm:text-2xl font-black text-emerald-500 mt-1.5 sm:mt-2 font-sans">
+            {totalLessons}টি
+          </div>
+          <div className="flex items-center gap-1 mt-1 sm:mt-1.5 text-[10px] sm:text-[11px] text-text-muted font-medium">
+            <Clock className="w-3 h-3 text-emerald-400" />
+            <span>{totalDuration}+ ঘণ্টা ভিডিও লেকচার</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. SMART SEARCH & FILTER CONTROLS (Full Phone Responsive)                 */}
+      {/* ========================================================================= */}
+      <div className="bg-surface rounded-2xl border border-border/80 p-3 sm:p-4 shadow-xs space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+          {/* Search Box with Clear Button */}
+          <div className="relative flex-1">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
+            <input
+              type="text"
+              placeholder="কোর্সের নাম বা স্লাগ দিয়ে খুঁজুন..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input w-full pl-10 pr-9 text-xs sm:text-sm h-10 rounded-xl bg-surface-secondary/60 border-border focus:border-primary font-bengali"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-text-muted hover:text-text cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Category Dropdown & View Mode Switcher */}
+          <div className="flex items-center gap-2">
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="input text-xs sm:text-sm h-10 rounded-xl bg-surface-secondary/60 border-border font-bengali px-3 cursor-pointer shrink-0"
+            >
+              <option value="all">সকল ক্যাটাগরি ({categories.length})</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id.toString()}>
+                  {cat.name_bn || cat.name}
+                </option>
+              ))}
+            </select>
+
+            {/* Desktop View Switcher: Table vs Grid */}
+            <div className="hidden sm:flex items-center p-1 rounded-xl bg-surface-secondary/60 border border-border">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "table"
+                    ? "bg-surface text-primary shadow-xs border border-border/80"
+                    : "text-text-muted hover:text-text"
+                }`}
+                title="টেবিল ভিউ"
+              >
+                <TableIcon className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`p-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-surface text-primary shadow-xs border border-border/80"
+                    : "text-text-muted hover:text-text"
+                }`}
+                title="কার্ড ভিউ"
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Status Filter Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs font-medium">
+          <button
+            type="button"
+            onClick={() => setStatusFilter("all")}
+            className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 cursor-pointer ${
+              statusFilter === "all"
+                ? "bg-primary text-white border-primary shadow-xs font-bold"
+                : "bg-surface-secondary/50 border-border text-text-muted hover:text-text"
+            }`}
+          >
+            সকল ({coursesList.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter("published")}
+            className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === "published"
+                ? "bg-emerald-600 text-white border-emerald-600 shadow-xs font-bold"
+                : "bg-surface-secondary/50 border-border text-text-muted hover:text-emerald-500"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>পাবলিশড ({publishedCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter("draft")}
+            className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === "draft"
+                ? "bg-amber-600 text-white border-amber-600 shadow-xs font-bold"
+                : "bg-surface-secondary/50 border-border text-text-muted hover:text-amber-500"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span>ড্রাফট ({draftCount})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStatusFilter("pinned")}
+            className={`px-3 py-1.5 rounded-xl border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+              statusFilter === "pinned"
+                ? "bg-amber-500 text-slate-950 border-amber-500 shadow-xs font-bold"
+                : "bg-surface-secondary/50 border-border text-text-muted hover:text-amber-500"
+            }`}
+          >
+            <Pin className="w-3 h-3" />
+            <span>হোমপেজে পিন ({pinnedCourseIds.length})</span>
+          </button>
+
+          {(searchQuery || filterCategory !== "all" || statusFilter !== "all") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setFilterCategory("all");
+                setStatusFilter("all");
+              }}
+              className="ml-auto px-2.5 py-1 text-[11px] text-text-muted hover:text-error cursor-pointer flex items-center gap-1 transition-colors shrink-0"
+            >
+              <X className="w-3 h-3" />
+              <span>রিসেট ফিল্টার</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 4. COURSES DISPLAY (Phone Cards + Desktop Adaptive Table)                 */}
+      {/* ========================================================================= */}
+      {loading ? (
+        <div className="bg-surface rounded-2xl border border-border/80 p-8 sm:p-14 text-center space-y-3">
+          <RefreshCw className="w-7 h-7 mx-auto animate-spin text-primary" />
+          <p className="text-xs sm:text-sm font-bold text-text">কোর্স ডাটা লোড হচ্ছে...</p>
+          <p className="text-xs text-text-muted">Supabase ডাটাবেজ থেকে রিয়েল-টাইম ডাটা সিঙ্ক হচ্ছে</p>
+        </div>
+      ) : filteredCourses.length === 0 ? (
+        <div className="bg-surface rounded-2xl border border-border/80 p-8 sm:p-14 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-surface-secondary flex items-center justify-center mx-auto mb-3 text-text-muted opacity-50">
+            <BookOpen className="w-8 h-8" />
+          </div>
+          <h3 className="text-base sm:text-lg font-bold text-text mb-1">
+            কোনো কোর্স পাওয়া যায়নি
+          </h3>
+          <p className="text-xs sm:text-sm text-text-muted max-w-md mx-auto mb-5">
+            {searchQuery || filterCategory !== "all" || statusFilter !== "all"
+              ? "আপনার ফিল্টার বা অনুসন্ধানের সাথে কোনো কোর্স মেলেনি। অনুগ্রহ করে ফিল্টার পরিবর্তন করুন।"
+              : "ডাটাবেজে এখনো কোনো কোর্স তৈরি করা হয়নি। এখনই নতুন কোর্স তৈরি করুন!"}
+          </p>
+          <Link
+            href="/courses/new"
+            className="btn btn-primary h-10 px-5 text-xs font-bold rounded-xl shadow-md"
+          >
+            <PlusCircle className="w-4 h-4 mr-2" />
+            নতুন কোর্স তৈরি করুন
+          </Link>
+        </div>
+      ) : (
+        <>
+          {/* ------------------------------------------------------------------- */}
+          {/* A. MOBILE CARDS VIEW (Always on mobile screens, also when grid mode) */}
+          {/* ------------------------------------------------------------------- */}
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 ${viewMode === "grid" ? "block" : "block lg:hidden"}`}>
+            {filteredCourses.map((c) => {
+              const isPinned = pinnedCourseIds.some((pId) => Number(pId) === Number(c.id));
+              const isPublished = c.status === "published";
+
+              return (
+                <div
+                  key={c.id}
+                  className="bg-surface rounded-2xl border border-border/80 overflow-hidden shadow-xs hover:border-primary/40 transition-all flex flex-col justify-between"
+                >
+                  {/* Top Thumbnail Section */}
+                  <div className="relative aspect-video w-full bg-slate-900 overflow-hidden group/thumb">
+                    {c.thumbnail_url ? (
+                      <img
+                        src={c.thumbnail_url}
+                        alt={c.title_bn || c.title}
+                        className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 bg-surface-secondary">
+                        <BookOpen className="w-8 h-8 opacity-40 mb-1" />
+                        <span className="text-[10px]">ছবি যুক্ত করা হয়নি</span>
+                      </div>
+                    )}
+
+                    {/* Overlay Badges */}
+                    <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 z-10">
+                      {/* Status badge */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(c.id, c.status)}
+                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-md shadow-xs border transition-transform active:scale-95 cursor-pointer ${
+                          isPublished
+                            ? "bg-emerald-500/90 text-white border-emerald-400/50"
+                            : "bg-amber-500/90 text-slate-950 border-amber-400/50"
+                        }`}
+                        title="স্ট্যাটাস পরিবর্তন করুন"
+                      >
+                        {isPublished ? "পাবলিশড" : "ড্রাফট"}
+                      </button>
+
+                      {/* Pin button badge */}
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePin(c.id)}
+                        className={`p-1 rounded-full backdrop-blur-md border shadow-xs transition-transform active:scale-95 cursor-pointer ${
+                          isPinned
+                            ? "bg-amber-400 text-slate-950 border-amber-300"
+                            : "bg-black/60 text-white/80 border-white/20 hover:text-white"
+                        }`}
+                        title={isPinned ? "হোমপেজ থেকে আনপিন করুন" : "হোমপেজে পিন করুন"}
+                      >
+                        <Pin className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Enrollment pill at bottom right of thumbnail */}
+                    <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white text-[10px] font-sans font-bold flex items-center gap-1 border border-white/10">
+                      <Users className="w-2.5 h-2.5 text-pink-400" />
+                      <span>{(c.enrollment_count ?? 1250).toLocaleString()} জন</span>
+                    </div>
+                  </div>
+
+                  {/* Card Content */}
+                  <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-3">
+                    <div>
+                      {/* Category & Instructor */}
+                      <div className="flex items-center justify-between gap-2 text-[11px] text-text-muted mb-1.5">
+                        <span className="px-2 py-0.5 rounded-md bg-surface-secondary border border-border text-text font-semibold truncate max-w-[150px]">
+                          {c.categories?.name_bn || c.categories?.name || "সাধারণ"}
+                        </span>
+                        <span className="truncate text-text font-medium flex items-center gap-1">
+                          <GraduationCap className="w-3 h-3 text-primary shrink-0" />
+                          <span>{c.instructors?.name_bn || c.instructors?.name || "অনলাইন শিক্ষক"}</span>
+                        </span>
+                      </div>
+
+                      {/* Course Title */}
+                      <Link
+                        href={`/courses/${c.id}/edit`}
+                        className="font-extrabold text-sm sm:text-base text-text hover:text-primary transition-colors line-clamp-2 block leading-snug"
+                      >
+                        {c.title_bn || c.title}
+                      </Link>
+                      <div className="text-[10px] text-text-muted font-sans mt-0.5 truncate flex items-center gap-1">
+                        <span>/{c.slug}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyLink(c.slug, c.id)}
+                          className="p-0.5 text-text-muted hover:text-primary cursor-pointer"
+                          title="লিংক কপি করুন"
+                        >
+                          {copiedId === c.id ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Price & Curriculum Bar */}
+                    <div className="pt-2 border-t border-border/80 flex items-center justify-between">
+                      {/* Price */}
+                      <div>
+                        <div className="text-sm font-black text-primary font-sans">
+                          {c.price === 0 ? "ফ্রি" : `৳${c.price.toLocaleString()}`}
+                        </div>
+                        {c.original_price && c.original_price > c.price ? (
+                          <div className="text-[10px] text-text-muted line-through font-sans">
+                            ৳{c.original_price.toLocaleString()}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Curriculum Badge */}
+                      <div className="text-right">
+                        <div className="text-[11px] font-bold text-text">
+                          {c.course_sections?.length || 0} অধ্যায় • {c.total_lessons || 0} ক্লাস
+                        </div>
+                        <div className="text-[10px] text-text-muted font-sans">
+                          {c.total_duration || 0} ঘণ্টা লাইভ
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Bar (Finger-friendly mobile touch targets) */}
+                    <div className="pt-2 border-t border-border/80 grid grid-cols-4 gap-1.5">
+                      {/* 1-Click Curriculum Edit */}
+                      <Link
+                        href={`/courses/${c.id}/edit?tab=curriculum`}
+                        className="col-span-2 h-8 px-2 rounded-xl text-xs font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        title="কারিকুলাম ও ক্লাস এডিট করুন"
+                      >
+                        <Layers className="w-3.5 h-3.5" />
+                        <span>ক্লাস এডিট</span>
+                      </Link>
+
+                      {/* Quick Edit Modal */}
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(c)}
+                        className="h-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all cursor-pointer"
+                        title="দ্রুত সম্পাদনা"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      {/* Live Preview */}
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${c.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="h-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all"
+                        title="ওয়েবসাইটে দেখুন"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ------------------------------------------------------------------- */}
+          {/* B. DESKTOP LUXURY TABLE VIEW (Rendered on Large Screens in Table Mode) */}
+          {/* ------------------------------------------------------------------- */}
+          <div className={`bg-surface rounded-2xl border border-border/80 overflow-hidden shadow-xs ${viewMode === "table" ? "hidden lg:block" : "hidden"}`}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-surface-secondary/60 border-b border-border text-text-muted uppercase tracking-wider text-[11px]">
+                  <tr>
+                    <th className="py-3.5 px-4 font-bold">কোর্স ও থাম্বনেইল</th>
+                    <th className="py-3.5 px-4 font-bold">ক্যাটাগরি</th>
+                    <th className="py-3.5 px-4 font-bold">ইন্সট্রাক্টর</th>
+                    <th className="py-3.5 px-4 font-bold">মূল্য</th>
+                    <th className="py-3.5 px-4 font-bold">কারিকুলাম ও ক্লাস</th>
+                    <th className="py-3.5 px-4 font-bold">ভর্তি শিক্ষার্থী</th>
+                    <th className="py-3.5 px-4 font-bold text-center">হোমপেজে পিন</th>
+                    <th className="py-3.5 px-4 font-bold">স্ট্যাটাস</th>
+                    <th className="py-3.5 px-4 font-bold text-right">অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/70 font-bengali">
+                  {filteredCourses.map((c) => {
+                    const isPinned = pinnedCourseIds.some((pId) => Number(pId) === Number(c.id));
+                    const isPublished = c.status === "published";
+
+                    return (
+                      <tr
+                        key={c.id}
+                        className="hover:bg-surface-secondary/40 transition-colors group/row"
+                      >
+                        {/* Course Column */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-14 h-10 rounded-lg bg-surface-secondary border border-border overflow-hidden shrink-0 relative group/thumb">
+                              {c.thumbnail_url ? (
+                                <img
+                                  src={c.thumbnail_url}
+                                  alt=""
+                                  className="w-full h-full object-cover group-hover/thumb:scale-110 transition-transform duration-200"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-text-muted opacity-40">
+                                  <BookOpen className="w-4 h-4" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0 max-w-[220px]">
+                              <Link
+                                href={`/courses/${c.id}/edit`}
+                                className="font-bold text-text text-sm hover:text-primary transition-colors truncate block"
+                                title={c.title_bn || c.title}
+                              >
+                                {c.title_bn || c.title}
+                              </Link>
+                              <div className="text-[11px] text-text-muted font-sans truncate flex items-center gap-1">
+                                <span>/{c.slug}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyLink(c.slug, c.id)}
+                                  className="p-0.5 text-text-muted hover:text-primary cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity"
+                                  title="লিংক কপি করুন"
+                                >
+                                  {copiedId === c.id ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Category */}
+                        <td className="py-3 px-4">
+                          <span className="px-2.5 py-1 rounded-lg text-[11px] bg-surface-secondary border border-border text-text font-semibold inline-block">
+                            {c.categories?.name_bn || c.categories?.name || "সাধারণ"}
+                          </span>
+                        </td>
+
+                        {/* Instructor */}
+                        <td className="py-3 px-4">
+                          <div className="font-bold text-text text-xs">
+                            {c.instructors?.name_bn || c.instructors?.name || "অনলাইন শিক্ষক"}
+                          </div>
+                          {c.instructors?.institution && (
+                            <div className="text-[10px] text-text-muted truncate max-w-[130px]">
+                              {c.instructors.institution}
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Price */}
+                        <td className="py-3 px-4 font-sans">
+                          <div className="font-bold text-text text-sm">
+                            {c.price === 0 ? (
+                              <span className="text-emerald-500 font-bengali">ফ্রি</span>
+                            ) : (
+                              `৳${c.price.toLocaleString()}`
+                            )}
+                          </div>
+                          {c.original_price && c.original_price > c.price ? (
+                            <div className="text-[10px] text-text-muted line-through">
+                              ৳{c.original_price.toLocaleString()}
+                            </div>
+                          ) : null}
+                        </td>
+
+                        {/* Curriculum & Classes */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-lg text-[10px] bg-surface-secondary border border-border text-text font-semibold shrink-0">
+                              {c.course_sections?.length || 0} অধ্যায় • {c.total_lessons || 0} ক্লাস
+                            </span>
+                            <Link
+                              href={`/courses/${c.id}/edit?tab=curriculum`}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-2xs cursor-pointer shrink-0"
+                              title="কারিকুলাম ও ক্লাসসমূহ এডিট করুন"
+                            >
+                              <Layers className="w-3 h-3" />
+                              <span>ক্লাস এডিট</span>
+                            </Link>
+                          </div>
+                        </td>
+
+                        {/* Students */}
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-pink-500/10 text-pink-500 border border-pink-500/20 font-sans">
+                            <Users className="w-3 h-3 text-pink-500" />
+                            <span>{(c.enrollment_count ?? 1250).toLocaleString()} জন</span>
+                          </span>
+                        </td>
+
+                        {/* Pin Button */}
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePin(c.id)}
+                            className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
+                              isPinned
+                                ? "bg-amber-500 text-slate-950 border-amber-400 shadow-xs scale-105"
+                                : "bg-surface border-border text-text-muted hover:text-text hover:border-amber-500/50"
+                            }`}
+                            title={isPinned ? "হোমপেজ থেকে আনপিন করুন" : "হোমপেজে পিন করুন"}
+                          >
+                            <Pin className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+
+                        {/* 1-Click Status Toggle */}
+                        <td className="py-3 px-4">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(c.id, c.status)}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border cursor-pointer ${
+                              isPublished
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20"
+                                : "bg-amber-500/10 text-amber-400 border-amber-500/25 hover:bg-amber-500/20"
+                            }`}
+                            title="ক্লিক করে স্ট্যাটাস পরিবর্তন করুন"
+                          >
+                            <span className={`w-1.5 h-1.5 rounded-full ${isPublished ? "bg-emerald-400" : "bg-amber-400"}`} />
+                            <span>{isPublished ? "পাবলিশড" : "ড্রাফট"}</span>
+                          </button>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            {/* Edit Studio */}
+                            <Link
+                              href={`/courses/${c.id}/edit`}
+                              className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
+                              title="কোর্স স্টুডিও খুলুন"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </Link>
+
+                            {/* Quick Edit Modal */}
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(c)}
+                              className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-secondary transition-colors cursor-pointer"
+                              title="কুইক সেটিংস"
+                            >
+                              <Sparkles className="w-4 h-4" />
+                            </button>
+
+                            {/* Live Preview */}
+                            <a
+                              href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${c.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
+                              title="ওয়েবসাইটে লাইভ দেখুন"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </a>
+
+                            {/* Delete */}
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(c.id, c.title_bn || c.title)}
+                              className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+                              title="কোর্স মুছে ফেলুন"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. QUICK EDIT COURSE MODAL (100% Phone & Touch Responsive)                */}
+      {/* ========================================================================= */}
       {editingCourse && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-4 border-b border-border mb-5">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
+          <div className="bg-surface border border-border/80 rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border bg-surface shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
                   <Edit2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-text font-bengali">কোর্স সম্পাদনা (Edit Course)</h3>
-                  <p className="text-xs text-text-muted font-sans">/{editingCourse.slug}</p>
+                  <h3 className="font-bold text-sm sm:text-base text-text">কোর্স দ্রুত সম্পাদনা</h3>
+                  <p className="text-[11px] text-text-muted font-sans">/{editingCourse.slug}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingCourse(null)}
-                className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-secondary"
+                className="p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEdit} className="space-y-4 font-bengali">
+            {/* Modal Form Scroll Area */}
+            <form onSubmit={handleSaveEdit} className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
               {/* Thumbnail Section */}
-              <div className="bg-surface-secondary/40 p-4 rounded-xl border border-border space-y-3">
+              <div className="bg-surface-secondary/50 p-3.5 sm:p-4 rounded-xl border border-border space-y-3">
                 <label className="block text-xs font-bold text-text">কোর্স থাম্বনেইল ও ব্যানার</label>
                 
-                <div className="flex flex-col sm:flex-row gap-4 items-start">
-                  <div className="w-full sm:w-44 aspect-video bg-slate-900 rounded-lg overflow-hidden border border-border shrink-0 flex items-center justify-center relative">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
+                  <div className="w-full sm:w-44 aspect-video bg-slate-950 rounded-xl overflow-hidden border border-border shrink-0 flex items-center justify-center relative">
                     {editForm.thumbnail_url ? (
                       <img
                         src={editForm.thumbnail_url}
@@ -534,17 +1045,17 @@ export default function AdminCoursesPage() {
                       type="button"
                       disabled={isUploadingEditThumb}
                       onClick={() => editFileInputRef.current?.click()}
-                      className="btn btn-outline btn-sm text-xs font-bold w-full flex items-center justify-center gap-1.5"
+                      className="btn btn-outline h-9 text-xs font-bold w-full rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       {isUploadingEditThumb ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                          <span>আপলোড হচ্ছে...</span>
+                          <span>ছবি আপলোড হচ্ছে...</span>
                         </>
                       ) : (
                         <>
                           <Upload className="w-3.5 h-3.5" />
-                          <span>ডিভাইস থেকে নতুন ছবি আপলোড করুন</span>
+                          <span>ডিভাইস থেকে আপলোড করুন</span>
                         </>
                       )}
                     </button>
@@ -555,7 +1066,7 @@ export default function AdminCoursesPage() {
                         placeholder="অথবা সরাসরি ছবির URL পেস্ট করুন..."
                         value={editForm.thumbnail_url}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, thumbnail_url: e.target.value }))}
-                        className="input text-xs w-full font-sans"
+                        className="input text-xs w-full font-sans h-9 rounded-xl"
                       />
                     </div>
                   </div>
@@ -571,7 +1082,7 @@ export default function AdminCoursesPage() {
                     required
                     value={editForm.title_bn}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, title_bn: e.target.value }))}
-                    className="input text-xs w-full"
+                    className="input text-xs w-full h-9 rounded-xl font-bengali"
                   />
                 </div>
                 <div>
@@ -580,8 +1091,106 @@ export default function AdminCoursesPage() {
                     type="text"
                     value={editForm.title}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
-                    className="input text-xs w-full font-sans"
+                    className="input text-xs w-full h-9 rounded-xl font-sans"
                   />
+                </div>
+              </div>
+
+              {/* Short Description */}
+              <div>
+                <label className="block text-xs font-bold text-text mb-1">
+                  কোর্সের সংক্ষিপ্ত বিবরণ
+                </label>
+                <textarea
+                  rows={2}
+                  value={editForm.short_description}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, short_description: e.target.value }))}
+                  placeholder="কোর্সের মূল আকর্ষণ ও বৈশিষ্ট্য..."
+                  className="input text-xs w-full py-2 rounded-xl resize-none font-bengali"
+                />
+              </div>
+
+              {/* Enrollment Count & Live Stats */}
+              <div className="p-3.5 rounded-xl bg-pink-500/5 border border-pink-500/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-pink-500">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>ভর্তি শিক্ষার্থী ও লাইভ কার্ড ব্যাজ</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-full">
+                    ওয়েবসাইটে দৃশ্যমান
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-text mb-1">
+                      মোট ভর্তি শিক্ষার্থী
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.enrollment_count}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            enrollment_count: Number(e.target.value),
+                          }))
+                        }
+                        className="input text-xs w-full h-9 rounded-xl font-sans font-bold text-pink-500 pr-12"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-muted">
+                        জন
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-text mb-1">
+                      লাইভ ক্লাস ঘণ্টা
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.total_duration}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            total_duration: Number(e.target.value),
+                          }))
+                        }
+                        className="input text-xs w-full h-9 rounded-xl font-sans pr-12"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-text-muted">
+                        ঘণ্টা
+                      </span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-text mb-1">
+                      মোট লেসন সংখ্যা
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editForm.total_lessons}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            total_lessons: Number(e.target.value),
+                          }))
+                        }
+                        className="input text-xs w-full h-9 rounded-xl font-sans pr-10"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-text-muted">
+                        টি
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -593,7 +1202,7 @@ export default function AdminCoursesPage() {
                     type="number"
                     value={editForm.price}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                    className="input text-xs w-full font-sans"
+                    className="input text-xs w-full h-9 rounded-xl font-sans"
                   />
                 </div>
                 <div>
@@ -602,7 +1211,7 @@ export default function AdminCoursesPage() {
                     type="number"
                     value={editForm.original_price}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, original_price: Number(e.target.value) }))}
-                    className="input text-xs w-full font-sans"
+                    className="input text-xs w-full h-9 rounded-xl font-sans"
                   />
                 </div>
               </div>
@@ -614,7 +1223,7 @@ export default function AdminCoursesPage() {
                   <select
                     value={editForm.category_id}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, category_id: e.target.value }))}
-                    className="input text-xs w-full"
+                    className="input text-xs w-full h-9 rounded-xl"
                   >
                     <option value="">ক্যাটাগরি নির্বাচন করুন</option>
                     {categories.map((cat) => (
@@ -629,7 +1238,7 @@ export default function AdminCoursesPage() {
                   <select
                     value={editForm.instructor_id}
                     onChange={(e) => setEditForm((prev) => ({ ...prev, instructor_id: e.target.value }))}
-                    className="input text-xs w-full"
+                    className="input text-xs w-full h-9 rounded-xl"
                   >
                     <option value="">ইন্সট্রাক্টর নির্বাচন করুন</option>
                     {instructors.map((inst) => (
@@ -641,19 +1250,9 @@ export default function AdminCoursesPage() {
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="flex flex-wrap items-center gap-6 pt-2 pb-2">
-                <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-text">
-                  <input
-                    type="checkbox"
-                    checked={editForm.is_featured}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, is_featured: e.target.checked }))}
-                    className="checkbox checkbox-primary rounded w-4 h-4"
-                  />
-                  <span>হোমপেজে জনপ্রিয় (Featured) দেখান</span>
-                </label>
-
-                <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-text">
+              {/* Live Publish Toggle */}
+              <div className="pt-2">
+                <label className="inline-flex items-center gap-2.5 cursor-pointer text-xs font-bold text-text">
                   <input
                     type="checkbox"
                     checked={editForm.status === "published"}
@@ -663,25 +1262,25 @@ export default function AdminCoursesPage() {
                         status: e.target.checked ? "published" : "draft",
                       }))
                     }
-                    className="checkbox checkbox-success rounded w-4 h-4"
+                    className="w-4 h-4 rounded text-primary border-border focus:ring-primary cursor-pointer"
                   />
                   <span>ওয়েবসাইটে লাইভ পাবলিশ রাখুন</span>
                 </label>
               </div>
 
-              {/* Modal Actions */}
-              <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-border">
+              {/* Modal Sticky Footer Actions */}
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
                 <button
                   type="button"
                   onClick={() => setEditingCourse(null)}
-                  className="btn btn-outline btn-sm text-xs"
+                  className="btn btn-outline h-9 px-4 text-xs font-bold rounded-xl cursor-pointer"
                 >
-                  বাতিল করুন
+                  বাতিল
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingEdit || isUploadingEditThumb}
-                  className="btn btn-primary btn-sm text-xs font-bold flex items-center gap-1.5"
+                  className="btn btn-primary h-9 px-5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
                 >
                   {isSavingEdit ? (
                     <>
@@ -703,4 +1302,3 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-

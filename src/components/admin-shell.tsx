@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Search,
   Settings,
+  CreditCard,
   Menu,
   X,
   Bell,
@@ -53,6 +54,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", labelBn: "ড্যাশবোর্ড", href: "/", icon: LayoutDashboard },
       { label: "All Courses", labelBn: "সকল কোর্স", href: "/courses", icon: BookOpen },
+      { label: "Book Management", labelBn: "বই ব্যবস্থাপনা", href: "/books", icon: BookOpen, badge: "Live" },
       { label: "Create Course", labelBn: "নতুন কোর্স তৈরি", href: "/courses/new", icon: PlusCircle },
       { label: "Categories", labelBn: "ক্যাটাগরি ও বিষয়", href: "/categories", icon: FolderTree },
       { label: "Instructors", labelBn: "ইন্সট্রাক্টর প্যানেল", href: "/instructors", icon: GraduationCap },
@@ -64,6 +66,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Students", labelBn: "শিক্ষার্থী তালিকা", href: "/students", icon: Users },
       { label: "Orders & Billing", labelBn: "অর্ডার ও পেমেন্ট", href: "/orders", icon: Receipt },
+      { label: "Payment Settings", labelBn: "পেমেন্ট মেথড সেটিংস", href: "/settings/payment", icon: CreditCard, badge: "Live" },
     ],
   },
   {

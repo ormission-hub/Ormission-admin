@@ -4,6 +4,41 @@ import { supabase } from "./client";
 // Types
 // ==========================================
 
+export interface DbLessonServer {
+  id?: number | string;
+  lesson_id?: number | string;
+  server_name: string;
+  server_type: string;
+  video_url: string;
+  is_enabled: boolean;
+  sort_order: number;
+}
+
+export interface DbLesson {
+  id: number | string;
+  course_id?: number | string;
+  section_id?: number | string;
+  title: string;
+  title_bn: string;
+  type?: string;
+  video_url?: string;
+  video_duration?: number;
+  content?: string;
+  is_preview: boolean;
+  is_published?: boolean;
+  sort_order: number;
+  lesson_servers?: DbLessonServer[];
+}
+
+export interface DbCourseSection {
+  id: number | string;
+  course_id?: number | string;
+  title: string;
+  title_bn: string;
+  sort_order: number;
+  lessons?: DbLesson[];
+}
+
 export interface DbCourse {
   id: number | string;
   slug: string;
@@ -23,8 +58,9 @@ export interface DbCourse {
   total_lessons: number;
   total_duration: number;
   is_featured: boolean;
-  categories?: { name: string; name_bn: string; slug: string } | null;
-  instructors?: { name: string; name_bn: string; institution: string } | null;
+  categories?: { id?: number; name: string; name_bn: string; slug: string } | null;
+  instructors?: { id?: number; name: string; name_bn: string; institution: string; photo_url?: string } | null;
+  course_sections?: DbCourseSection[];
   created_at?: string;
 }
 
@@ -63,6 +99,7 @@ export interface DbInstructor {
   bio?: string;
   photo_url?: string;
   credentials?: string;
+  display_order?: number;
   is_featured: boolean;
   is_published: boolean;
 }
@@ -88,8 +125,13 @@ export interface DbOrder {
   total_amount: number;
   paid_amount: number;
   discount_amount: number;
-  status: "pending" | "processing" | "completed" | "failed" | "refunded";
+  status: "pending" | "paid" | "processing" | "completed" | "failed" | "cancelled" | "refunded";
   payment_method?: string;
+  sender_number?: string;
+  transaction_id?: string;
+  student_name?: string;
+  student_phone?: string;
+  student_email?: string;
   created_at: string;
   profiles?: { full_name: string; phone: string } | null;
   courses?: { title: string; title_bn: string } | null;
@@ -126,9 +168,9 @@ export interface DbBlogPost {
 export interface DbTestimonial {
   id: number;
   student_name: string;
-  student_photo?: string;
-  course_name?: string;
-  batch?: string;
+  student_photo?: string | null;
+  course_name?: string | null;
+  batch?: string | null;
   review: string;
   rating: number;
   display_order: number;
@@ -177,6 +219,86 @@ export const dbService = {
       console.error("Error fetching courses from Supabase:", e);
       return [];
     }
+  },
+
+  async getCourseById(id: number | string): Promise<DbCourse | null> {
+    try {
+      const res = await fetch(`/api/courses?id=${id}`, { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          return json.data;
+        }
+      }
+    } catch {
+      // fallback
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("courses")
+        .select(`
+          *,
+          categories:category_id (name, name_bn, slug),
+          instructors:instructor_id (name, name_bn, institution),
+          course_sections (
+            id,
+            course_id,
+            title,
+            title_bn,
+            sort_order,
+            lessons (
+              id,
+              course_id,
+              section_id,
+              title,
+              title_bn,
+              type,
+              video_url,
+              video_duration,
+              is_preview,
+              is_published,
+              sort_order,
+              lesson_servers (
+                id,
+                server_name,
+                server_type,
+                video_url,
+                is_enabled,
+                sort_order
+              )
+            )
+          )
+        `)
+        .eq("id", id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.error("Error fetching course by id from Supabase:", e);
+      return null;
+    }
+  },
+
+  async saveCourseCurriculum(
+    courseId: number | string,
+    curriculum: any[]
+  ): Promise<boolean> {
+    try {
+      const res = await fetch("/api/courses", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: courseId, curriculum }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success) return true;
+      }
+    } catch (e) {
+      console.error("Error saving curriculum via API:", e);
+    }
+    return false;
   },
 
   async createCourse(courseData: Partial<DbCourse>): Promise<DbCourse | null> {
@@ -243,24 +365,12 @@ export const dbService = {
       const res = await fetch(`/api/courses?id=${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) return true;
-      }
-    } catch {
-      // fallback
-    }
-
-    try {
-      const { error } = await supabase
-        .from("courses")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      return true;
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete course:", json?.error);
+      return false;
     } catch (e) {
-      console.error("Error deleting course in Supabase:", e);
+      console.error("Error deleting course in API:", e);
       return false;
     }
   },
@@ -384,6 +494,7 @@ export const dbService = {
       const { data, error } = await supabase
         .from("instructors")
         .select("*")
+        .order("display_order", { ascending: true })
         .order("id", { ascending: true });
 
       if (error) throw error;
@@ -410,17 +521,37 @@ export const dbService = {
     }
   },
 
-  async deleteInstructor(id: number): Promise<boolean> {
+  async updateInstructor(id: number, updates: Partial<DbInstructor>): Promise<DbInstructor | null> {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("instructors")
-        .delete()
-        .eq("id", id);
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .select()
+        .single();
 
       if (error) throw error;
-      return true;
+      return data;
     } catch (e) {
-      console.error("Error deleting instructor in Supabase:", e);
+      console.error("Error updating instructor in Supabase:", e);
+      return null;
+    }
+  },
+
+  async deleteInstructor(id: number | string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/instructors?id=${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete instructor:", json?.error);
+      return false;
+    } catch (e) {
+      console.error("Error deleting instructor via API:", e);
       return false;
     }
   },
@@ -459,6 +590,13 @@ export const dbService = {
   // ---- ORDERS ----
   async getOrders(): Promise<DbOrder[]> {
     try {
+      const res = await fetch("/api/orders", { cache: "no-store" });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return json.data;
+      }
+
+      // Fallback directly to supabase if API not reachable
       const { data, error } = await supabase
         .from("orders")
         .select(`
@@ -478,6 +616,14 @@ export const dbService = {
 
   async updateOrderStatus(id: string, status: DbOrder["status"]): Promise<boolean> {
     try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      const json = await res.json();
+      if (json.success) return true;
+
       const { error } = await supabase
         .from("orders")
         .update({ status })
@@ -523,17 +669,17 @@ export const dbService = {
     }
   },
 
-  async deleteResource(id: number): Promise<boolean> {
+  async deleteResource(id: number | string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from("resources")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      return true;
+      const res = await fetch(`/api/resources?id=${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete resource:", json?.error);
+      return false;
     } catch (e) {
-      console.error("Error deleting resource:", e);
+      console.error("Error deleting resource via API:", e);
       return false;
     }
   },
@@ -570,17 +716,17 @@ export const dbService = {
     }
   },
 
-  async deleteBlogPost(id: number): Promise<boolean> {
+  async deleteBlogPost(id: number | string): Promise<boolean> {
     try {
-      const { error } = await supabase
-        .from("blog_posts")
-        .delete()
-        .eq("id", id);
-
-      if (error) throw error;
-      return true;
+      const res = await fetch(`/api/blog?id=${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete blog post:", json?.error);
+      return false;
     } catch (e) {
-      console.error("Error deleting blog post:", e);
+      console.error("Error deleting blog post via API:", e);
       return false;
     }
   },
@@ -601,7 +747,7 @@ export const dbService = {
     }
   },
 
-  async toggleTestimonialApproval(id: number, currentApproved: boolean): Promise<boolean> {
+  async toggleTestimonialApproval(id: number | string, currentApproved: boolean): Promise<boolean> {
     try {
       const { error } = await supabase
         .from("testimonials")
@@ -612,6 +758,52 @@ export const dbService = {
       return true;
     } catch (e) {
       console.error("Error toggling testimonial approval:", e);
+      return false;
+    }
+  },
+
+  async createTestimonial(data: Partial<DbTestimonial>): Promise<DbTestimonial | null> {
+    try {
+      const { data: created, error } = await supabase
+        .from("testimonials")
+        .insert([data])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return created;
+    } catch (e) {
+      console.error("Error creating testimonial in Supabase:", e);
+      return null;
+    }
+  },
+
+  async updateTestimonial(id: number | string, updates: Partial<DbTestimonial>): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from("testimonials")
+        .update(updates)
+        .eq("id", id);
+
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error("Error updating testimonial in Supabase:", e);
+      return false;
+    }
+  },
+
+  async deleteTestimonial(id: number | string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/testimonials?id=${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete testimonial:", json?.error);
+      return false;
+    } catch (e) {
+      console.error("Error deleting testimonial via API:", e);
       return false;
     }
   },

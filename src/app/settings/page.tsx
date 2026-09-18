@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Settings, Save, ShieldCheck, CreditCard, CheckCircle2, RefreshCw, Sparkles, Database } from "lucide-react";
+import Link from "next/link";
+import { Settings, Save, ShieldCheck, CreditCard, CheckCircle2, RefreshCw, Sparkles, Database, ArrowRight } from "lucide-react";
 import { dbService } from "@/lib/supabase/db-service";
 
 export default function AdminSettingsPage() {
@@ -129,6 +130,36 @@ export default function AdminSettingsPage() {
           <Sparkles className={`w-3.5 h-3.5 ${seeding ? "animate-spin" : ""}`} />
           <span>{seeding ? "সিড হচ্ছে..." : "প্রাথমিক ডেটা সিড করুন"}</span>
         </button>
+      </div>
+
+      {/* Payment Wallet Setup Banner Card */}
+      <div className="bg-gradient-to-r from-primary/10 via-secondary/5 to-surface rounded-xl border border-primary/20 p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shadow-xs shrink-0">
+            <CreditCard className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-text font-bengali">
+                বিকাশ, নগদ ও রকেট ওয়ালেট ও গেটওয়ে সেটিংস
+              </h3>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary text-white font-bengali">
+                নতুন
+              </span>
+            </div>
+            <p className="text-xs text-text-muted font-bengali mt-0.5">
+              অ্যাডমিনের বিকাশ/নগদ/রকেট নম্বর, মার্চেন্ট অ্যাকাউন্ট ও শিক্ষার্থীদের জন্য পেমেন্ট নির্দেশনা কনফিগার করুন।
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/settings/payment"
+          className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 whitespace-nowrap shadow-xs shrink-0"
+        >
+          <span>পেমেন্ট সেটিংস কনফিগার করুন</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
       {loading ? (

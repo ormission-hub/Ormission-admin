@@ -28,6 +28,8 @@ import {
   Check,
   Users,
   ShieldCheck,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 
@@ -36,7 +38,6 @@ interface NewLesson {
   titleBn: string;
   duration: string;
   videoUrl: string;
-  pdfUrl: string;
   isFreePreview: boolean;
 }
 
@@ -51,6 +52,23 @@ export default function CreateCourseWizardPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [saved, setSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Toast Notification State
+  const [toast, setToast] = useState<{
+    show: boolean;
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+
+  const showToast = (type: "success" | "error" | "info", title: string, message: string) => {
+    setToast({ show: true, type, title, message });
+    if (type === "success") {
+      setTimeout(() => {
+        setToast((prev) => (prev?.title === title ? null : prev));
+      }, 6000);
+    }
+  };
 
   // Lists from DB
   const [categoriesList, setCategoriesList] = useState<DbCategory[]>([]);
@@ -99,8 +117,7 @@ export default function CreateCourseWizardPage() {
           id: "les-1",
           titleBn: "কোর্স পরিচিতি ও প্রস্তুতি কৌশল",
           duration: "20:00",
-          videoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ",
-          pdfUrl: "https://example.com/lecture-1.pdf",
+          videoUrl: "https://www.youtube.com/embed/M7lc1UVf-VE",
           isFreePreview: true,
         },
       ],
@@ -112,7 +129,6 @@ export default function CreateCourseWizardPage() {
     metaTitle: "",
     metaDescription: "",
     isPublished: true,
-    isFeatured: true,
   });
 
   useEffect(() => {
@@ -171,9 +187,11 @@ export default function CreateCourseWizardPage() {
 
       setUploadProgress(100);
       setMedia((prev) => ({ ...prev, thumbnailUrl: data.url }));
+      showToast("success", "ছবি আপলোড সম্পন্ন", "কোর্সের থাম্বনেইল সফলভাবে আপলোড হয়েছে।");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "আপলোড ব্যর্থ হয়েছে";
       setUploadError(msg);
+      showToast("error", "আপলোড ত্রুটি", msg);
     } finally {
       setIsUploadingThumb(false);
       setTimeout(() => setUploadProgress(0), 1000);
@@ -193,7 +211,6 @@ export default function CreateCourseWizardPage() {
             titleBn: "প্রথম লেসন",
             duration: "30:00",
             videoUrl: "",
-            pdfUrl: "",
             isFreePreview: false,
           },
         ],
@@ -203,10 +220,11 @@ export default function CreateCourseWizardPage() {
 
   const removeSection = (secId: string) => {
     if (curriculum.length <= 1) {
-      alert("কমপক্ষে একটি অধ্যায় থাকতে হবে।");
+      showToast("error", "মুছে ফেলা সম্ভব নয়", "কমপক্ষে একটি অধ্যায় অবশ্যই থাকতে হবে।");
       return;
     }
     setCurriculum((prev) => prev.filter((s) => s.id !== secId));
+    showToast("info", "অধ্যায় সরানো হয়েছে", "অধ্যায়টি কারিকুলাম থেকে অপসারিত হয়েছে।");
   };
 
   const addLesson = (secId: string) => {
@@ -219,10 +237,9 @@ export default function CreateCourseWizardPage() {
               ...sec.lessons,
               {
                 id: `les-${Date.now()}`,
-                titleBn: `লেসন ${sec.lessons.length + 1}: নতুন ক্লাস`,
-                duration: "35:00",
+                titleBn: `নতুন ক্লাস ${sec.lessons.length + 1}`,
+                duration: "30:00",
                 videoUrl: "",
-                pdfUrl: "",
                 isFreePreview: false,
               },
             ],
@@ -238,7 +255,7 @@ export default function CreateCourseWizardPage() {
       prev.map((sec) => {
         if (sec.id === secId) {
           if (sec.lessons.length <= 1) {
-            alert("প্রতিটি অধ্যায়ে কমপক্ষে একটি লেসন থাকতে হবে।");
+            showToast("error", "মুছে ফেলা সম্ভব নয়", "প্রতিটি অধ্যায়ে কমপক্ষে একটি ক্লাস থাকতে হবে।");
             return sec;
           }
           return {
@@ -254,9 +271,41 @@ export default function CreateCourseWizardPage() {
   const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!basicInfo.titleBn.trim()) {
-      alert("অনুগ্রহ করে কোর্সের পূর্ণ নাম (বাংলায়) লিখুন।");
+      showToast("error", "কোর্সের নাম আবশ্যক", "অনুগ্রহ করে ধাপ ১-এ গিয়ে কোর্সের পূর্ণ নাম (বাংলায়) লিখুন।");
       setCurrentStep(1);
       return;
+    }
+
+    if (curriculum.length === 0) {
+      showToast("error", "কারিকুলাম আবশ্যক", "কোর্সে কমপক্ষে একটি অধ্যায় থাকতে হবে।");
+      setCurrentStep(4);
+      return;
+    }
+
+    for (let i = 0; i < curriculum.length; i++) {
+      const sec = curriculum[i];
+      if (!sec.titleBn.trim()) {
+        showToast("error", "অধ্যায়ের নাম আবশ্যক", `অধ্যায় ${i + 1}-এর নাম লিখুন।`);
+        setCurrentStep(4);
+        return;
+      }
+      if (!sec.lessons || sec.lessons.length === 0) {
+        showToast("error", "ক্লাস আবশ্যক", `'${sec.titleBn}' অধ্যায়ে কমপক্ষে একটি ক্লাস যোগ করুন।`);
+        setCurrentStep(4);
+        return;
+      }
+      for (let j = 0; j < sec.lessons.length; j++) {
+        const les = sec.lessons[j];
+        if (!les.titleBn.trim()) {
+          showToast(
+            "error",
+            "ক্লাসের নাম আবশ্যক",
+            `'${sec.titleBn}' অধ্যায়ের ${j + 1} নম্বর ক্লাসের নাম লিখুন।`
+          );
+          setCurrentStep(4);
+          return;
+        }
+      }
     }
 
     setSaved(true);
@@ -283,14 +332,21 @@ export default function CreateCourseWizardPage() {
         total_lessons: curriculum.reduce((acc, s) => acc + s.lessons.length, 0),
         total_duration: (Number(media.durationHours) || 40) * 60,
         enrollment_count: Number(basicInfo.initialEnrolled) || 0,
-        is_featured: seo.isFeatured,
-      });
+        is_featured: false,
+        curriculum: curriculum,
+      } as any);
 
       if (res) {
-        alert("অভিনন্দন! নতুন কোর্সটি সফলভাবে Supabase ডাটাবেজে তৈরি ও সংরক্ষিত হয়েছে।");
-        router.push("/courses");
+        showToast(
+          "success",
+          "কোর্স তৈরি সফল!",
+          "নতুন কোর্সটি এবং এর সকল ক্লাস কারিকুলাম সফলভাবে তৈরি হয়েছে। রিডাইরেক্ট করা হচ্ছে..."
+        );
+        setTimeout(() => {
+          router.push("/courses");
+        }, 1500);
       } else {
-        alert("কোর্স ডাটাবেজে সংরক্ষণ করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
+        showToast("error", "সংরক্ষণ ব্যর্থ", "কোর্স ডাটাবেজে সংরক্ষণ করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
         setSaved(false);
       }
     } catch (err: unknown) {
@@ -322,7 +378,50 @@ export default function CreateCourseWizardPage() {
       : 0;
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+    <div className="space-y-6 max-w-5xl mx-auto pb-16 font-bengali">
+      {/* Toast Notification */}
+      {toast && toast.show && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className={`fixed top-5 right-5 z-50 max-w-md w-full p-4 rounded-xl shadow-2xl border flex items-start gap-3 backdrop-blur-xl transition-all duration-300 ${
+            toast.type === "success"
+              ? "bg-emerald-950/95 border-emerald-500 text-emerald-100 shadow-emerald-950/40"
+              : toast.type === "error"
+              ? "bg-rose-950/95 border-rose-500 text-rose-100 shadow-rose-950/40"
+              : "bg-slate-900/95 border-slate-600 text-slate-100 shadow-slate-950/40"
+          }`}
+        >
+          <div className="mt-0.5 shrink-0">
+            {toast.type === "success" && (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            )}
+            {toast.type === "error" && (
+              <AlertTriangle className="w-5 h-5 text-rose-400" />
+            )}
+            {toast.type === "info" && (
+              <Sparkles className="w-5 h-5 text-blue-400" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0 pr-2">
+            <h4 className="text-xs font-black tracking-wide">
+              {toast.title}
+            </h4>
+            <p className="text-xs mt-1 leading-relaxed opacity-90 font-normal">
+              {toast.message}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="shrink-0 p-1 text-white/60 hover:text-white rounded-lg transition-colors"
+            title="বন্ধ করুন"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Top Navigation Back */}
       <div className="flex items-center justify-between">
         <Link
@@ -918,7 +1017,7 @@ export default function CreateCourseWizardPage() {
                     ধাপ ৪: কারিকুলাম ও লেসন বিন্যাস
                   </h3>
                   <p className="text-xs text-text-muted font-bengali mt-0.5">
-                    অধ্যায় যোগ করুন এবং প্রতিটি অধ্যায়ে ক্লাস ও লেকচার শিট লিংক যুক্ত করুন
+                    অধ্যায় যোগ করুন এবং প্রতিটি অধ্যায়ে ক্লাস ও ভিডিও লিংক যুক্ত করুন
                   </p>
                 </div>
                 <button
@@ -1065,12 +1164,12 @@ export default function CreateCourseWizardPage() {
                             )}
                           </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          <div className="text-xs">
                             <div className="relative">
                               <Video className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
                               <input
                                 type="url"
-                                placeholder="ভিডিও Embed URL"
+                                placeholder="ভিডিও Embed URL (যেমন: https://www.youtube.com/embed/...)"
                                 value={lesson.videoUrl}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -1081,31 +1180,6 @@ export default function CreateCourseWizardPage() {
                                             ...s,
                                             lessons: s.lessons.map((l) =>
                                               l.id === lesson.id ? { ...l, videoUrl: val } : l
-                                            ),
-                                          }
-                                        : s
-                                    )
-                                  );
-                                }}
-                                className="input pl-8 text-xs font-sans w-full"
-                              />
-                            </div>
-
-                            <div className="relative">
-                              <FileDown className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
-                              <input
-                                type="url"
-                                placeholder="লেকচার শিট PDF লিংক"
-                                value={lesson.pdfUrl}
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setCurriculum((prev) =>
-                                    prev.map((s) =>
-                                      s.id === section.id
-                                        ? {
-                                            ...s,
-                                            lessons: s.lessons.map((l) =>
-                                              l.id === lesson.id ? { ...l, pdfUrl: val } : l
                                             ),
                                           }
                                         : s
@@ -1175,7 +1249,7 @@ export default function CreateCourseWizardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 {/* Publish Status Toggle */}
                 <div className="p-4 bg-surface-secondary/40 rounded-2xl border border-border flex items-center justify-between">
                   <div>
@@ -1194,28 +1268,6 @@ export default function CreateCourseWizardPage() {
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
-                  </label>
-                </div>
-
-                {/* Homepage Featured Toggle */}
-                <div className="p-4 bg-amber-500/5 rounded-2xl border border-amber-500/20 flex items-center justify-between">
-                  <div>
-                    <h4 className="font-bold text-sm text-amber-500 font-bengali flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>হোমপেজে জনপ্রিয় (Featured)</span>
-                    </h4>
-                    <p className="text-[11px] text-text-muted font-bengali mt-0.5">
-                      অন করলে হোমপেজের &apos;জনপ্রিয় কোর্সসমূহ&apos; সেকশনে দেখাবে
-                    </p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={seo.isFeatured}
-                      onChange={(e) => setSeo({ ...seo, isFeatured: e.target.checked })}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-border peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500" />
                   </label>
                 </div>
               </div>
@@ -1277,7 +1329,7 @@ export default function CreateCourseWizardPage() {
               whileTap={{ scale: 0.97 }}
               onClick={() => {
                 if (currentStep === 1 && !basicInfo.titleBn.trim()) {
-                  alert("অনুগ্রহ করে কোর্সের পূর্ণ নাম (বাংলায়) লিখুন।");
+                  showToast("error", "কোর্সের নাম আবশ্যক", "অনুগ্রহ করে কোর্সের পূর্ণ নাম (বাংলায়) লিখুন।");
                   return;
                 }
                 setCurrentStep((prev) => prev + 1);
