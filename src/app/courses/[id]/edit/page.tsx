@@ -1549,13 +1549,17 @@ export default function EditCourseStudioPage({
                   previewVideoUrl &&
                   /youtu\.be|youtube\.com|youtube-nocookie\.com/i.test(previewVideoUrl)
                 );
+                const isStreamtape = Boolean(
+                  previewVideoUrl &&
+                  /streamtape\.(com|to|net|pe|xyz|site|cash|cc)|streamta\.pe/i.test(previewVideoUrl)
+                );
                 const embedUrl = getEmbedUrl(previewVideoUrl);
 
-                if (isYouTube) {
+                if (isYouTube || isStreamtape) {
                   return (
                     <iframe
                       src={embedUrl}
-                      title="YouTube Video Preview"
+                      title={isYouTube ? "YouTube Video Preview" : "Streamtape Video Preview"}
                       className="w-full h-full border-0 absolute inset-0"
                       referrerPolicy="strict-origin-when-cross-origin"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

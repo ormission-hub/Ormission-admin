@@ -14,10 +14,10 @@ export function cleanAndNormalizeVideoUrl(input: string): string {
 
   // 2. Streamtape normalization:
   // Convert /v/ (watch page) to /e/ (embed player)
-  // Handles streamtape.com, streamtape.to, streamta.pe, streamtape.net
-  if (/streamtape\.(com|to|net|pe)\/(?:v|e)\/([a-zA-Z0-9_-]+)/i.test(url)) {
+  // Handles streamtape.com, streamtape.to, streamta.pe, streamtape.net, streamtape.xyz, etc.
+  if (/(?:streamtape\.(?:com|to|net|pe|xyz|site|cash|cc)|streamta\.pe)\/(?:v|e)\/([a-zA-Z0-9_-]+)/i.test(url)) {
     url = url.replace(
-      /(?:https?:\/\/)?(?:www\.)?streamtape\.(?:com|to|net|pe)\/(?:v|e)\/([a-zA-Z0-9_-]+)[^\s"']*/i,
+      /(?:https?:\/\/)?(?:www\.)?(?:streamtape\.(?:com|to|net|pe|xyz|site|cash|cc)|streamta\.pe)\/(?:v|e)\/([a-zA-Z0-9_-]+)[^\s"']*/i,
       "https://streamtape.com/e/$1/"
     );
     if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -41,7 +41,7 @@ export function getEmbedUrl(raw: string): string {
   const cleaned = cleanAndNormalizeVideoUrl(raw);
 
   // 1. Streamtape
-  const stMatch = cleaned.match(/streamtape\.(?:com|to|net|pe)\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
+  const stMatch = cleaned.match(/(?:streamtape\.(?:com|to|net|pe|xyz|site|cash|cc)|streamta\.pe)\/(?:v|e)\/([a-zA-Z0-9_-]+)/i);
   if (stMatch && stMatch[1]) {
     return `https://streamtape.com/e/${stMatch[1]}/`;
   }
