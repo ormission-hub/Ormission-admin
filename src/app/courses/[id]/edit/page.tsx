@@ -1548,6 +1548,8 @@ export default function EditCourseStudioPage({
                 src={getEmbedUrl(previewVideoUrl)}
                 title="Lesson Video Preview"
                 className="w-full h-full border-0 absolute inset-0"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+                referrerPolicy="no-referrer"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
                 scrolling="no"
