@@ -1544,16 +1544,39 @@ export default function EditCourseStudioPage({
 
             {/* Video Frame: 16:9 responsive container with proper aspect ratio and fit */}
             <div className="aspect-video w-full bg-black relative flex items-center justify-center overflow-hidden">
-              <iframe
-                src={getEmbedUrl(previewVideoUrl)}
-                title="Lesson Video Preview"
-                className="w-full h-full border-0 absolute inset-0"
-                sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
-                referrerPolicy="no-referrer"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                scrolling="no"
-              />
+              {(() => {
+                const isYouTube = Boolean(
+                  previewVideoUrl &&
+                  /youtu\.be|youtube\.com|youtube-nocookie\.com/i.test(previewVideoUrl)
+                );
+                const embedUrl = getEmbedUrl(previewVideoUrl);
+
+                if (isYouTube) {
+                  return (
+                    <iframe
+                      src={embedUrl}
+                      title="YouTube Video Preview"
+                      className="w-full h-full border-0 absolute inset-0"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  );
+                }
+
+                return (
+                  <iframe
+                    src={embedUrl}
+                    title="Lesson Video Preview"
+                    className="w-full h-full border-0 absolute inset-0"
+                    sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    scrolling="no"
+                  />
+                );
+              })()}
             </div>
 
             {/* Modal Footer */}
