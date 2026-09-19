@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { cleanAndNormalizeVideoUrl } from "@/lib/video-helpers";
 
 export const runtime = "nodejs";
 
@@ -62,7 +63,8 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
           const primaryServerUrl = Array.isArray(les.servers) && les.servers.length > 0
             ? (les.servers[0].videoUrl || les.servers[0].video_url || "")
             : "";
-          const primaryVideoUrl = les.videoUrl || les.video_url || primaryServerUrl;
+          const rawPrimary = les.videoUrl || les.video_url || primaryServerUrl;
+          const primaryVideoUrl = cleanAndNormalizeVideoUrl(rawPrimary);
 
           return {
             course_id: Number(courseId),
@@ -104,23 +106,24 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
               for (const srv of servers) {
                 const srvUrl = srv.videoUrl || srv.video_url;
                 if (srvUrl) {
+                  const rawName = (srv.serverName || srv.server_name || "").trim();
                   allServersToInsert.push({
                     lesson_id: insertedLesson.id,
-                    server_name: srv.serverName || srv.server_name || "YouTube",
+                    server_name: rawName || `Server ${srv.sortOrder || srv.sort_order || 1}`,
                     server_type: srv.serverType || srv.server_type || "youtube",
-                    video_url: srvUrl,
+                    video_url: cleanAndNormalizeVideoUrl(srvUrl),
                     is_enabled: srv.isEnabled !== false && srv.is_enabled !== false,
                     sort_order: srv.sortOrder || srv.sort_order || 1,
                   });
                 }
               }
             } else if (lesFormData.videoUrl || lesFormData.video_url) {
-              // Fallback: create a single YouTube server from legacy videoUrl
+              // Fallback: create a single server from legacy videoUrl
               allServersToInsert.push({
                 lesson_id: insertedLesson.id,
-                server_name: "YouTube",
+                server_name: "Server 1",
                 server_type: "youtube",
-                video_url: lesFormData.videoUrl || lesFormData.video_url,
+                video_url: cleanAndNormalizeVideoUrl(lesFormData.videoUrl || lesFormData.video_url),
                 is_enabled: true,
                 sort_order: 1,
               });

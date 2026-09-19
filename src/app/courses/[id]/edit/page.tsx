@@ -42,6 +42,7 @@ import {
   type DbCategory,
   type DbInstructor,
 } from "@/lib/supabase/db-service";
+import { cleanAndNormalizeVideoUrl, getEmbedUrl } from "@/lib/video-helpers";
 
 interface ServerFormItem {
   id: string | number;
@@ -136,6 +137,7 @@ export default function EditCourseStudioPage({
 
   // Video Test Preview Modal
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const [previewServerName, setPreviewServerName] = useState<string | null>(null);
 
   const loadCourseData = async (isInitial = true) => {
     if (isInitial) setLoading(true);
@@ -184,14 +186,14 @@ export default function EditCourseStudioPage({
                       .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
                       .map((srv: any) => ({
                         id: srv.id,
-                        serverName: srv.server_name || "YouTube",
+                        serverName: srv.server_name || `Server ${srv.sort_order || 1}`,
                         serverType: srv.server_type || "youtube",
-                        videoUrl: srv.video_url || "",
+                        videoUrl: cleanAndNormalizeVideoUrl(srv.video_url || ""),
                         isEnabled: srv.is_enabled !== false,
                         sortOrder: srv.sort_order || 1,
                       }))
                   : l.video_url
-                    ? [{ id: `srv-${l.id}-1`, serverName: "YouTube", serverType: "youtube" as const, videoUrl: l.video_url, isEnabled: true, sortOrder: 1 }]
+                    ? [{ id: `srv-${l.id}-1`, serverName: "Server 1", serverType: "youtube" as const, videoUrl: cleanAndNormalizeVideoUrl(l.video_url), isEnabled: true, sortOrder: 1 }]
                     : [];
 
                 return {
@@ -199,7 +201,7 @@ export default function EditCourseStudioPage({
                   title: l.title || "",
                   titleBn: l.title_bn || l.title || "ক্লাস",
                   duration: l.video_duration ? `${l.video_duration}:00` : "30:00",
-                  videoUrl: l.video_url || (srvs[0]?.videoUrl || ""),
+                  videoUrl: cleanAndNormalizeVideoUrl(l.video_url || (srvs[0]?.videoUrl || "")),
                   isFreePreview: l.is_preview === true,
                   servers: srvs,
                   showServers: srvs.length > 0,
@@ -415,7 +417,7 @@ export default function EditCourseStudioPage({
                 ...les.servers,
                 {
                   id: `srv-${Date.now()}`,
-                  serverName: newOrder === 1 ? "YouTube" : `Server ${newOrder}`,
+                  serverName: `Server ${newOrder}`,
                   serverType: "youtube" as const,
                   videoUrl: "",
                   isEnabled: true,
@@ -454,6 +456,10 @@ export default function EditCourseStudioPage({
     field: keyof ServerFormItem,
     val: any
   ) => {
+    const finalVal = (field === "videoUrl" && typeof val === "string")
+      ? cleanAndNormalizeVideoUrl(val)
+      : val;
+
     setSections(
       sections.map((sec) => {
         if (sec.id !== secId) return sec;
@@ -464,7 +470,7 @@ export default function EditCourseStudioPage({
             return {
               ...les,
               servers: les.servers.map((srv) =>
-                srv.id === srvId ? { ...srv, [field]: val } : srv
+                srv.id === srvId ? { ...srv, [field]: finalVal } : srv
               ),
             };
           }),
@@ -498,19 +504,7 @@ export default function EditCourseStudioPage({
     );
   };
 
-  // Helper to extract clean youtube embed or id
-  const getEmbedUrl = (raw: string) => {
-    if (!raw) return "";
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = raw.match(regExp);
-    if (match && match[2].length === 11) {
-      return `https://www.youtube.com/embed/${match[2]}?autoplay=1`;
-    }
-    if (raw.length === 11 && !raw.includes("/")) {
-      return `https://www.youtube.com/embed/${raw}?autoplay=1`;
-    }
-    return raw;
-  };
+
 
   // Save All Changes with Comprehensive Error Handling & Validation
   const handleSaveAll = async () => {
@@ -1044,7 +1038,10 @@ export default function EditCourseStudioPage({
                               {lesson.videoUrl && (
                                 <button
                                   type="button"
-                                  onClick={() => setPreviewVideoUrl(lesson.videoUrl)}
+                                  onClick={() => {
+                                    setPreviewVideoUrl(lesson.videoUrl);
+                                    setPreviewServerName(lesson.titleBn || "ভিডিও প্রিভিউ");
+                                  }}
                                   className="p-1.5 rounded-lg border border-border bg-surface text-primary hover:bg-primary/10 transition-colors shrink-0"
                                   title="ভিডিও প্লেয়ার টেস্ট করুন"
                                 >
@@ -1127,8 +1124,8 @@ export default function EditCourseStudioPage({
                                     type="text"
                                     value={srv.serverName}
                                     onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverName", e.target.value)}
-                                    placeholder="Server Name..."
-                                    className="input text-[11px] py-1 px-2 w-28 font-semibold"
+                                    placeholder="সার্ভারের নাম (যেমন: Server 1)..."
+                                    className="input text-[11px] py-1 px-2.5 w-32 sm:w-36 font-semibold"
                                   />
 
                                   {/* Server Type Dropdown */}
@@ -1150,7 +1147,14 @@ export default function EditCourseStudioPage({
                                       type="text"
                                       value={srv.videoUrl}
                                       onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "videoUrl", e.target.value)}
-                                      placeholder={srv.serverType === "youtube" ? "YouTube URL বা ID..." : srv.serverType === "streamtape" ? "Streamtape embed URL..." : "Video URL..."}
+                                      onPaste={(e) => {
+                                        const pasted = e.clipboardData.getData("text");
+                                        if (pasted && (pasted.includes("<iframe") || pasted.includes("streamtape"))) {
+                                          e.preventDefault();
+                                          updateServerField(section.id, lesson.id, srv.id, "videoUrl", cleanAndNormalizeVideoUrl(pasted));
+                                        }
+                                      }}
+                                      placeholder={srv.serverType === "youtube" ? "YouTube URL বা ID..." : srv.serverType === "streamtape" ? "Streamtape URL বা iframe embed..." : "Video URL..."}
                                       className="input text-[11px] py-1 pl-7 pr-2 font-mono w-full"
                                     />
                                   </div>
@@ -1159,7 +1163,10 @@ export default function EditCourseStudioPage({
                                   {srv.videoUrl && (
                                     <button
                                       type="button"
-                                      onClick={() => setPreviewVideoUrl(srv.videoUrl)}
+                                      onClick={() => {
+                                        setPreviewVideoUrl(srv.videoUrl);
+                                        setPreviewServerName(srv.serverName || "ভিডিও প্রিভিউ");
+                                      }}
                                       className="p-1 rounded-md border border-border bg-surface text-primary hover:bg-primary/10 transition-colors shrink-0"
                                       title="প্রিভিউ"
                                     >
@@ -1494,29 +1501,69 @@ export default function EditCourseStudioPage({
 
       {/* Video Preview Modal */}
       {previewVideoUrl && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full overflow-hidden shadow-2xl">
-            <div className="flex items-center justify-between p-3.5 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Video className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold text-white font-bengali">ভিডিও প্রিভিউ টেস্ট</span>
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-900/90">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+                  <Video className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-sm font-bold text-white font-bengali">
+                      {previewServerName ? `ভিডিও প্রিভিউ — ${previewServerName}` : "ভিডিও প্রিভিউ টেস্ট"}
+                    </h4>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono truncate max-w-xs sm:max-w-lg mt-0.5">
+                    {cleanAndNormalizeVideoUrl(previewVideoUrl)}
+                  </p>
+                </div>
               </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={cleanAndNormalizeVideoUrl(previewVideoUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-bengali flex items-center gap-1.5 transition-colors"
+                  title="ব্রাউজারে নতুন ট্যাবে খুলুন"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">নতুন ট্যাবে দেখুন</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewVideoUrl(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  title="বন্ধ করুন"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Video Frame: 16:9 responsive container with proper aspect ratio and fit */}
+            <div className="aspect-video w-full bg-black relative flex items-center justify-center overflow-hidden">
+              <iframe
+                src={getEmbedUrl(previewVideoUrl)}
+                title="Lesson Video Preview"
+                className="w-full h-full border-0 absolute inset-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                scrolling="no"
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-4 py-2.5 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400 font-bengali">
+              <span>💡 প্লেয়ারের ভেতরে ফুলস্ক্রিন ও কোয়ালিটি বাটন ব্যবহার করে টেস্ট করতে পারেন।</span>
               <button
                 type="button"
                 onClick={() => setPreviewVideoUrl(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white"
+                className="text-xs text-slate-300 hover:text-white font-bold cursor-pointer transition-colors"
               >
-                <X className="w-5 h-5" />
+                বন্ধ করুন
               </button>
-            </div>
-            <div className="aspect-video w-full bg-black">
-              <iframe
-                src={getEmbedUrl(previewVideoUrl)}
-                title="Lesson Test"
-                className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
             </div>
           </div>
         </div>
