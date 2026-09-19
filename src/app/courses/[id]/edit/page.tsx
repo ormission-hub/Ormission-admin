@@ -47,7 +47,7 @@ import { cleanAndNormalizeVideoUrl, getEmbedUrl } from "@/lib/video-helpers";
 interface ServerFormItem {
   id: string | number;
   serverName: string;
-  serverType: "youtube" | "streamtape" | "abyss" | "embed" | "direct";
+  serverType: "youtube" | "streamtape" | "abyss" | "hls" | "embed" | "direct";
   videoUrl: string;
   isEnabled: boolean;
   sortOrder: number;
@@ -1137,6 +1137,7 @@ export default function EditCourseStudioPage({
                                     <option value="youtube">YouTube</option>
                                     <option value="streamtape">Streamtape</option>
                                     <option value="abyss">Abyss Player (AdBlocked)</option>
+                                    <option value="hls">HLS Stream (Encrypted .m3u8)</option>
                                     <option value="embed">Embed (iframe)</option>
                                     <option value="direct">Direct URL</option>
                                   </select>
@@ -1162,6 +1163,8 @@ export default function EditCourseStudioPage({
                                           ? "Streamtape URL বা iframe embed..."
                                           : srv.serverType === "abyss"
                                           ? "Abyss URL বা iframe (যেমন: https://player.abyssplayer.com/XYkCAnivh)..."
+                                          : srv.serverType === "hls"
+                                          ? "HLS Stream URL (যেমন: https://.../playlist.m3u8)..."
                                           : "Video URL..."
                                       }
                                       className="input text-[11px] py-1 pl-7 pr-2 font-mono w-full"

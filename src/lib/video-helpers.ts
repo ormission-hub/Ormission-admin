@@ -76,3 +76,17 @@ export function getEmbedUrl(raw: string): string {
 
   return cleaned;
 }
+
+/**
+ * Detects if a URL is an HLS (.m3u8) stream
+ */
+export function isHlsUrl(raw: string): boolean {
+  if (!raw) return false;
+  const cleaned = cleanAndNormalizeVideoUrl(raw).toLowerCase();
+  return (
+    cleaned.includes(".m3u8") ||
+    cleaned.includes("/hls/") ||
+    cleaned.includes("/stream/hls") ||
+    cleaned.endsWith(".m3u8")
+  );
+}
