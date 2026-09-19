@@ -47,7 +47,7 @@ import { cleanAndNormalizeVideoUrl, getEmbedUrl } from "@/lib/video-helpers";
 interface ServerFormItem {
   id: string | number;
   serverName: string;
-  serverType: "youtube" | "streamtape" | "embed" | "direct";
+  serverType: "youtube" | "streamtape" | "abyss" | "embed" | "direct";
   videoUrl: string;
   isEnabled: boolean;
   sortOrder: number;
@@ -1136,6 +1136,7 @@ export default function EditCourseStudioPage({
                                   >
                                     <option value="youtube">YouTube</option>
                                     <option value="streamtape">Streamtape</option>
+                                    <option value="abyss">Abyss Player (AdBlocked)</option>
                                     <option value="embed">Embed (iframe)</option>
                                     <option value="direct">Direct URL</option>
                                   </select>
@@ -1149,12 +1150,20 @@ export default function EditCourseStudioPage({
                                       onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "videoUrl", e.target.value)}
                                       onPaste={(e) => {
                                         const pasted = e.clipboardData.getData("text");
-                                        if (pasted && (pasted.includes("<iframe") || pasted.includes("streamtape"))) {
+                                        if (pasted && (pasted.includes("<iframe") || pasted.includes("streamtape") || pasted.includes("abyss"))) {
                                           e.preventDefault();
                                           updateServerField(section.id, lesson.id, srv.id, "videoUrl", cleanAndNormalizeVideoUrl(pasted));
                                         }
                                       }}
-                                      placeholder={srv.serverType === "youtube" ? "YouTube URL বা ID..." : srv.serverType === "streamtape" ? "Streamtape URL বা iframe embed..." : "Video URL..."}
+                                      placeholder={
+                                        srv.serverType === "youtube"
+                                          ? "YouTube URL বা ID..."
+                                          : srv.serverType === "streamtape"
+                                          ? "Streamtape URL বা iframe embed..."
+                                          : srv.serverType === "abyss"
+                                          ? "Abyss URL বা iframe (যেমন: https://player.abyssplayer.com/XYkCAnivh)..."
+                                          : "Video URL..."
+                                      }
                                       className="input text-[11px] py-1 pl-7 pr-2 font-mono w-full"
                                     />
                                   </div>
