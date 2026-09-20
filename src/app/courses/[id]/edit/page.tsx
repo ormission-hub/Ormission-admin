@@ -35,6 +35,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Globe,
+  Star,
 } from "lucide-react";
 import {
   dbService,
@@ -126,6 +127,9 @@ export default function EditCourseStudioPage({
     status: "published" as DbCourse["status"],
     is_featured: false,
     enrollment_count: 1250,
+    rating: 5.0,
+    reviews_count: 125,
+    show_rating: true,
   });
 
   // Curriculum State
@@ -171,6 +175,15 @@ export default function EditCourseStudioPage({
         status: courseData.status || "published",
         is_featured: !!courseData.is_featured,
         enrollment_count: courseData.enrollment_count ?? 1250,
+        rating: (courseData.features && typeof courseData.features === "object" && courseData.features.rating !== undefined)
+          ? Number(courseData.features.rating)
+          : (courseData.rating ?? 5.0),
+        reviews_count: (courseData.features && typeof courseData.features === "object" && courseData.features.reviews_count !== undefined)
+          ? Number(courseData.features.reviews_count)
+          : (courseData.reviews_count ?? 125),
+        show_rating: (courseData.features && typeof courseData.features === "object" && courseData.features.show_rating !== undefined)
+          ? Boolean(courseData.features.show_rating)
+          : (courseData.show_rating ?? true),
       });
 
       // Parse course_sections
@@ -567,6 +580,9 @@ export default function EditCourseStudioPage({
         status: detailsForm.status,
         is_featured: detailsForm.is_featured,
         enrollment_count: Number(detailsForm.enrollment_count) || 0,
+        rating: Number(detailsForm.rating) || 5.0,
+        reviews_count: Number(detailsForm.reviews_count) || 0,
+        show_rating: detailsForm.show_rating,
         curriculum: sections, // Passes all sections & lessons to sync
       };
 
@@ -1393,6 +1409,109 @@ export default function EditCourseStudioPage({
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* Rating & Review Settings */}
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <Star className="w-4 h-4 fill-amber-500" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-text">কোর্স রেটিং ও রিভিউ সেটিংস</h3>
+                  <p className="text-xs text-text-muted">ওয়েবসাইটে কোর্স কার্ড ও বিস্তারিত পেজে রেটিং প্রদর্শন কাস্টমাইজ করুন</p>
+                </div>
+              </div>
+
+              {/* Status Badge */}
+              <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                detailsForm.show_rating
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                  : "bg-slate-500/10 text-slate-500 border border-slate-500/20"
+              }`}>
+                {detailsForm.show_rating ? "রেটিং অন আছে" : "রেটিং অফ (হাইড)"}
+              </span>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-surface-secondary/60 border border-border">
+              <input
+                type="checkbox"
+                id="show_rating"
+                checked={detailsForm.show_rating}
+                onChange={(e) =>
+                  setDetailsForm({ ...detailsForm, show_rating: e.target.checked })
+                }
+                className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary cursor-pointer"
+              />
+              <div className="flex-1">
+                <label htmlFor="show_rating" className="text-xs font-bold text-text cursor-pointer block">
+                  ওয়েবসাইটে এই কোর্সের রেটিং ব্যাজ ও রিভিউ সংখ্যা প্রদর্শন করুন
+                </label>
+                <span className="text-[11px] text-text-muted block mt-0.5">
+                  টিক তুলে দিলে (Off রাখলে) হোমপেজ, কোর্স তালিকা এবং কোর্স বিস্তারিত পেজে রেটিং স্টার ও সংখ্যা সম্পূর্ণ লুকানো থাকবে।
+                </span>
+              </div>
+            </div>
+
+            {/* Editable Rating Inputs (Shown when enabled) */}
+            {detailsForm.show_rating && (
+              <div className="space-y-4 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text flex items-center gap-1.5">
+                      <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                      রেটিং স্কোর (Rating Score)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="1.0"
+                      max="5.0"
+                      value={detailsForm.rating}
+                      onChange={(e) =>
+                        setDetailsForm({ ...detailsForm, rating: Number(e.target.value) || 0 })
+                      }
+                      className="input text-xs font-sans w-full font-bold"
+                      placeholder="5.0"
+                    />
+                    <span className="text-[10px] text-text-muted">১.০ থেকে ৫.০ এর মধ্যে স্কোর সেট করুন (যেমন: 5.0 বা 4.9)</span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text">
+                      মোট রিভিউ / রেটিং সংখ্যা (Review Count)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={detailsForm.reviews_count}
+                      onChange={(e) =>
+                        setDetailsForm({ ...detailsForm, reviews_count: Number(e.target.value) || 0 })
+                      }
+                      className="input text-xs font-sans w-full font-bold"
+                      placeholder="125"
+                    />
+                    <span className="text-[10px] text-text-muted">কতজন শিক্ষার্থী রেটিং দিয়েছে তা দেখাবে (যেমন: 125)</span>
+                  </div>
+                </div>
+
+                {/* Live Preview Box */}
+                <div className="p-3.5 rounded-xl bg-amber-400/5 border border-amber-400/20 flex items-center justify-between">
+                  <span className="text-xs text-text-muted font-bold">ওয়েবসাইটে যেমন দেখাবে (Live Preview):</span>
+                  <div className="flex items-center gap-1.5 bg-amber-400/15 px-3 py-1 rounded-full border border-amber-400/30">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                      {Number(detailsForm.rating || 5.0).toFixed(1)}
+                    </span>
+                    <span className="text-[11px] font-bold text-text-muted">
+                      ({String(detailsForm.reviews_count || 125).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[+d])})
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Thumbnail & Media */}

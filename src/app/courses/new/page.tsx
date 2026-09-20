@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   AlertTriangle,
   Loader2,
+  Star,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 
@@ -91,6 +92,9 @@ export default function CreateCourseWizardPage() {
     level: "Intermediate",
     badge: "নতুন ব্যাচ",
     initialEnrolled: "1250",
+    showRating: true,
+    ratingScore: "5.0",
+    reviewsCount: "125",
   });
 
   // Step 2: Pricing
@@ -333,6 +337,11 @@ export default function CreateCourseWizardPage() {
         total_duration: (Number(media.durationHours) || 40) * 60,
         enrollment_count: Number(basicInfo.initialEnrolled) || 0,
         is_featured: false,
+        features: {
+          rating: Number(basicInfo.ratingScore) || 5.0,
+          reviews_count: Number(basicInfo.reviewsCount) || 125,
+          show_rating: basicInfo.showRating,
+        },
         curriculum: curriculum,
       } as any);
 
@@ -665,6 +674,106 @@ export default function CreateCourseWizardPage() {
                     className="input text-xs font-sans w-full"
                   />
                 </div>
+              </div>
+
+              {/* Course Rating & Review Display Settings */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-surface-secondary/50 border border-border space-y-4">
+                <div className="flex items-center justify-between border-b border-border/80 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                      <Star className="w-3.5 h-3.5 fill-amber-500" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-text font-bengali">কোর্স রেটিং ও রিভিউ সেটিংস</h4>
+                      <p className="text-[11px] text-text-muted font-bengali">ওয়েবসাইটে রেটিং ডিসপ্লে অন বা অফ রাখুন এবং মান নির্ধারণ করুন</p>
+                    </div>
+                  </div>
+
+                  <span className={`text-[11px] px-2.5 py-0.5 rounded-full font-bold ${
+                    basicInfo.showRating
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : "bg-slate-500/10 text-slate-500 border border-slate-500/20"
+                  }`}>
+                    {basicInfo.showRating ? "রেটিং অন" : "রেটিং অফ (হাইড)"}
+                  </span>
+                </div>
+
+                {/* Toggle Checkbox */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="new_course_show_rating"
+                    checked={basicInfo.showRating}
+                    onChange={(e) => setBasicInfo({ ...basicInfo, showRating: e.target.checked })}
+                    className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="new_course_show_rating" className="text-xs font-bold text-text cursor-pointer block">
+                      ওয়েবসাইটে এই কোর্সের রেটিং ও রিভিউ সংখ্যা প্রদর্শন করুন
+                    </label>
+                    <span className="text-[10.5px] text-text-muted block mt-0.5">
+                      অফ রাখলে কোর্স কার্ড ও কোর্সের বিস্তারিত পেজে কোনো রেটিং ব্যাজ বা স্টার প্রদর্শিত হবে না।
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rating inputs */}
+                {basicInfo.showRating && (
+                  <div className="space-y-3 pt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-text font-bengali mb-1.5 flex items-center gap-1.5">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          রেটিং স্কোর (Rating Score)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.1"
+                          min="1.0"
+                          max="5.0"
+                          placeholder="5.0"
+                          value={basicInfo.ratingScore}
+                          onChange={(e) => setBasicInfo({ ...basicInfo, ratingScore: e.target.value })}
+                          className="input text-xs font-sans w-full font-bold"
+                        />
+                        <span className="text-[10px] text-text-muted font-bengali mt-0.5 block">
+                          ১.০ থেকে ৫.০ এর মধ্যে (যেমন: 5.0)
+                        </span>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-text font-bengali mb-1.5">
+                          রিভিউ / রেটিং সংখ্যা (Review Count)
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="125"
+                          value={basicInfo.reviewsCount}
+                          onChange={(e) => setBasicInfo({ ...basicInfo, reviewsCount: e.target.value })}
+                          className="input text-xs font-sans w-full font-bold"
+                        />
+                        <span className="text-[10px] text-text-muted font-bengali mt-0.5 block">
+                          মোট কতজন শিক্ষার্থী রেটিং দিয়েছে (যেমন: 125)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Live preview */}
+                    <div className="p-3 rounded-xl bg-amber-400/5 border border-amber-400/20 flex items-center justify-between">
+                      <span className="text-xs text-text-muted font-bold font-bengali">লাইভ প্রিভিউ:</span>
+                      <div className="flex items-center gap-1.5 bg-amber-400/15 px-3 py-0.5 rounded-full border border-amber-400/30">
+                        <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                        <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                          {Number(basicInfo.ratingScore || 5.0).toFixed(1)}
+                        </span>
+                        <span className="text-[11px] font-bold text-text-muted">
+                          ({String(basicInfo.reviewsCount || 125).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[+d])})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

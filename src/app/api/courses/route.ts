@@ -287,6 +287,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { curriculum, ...rest } = body;
 
+    const incomingFeatures = (rest.features && typeof rest.features === "object") ? rest.features : {};
+    const features = {
+      ...incomingFeatures,
+      rating: rest.rating !== undefined ? Number(rest.rating) : (incomingFeatures.rating !== undefined ? Number(incomingFeatures.rating) : 5.0),
+      reviews_count: rest.reviews_count !== undefined ? Number(rest.reviews_count) : (incomingFeatures.reviews_count !== undefined ? Number(incomingFeatures.reviews_count) : 125),
+      show_rating: rest.show_rating !== undefined ? Boolean(rest.show_rating) : (incomingFeatures.show_rating !== undefined ? Boolean(incomingFeatures.show_rating) : true),
+    };
+
     const coursePayload = {
       title: rest.title || rest.title_bn,
       title_bn: rest.title_bn,
@@ -305,6 +313,7 @@ export async function POST(request: Request) {
       enrollment_count: Number(rest.enrollment_count) || 0,
       total_lessons: Number(rest.total_lessons) || 0,
       total_duration: Number(rest.total_duration) || 0,
+      features: features,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -339,10 +348,32 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, categories, instructors, course_sections, curriculum, ...updates } = body;
+    const { id, categories, instructors, course_sections, curriculum, rating, reviews_count, show_rating, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Course ID is required" }, { status: 400 });
+    }
+
+    // Merge rating metadata into features JSONB column cleanly
+    if (rating !== undefined || reviews_count !== undefined || show_rating !== undefined || updates.features !== undefined) {
+      let mergedFeatures: Record<string, any> = {};
+      if (updates.features && typeof updates.features === "object") {
+        mergedFeatures = { ...updates.features };
+      } else {
+        const { data: existingCourse } = await supabaseAdmin
+          .from("courses")
+          .select("features")
+          .eq("id", id)
+          .maybeSingle();
+        if (existingCourse?.features && typeof existingCourse.features === "object") {
+          mergedFeatures = { ...existingCourse.features };
+        }
+      }
+
+      if (rating !== undefined) mergedFeatures.rating = Number(rating);
+      if (reviews_count !== undefined) mergedFeatures.reviews_count = Number(reviews_count);
+      if (show_rating !== undefined) mergedFeatures.show_rating = Boolean(show_rating);
+      updates.features = mergedFeatures;
     }
 
     updates.updated_at = new Date().toISOString();

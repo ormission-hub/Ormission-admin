@@ -58,6 +58,15 @@ export interface DbCourse {
   total_lessons: number;
   total_duration: number;
   is_featured: boolean;
+  features?: {
+    rating?: number;
+    reviews_count?: number;
+    show_rating?: boolean;
+    [key: string]: any;
+  } | null;
+  rating?: number;
+  reviews_count?: number;
+  show_rating?: boolean;
   categories?: { id?: number; name: string; name_bn: string; slug: string } | null;
   instructors?: { id?: number; name: string; name_bn: string; institution: string; photo_url?: string } | null;
   course_sections?: DbCourseSection[];
