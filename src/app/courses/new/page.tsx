@@ -91,7 +91,7 @@ export default function CreateCourseWizardPage() {
     instructorId: "",
     level: "Intermediate",
     badge: "নতুন ব্যাচ",
-    initialEnrolled: "1250",
+    initialEnrolled: "0",
     showRating: true,
     ratingScore: "5.0",
     reviewsCount: "125",
@@ -668,7 +668,7 @@ export default function CreateCourseWizardPage() {
                   </label>
                   <input
                     type="number"
-                    placeholder="1250"
+                    placeholder="0"
                     value={basicInfo.initialEnrolled}
                     onChange={(e) => setBasicInfo({ ...basicInfo, initialEnrolled: e.target.value })}
                     className="input text-xs font-sans w-full"

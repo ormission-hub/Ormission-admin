@@ -37,6 +37,19 @@ import {
   type DbInstructor,
 } from "@/lib/supabase/db-service";
 
+function formatDurationBn(minutes: number): string {
+  if (!minutes || minutes <= 0) return "০ মিনিট";
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (hours > 0 && remainingMinutes > 0) {
+    return `${hours} ঘণ্টা ${remainingMinutes} মিনিট`;
+  }
+  if (hours > 0) {
+    return `${hours} ঘণ্টা`;
+  }
+  return `${remainingMinutes} মিনিট`;
+}
+
 export default function AdminCoursesPage() {
   const [coursesList, setCoursesList] = useState<DbCourse[]>([]);
   const [categories, setCategories] = useState<DbCategory[]>([]);
@@ -68,7 +81,7 @@ export default function AdminCoursesPage() {
     is_featured: false,
     status: "published" as DbCourse["status"],
     short_description: "",
-    enrollment_count: 1250,
+    enrollment_count: 0,
     total_lessons: 0,
     total_duration: 0,
   });
@@ -170,7 +183,7 @@ export default function AdminCoursesPage() {
       is_featured: !!c.is_featured,
       status: c.status || "published",
       short_description: c.short_description || "",
-      enrollment_count: c.enrollment_count !== undefined && c.enrollment_count !== null ? c.enrollment_count : 1250,
+      enrollment_count: c.enrollment_count || 0,
       total_lessons: c.total_lessons || 0,
       total_duration: c.total_duration || 0,
     });
@@ -424,7 +437,7 @@ export default function AdminCoursesPage() {
           </div>
           <div className="flex items-center gap-1 mt-1 sm:mt-1.5 text-[10px] sm:text-[11px] text-text-muted font-medium">
             <Clock className="w-3 h-3 text-emerald-400" />
-            <span>{totalDuration}+ ঘণ্টা ভিডিও লেকচার</span>
+            <span>{formatDurationBn(totalDuration)} ভিডিও লেকচার</span>
           </div>
         </div>
       </div>
@@ -664,7 +677,7 @@ export default function AdminCoursesPage() {
                     {/* Enrollment pill at bottom right of thumbnail */}
                     <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-white text-[10px] font-sans font-bold flex items-center gap-1 border border-white/10">
                       <Users className="w-2.5 h-2.5 text-pink-400" />
-                      <span>{(c.enrollment_count ?? 1250).toLocaleString()} জন</span>
+                      <span>{(c.enrollment_count || 0).toLocaleString()} জন</span>
                     </div>
                   </div>
 
@@ -722,7 +735,7 @@ export default function AdminCoursesPage() {
                           {c.course_sections?.length || 0} অধ্যায় • {c.total_lessons || 0} ক্লাস
                         </div>
                         <div className="text-[10px] text-text-muted font-sans">
-                          {c.total_duration || 0} ঘণ্টা লাইভ
+                          {formatDurationBn(c.total_duration)}
                         </div>
                       </div>
                     </div>
@@ -890,7 +903,7 @@ export default function AdminCoursesPage() {
                         <td className="py-3 px-4">
                           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-pink-500/10 text-pink-500 border border-pink-500/20 font-sans">
                             <Users className="w-3 h-3 text-pink-500" />
-                            <span>{(c.enrollment_count ?? 1250).toLocaleString()} জন</span>
+                            <span>{(c.enrollment_count || 0).toLocaleString()} জন</span>
                           </span>
                         </td>
 

@@ -226,6 +226,13 @@ export async function GET(request: Request) {
         return NextResponse.json({ success: false, error: "Course not found" }, { status: 404 });
       }
 
+      // Fetch live real enrollment count from enrollments table
+      const { count: enrollCount } = await supabaseAdmin
+        .from("enrollments")
+        .select("*", { count: "exact", head: true })
+        .eq("course_id", id);
+      data.enrollment_count = enrollCount ?? 0;
+
       // Sort sections and lessons by sort_order
       if (Array.isArray(data.course_sections)) {
         data.course_sections.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -274,7 +281,24 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: data || [] });
+    // Fetch live real enrollment counts from enrollments table
+    const { data: allEnrollments } = await supabaseAdmin
+      .from("enrollments")
+      .select("course_id");
+
+    const enrollmentMap: Record<number | string, number> = {};
+    (allEnrollments || []).forEach((e: any) => {
+      if (e.course_id != null) {
+        enrollmentMap[e.course_id] = (enrollmentMap[e.course_id] || 0) + 1;
+      }
+    });
+
+    const enrichedCourses = (data || []).map((c: any) => ({
+      ...c,
+      enrollment_count: enrollmentMap[c.id] !== undefined ? enrollmentMap[c.id] : 0,
+    }));
+
+    return NextResponse.json({ success: true, data: enrichedCourses });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Server error";
     return NextResponse.json({ success: false, error: message }, { status: 500 });
@@ -434,17 +458,19 @@ export async function DELETE(request: Request) {
 
     // 2. Delete payments referencing those orders
     if (orderIds.length > 0) {
-      await supabaseAdmin
+      const { error: payErr } = await supabaseAdmin
         .from("payments")
         .delete()
         .in("order_id", orderIds);
-
-      // 3. Delete orders for this course
-      await supabaseAdmin
-        .from("orders")
-        .delete()
-        .eq("course_id", courseId);
+      if (payErr) console.warn("Notice: Deleting payments:", payErr.message);
     }
+
+    // 3. Delete orders for this course
+    const { error: ordErr } = await supabaseAdmin
+      .from("orders")
+      .delete()
+      .eq("course_id", courseId);
+    if (ordErr) console.warn("Notice: Deleting orders:", ordErr.message);
 
     // 4. Find all enrollments for this course
     const { data: enrollments } = await supabaseAdmin
@@ -454,25 +480,28 @@ export async function DELETE(request: Request) {
 
     const enrollmentIds = (enrollments || []).map((e) => e.id);
 
-    // 5. Delete course progress
+    // 5. Delete course progress by enrollment_id
     if (enrollmentIds.length > 0) {
-      await supabaseAdmin
+      const { error: cpErr } = await supabaseAdmin
         .from("course_progress")
         .delete()
         .in("enrollment_id", enrollmentIds);
-
-      // 6. Delete enrollments
-      await supabaseAdmin
-        .from("enrollments")
-        .delete()
-        .eq("course_id", courseId);
+      if (cpErr) console.warn("Notice: Deleting course_progress by enrollment:", cpErr.message);
     }
 
+    // 6. Delete enrollments for this course
+    const { error: enrErr } = await supabaseAdmin
+      .from("enrollments")
+      .delete()
+      .eq("course_id", courseId);
+    if (enrErr) console.warn("Notice: Deleting enrollments:", enrErr.message);
+
     // 7. Delete reviews
-    await supabaseAdmin
+    const { error: revErr } = await supabaseAdmin
       .from("reviews")
       .delete()
       .eq("course_id", courseId);
+    if (revErr) console.warn("Notice: Deleting reviews:", revErr.message);
 
     // 8. Find all sections and lessons for this course
     const { data: sections } = await supabaseAdmin
@@ -489,29 +518,77 @@ export async function DELETE(request: Request) {
 
     const lessonIds = (lessons || []).map((l) => l.id);
 
-    // 9. Delete lesson resources
+    // 9. Delete lesson servers, resources, and progress by lesson_id
     if (lessonIds.length > 0) {
-      await supabaseAdmin
+      // 9a. Delete lesson_servers (Foreign Key references lessons.id)
+      const { error: lsErr } = await supabaseAdmin
+        .from("lesson_servers")
+        .delete()
+        .in("lesson_id", lessonIds);
+      if (lsErr) console.warn("Notice: Deleting lesson_servers:", lsErr.message);
+
+      // 9b. Delete lesson resources
+      const { error: lrErr } = await supabaseAdmin
         .from("lesson_resources")
         .delete()
         .in("lesson_id", lessonIds);
+      if (lrErr) console.warn("Notice: Deleting lesson_resources:", lrErr.message);
+
+      // 9c. Delete course progress by lesson_id
+      const { error: cplErr } = await supabaseAdmin
+        .from("course_progress")
+        .delete()
+        .in("lesson_id", lessonIds);
+      if (cplErr) console.warn("Notice: Deleting course_progress by lesson:", cplErr.message);
 
       // 10. Delete lessons
-      await supabaseAdmin
+      const { error: lesErr } = await supabaseAdmin
         .from("lessons")
         .delete()
         .eq("course_id", courseId);
+      if (lesErr) console.error("Error deleting lessons:", lesErr.message);
     }
 
     // 11. Delete sections
     if (sectionIds.length > 0) {
-      await supabaseAdmin
+      const { error: secErr } = await supabaseAdmin
         .from("course_sections")
         .delete()
         .eq("course_id", courseId);
+      if (secErr) console.error("Error deleting course_sections:", secErr.message);
     }
 
-    // 12. Delete the course itself
+    // 12. Disassociate coupons
+    const { error: cpnErr } = await supabaseAdmin
+      .from("coupons")
+      .update({ course_id: null })
+      .eq("course_id", courseId);
+    if (cpnErr) console.warn("Notice: Nullifying coupons:", cpnErr.message);
+
+    // 13. Remove from homepage_pinned_courses in site_settings
+    try {
+      const { data: pinnedSetting } = await supabaseAdmin
+        .from("site_settings")
+        .select("value")
+        .eq("key", "homepage_pinned_courses")
+        .maybeSingle();
+
+      if (pinnedSetting?.value && Array.isArray(pinnedSetting.value)) {
+        const updatedPinned = pinnedSetting.value.filter(
+          (pId: any) => Number(pId) !== Number(courseId)
+        );
+        if (updatedPinned.length !== pinnedSetting.value.length) {
+          await supabaseAdmin
+            .from("site_settings")
+            .update({ value: updatedPinned, updated_at: new Date().toISOString() })
+            .eq("key", "homepage_pinned_courses");
+        }
+      }
+    } catch (setErr) {
+      console.warn("Notice: Updating homepage_pinned_courses:", setErr);
+    }
+
+    // 14. Finally delete the course itself
     const { error } = await supabaseAdmin
       .from("courses")
       .delete()

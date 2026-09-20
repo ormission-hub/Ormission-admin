@@ -126,7 +126,7 @@ export default function EditCourseStudioPage({
     instructor_id: "",
     status: "published" as DbCourse["status"],
     is_featured: false,
-    enrollment_count: 1250,
+    enrollment_count: 0,
     rating: 5.0,
     reviews_count: 125,
     show_rating: true,
@@ -174,7 +174,7 @@ export default function EditCourseStudioPage({
         instructor_id: courseData.instructor_id ? String(courseData.instructor_id) : "",
         status: courseData.status || "published",
         is_featured: !!courseData.is_featured,
-        enrollment_count: courseData.enrollment_count ?? 1250,
+        enrollment_count: courseData.enrollment_count ?? 0,
         rating: (courseData.features && typeof courseData.features === "object" && courseData.features.rating !== undefined)
           ? Number(courseData.features.rating)
           : (courseData.rating ?? 5.0),
