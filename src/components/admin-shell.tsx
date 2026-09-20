@@ -30,6 +30,7 @@ import {
   Layers,
   PanelLeftClose,
   PanelLeftOpen,
+  Headphones,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
@@ -66,6 +67,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Students", labelBn: "শিক্ষার্থী তালিকা", href: "/students", icon: Users },
       { label: "Orders & Billing", labelBn: "অর্ডার ও পেমেন্ট", href: "/orders", icon: Receipt },
+      { label: "Support Tickets", labelBn: "সাপোর্ট টিকিট ও হেল্পডেস্ক", href: "/support", icon: Headphones, badge: "Live" },
       { label: "Payment Settings", labelBn: "পেমেন্ট মেথড সেটিংস", href: "/settings/payment", icon: CreditCard, badge: "Live" },
     ],
   },
