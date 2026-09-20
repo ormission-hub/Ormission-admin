@@ -126,3 +126,43 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
+
+// DELETE: Delete ticket completely from database
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let ticketId = searchParams.get("ticketId");
+
+    if (!ticketId) {
+      try {
+        const body = await request.json();
+        ticketId = body.ticketId;
+      } catch {}
+    }
+
+    if (!ticketId) {
+      return NextResponse.json({ success: false, error: "টিকিট আইডি আবশ্যক।" }, { status: 400 });
+    }
+
+    const storageKey = `ticket_${ticketId}`;
+
+    const { error: deleteErr } = await supabaseAdmin
+      .from("site_settings")
+      .delete()
+      .eq("key", storageKey);
+
+    if (deleteErr) {
+      return NextResponse.json({ success: false, error: deleteErr.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `সাপোর্ট টিকিট #${ticketId} ডাটাবেজ থেকে সম্পূর্ণ মুছে ফেলা হয়েছে।`,
+      ticketId,
+    });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "ডিলিট ব্যর্থ হয়েছে";
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+  }
+}
+

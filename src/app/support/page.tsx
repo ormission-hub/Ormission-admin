@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Tag,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 
 interface TicketReply {
@@ -64,6 +65,7 @@ export default function AdminSupportPage() {
   const [replyStatus, setReplyStatus] = useState<SupportTicket["status"]>("in_progress");
   const [sendingReply, setSendingReply] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null);
 
   // Load all tickets
   const loadTickets = async () => {
@@ -190,6 +192,37 @@ export default function AdminSupportPage() {
       alert("নেটওয়ার্ক ত্রুটি, অনুগ্রহ করে আবার চেষ্টা করুন।");
     } finally {
       setSendingReply(false);
+    }
+  };
+
+  // Delete Ticket completely from database
+  const handleDeleteTicket = async (ticketId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+
+    const confirmed = window.confirm(
+      `আপনি কি নিশ্চিতভাবে টিকিট #${ticketId} ডাটাবেজ থেকে সম্পূর্ণ মুছে ফেলতে চান?\n\nসতর্কতা: এটি পার্মানেন্টলি ডিলিট হবে এবং আর রিকভার করা যাবে না।`
+    );
+    if (!confirmed) return;
+
+    setDeletingTicketId(ticketId);
+    try {
+      const res = await fetch(`/api/support/tickets?ticketId=${ticketId}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data?.success) {
+        setTickets((prev) => prev.filter((t) => t.id !== ticketId));
+        if (selectedTicket?.id === ticketId) {
+          setSelectedTicket(null);
+        }
+      } else {
+        alert(data?.error || "টিকিট ডিলিট করতে সমস্যা হয়েছে।");
+      }
+    } catch (err) {
+      console.error("Delete ticket error:", err);
+      alert("নেটওয়ার্ক ত্রুটি, অনুগ্রহ করে আবার চেষ্টা করুন।");
+    } finally {
+      setDeletingTicketId(null);
     }
   };
 
@@ -522,12 +555,31 @@ export default function AdminSupportPage() {
 
                       {/* Actions */}
                       <td className="p-4 text-right whitespace-nowrap">
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-xs"
-                        >
-                          উত্তর দিন
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedTicket(ticket);
+                              setReplyStatus(ticket.status === "open" ? "in_progress" : ticket.status);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-hover transition-colors shadow-xs"
+                          >
+                            উত্তর দিন
+                          </button>
+                          <button
+                            type="button"
+                            disabled={deletingTicketId === ticket.id}
+                            onClick={(e) => handleDeleteTicket(ticket.id, e)}
+                            className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-500/15 transition-colors border border-rose-500/20 disabled:opacity-50 cursor-pointer"
+                            title="ডাটাবেজ থেকে স্থায়ীভাবে ডিলিট করুন"
+                          >
+                            {deletingTicketId === ticket.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin text-rose-500" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -561,13 +613,29 @@ export default function AdminSupportPage() {
                 </h3>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setSelectedTicket(null)}
-                className="p-1.5 rounded-lg hover:bg-surface text-text-muted hover:text-text transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={deletingTicketId === selectedTicket.id}
+                  onClick={() => handleDeleteTicket(selectedTicket.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-xs font-bold transition-all disabled:opacity-50 cursor-pointer"
+                  title="ডাটাবেজ থেকে সম্পূর্ণ মুছে ফেলুন"
+                >
+                  {deletingTicketId === selectedTicket.id ? (
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-3.5 h-3.5" />
+                  )}
+                  <span>ডিলিট</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTicket(null)}
+                  className="p-1.5 rounded-lg hover:bg-surface text-text-muted hover:text-text transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             {/* Student & Linked Order Metadata Panel */}
