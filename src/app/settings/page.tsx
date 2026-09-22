@@ -2,8 +2,104 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Settings, Save, ShieldCheck, CreditCard, CheckCircle2, RefreshCw, Sparkles, Database, ArrowRight } from "lucide-react";
+import {
+  Settings,
+  Save,
+  ShieldCheck,
+  CreditCard,
+  CheckCircle2,
+  RefreshCw,
+  Sparkles,
+  Database,
+  ArrowRight,
+  Share2,
+  ExternalLink,
+  Globe,
+} from "lucide-react";
 import { dbService } from "@/lib/supabase/db-service";
+import {
+  FacebookIcon,
+  YouTubeIcon,
+  TelegramIcon,
+  WhatsAppIcon,
+  InstagramIcon,
+  LinkedInIcon,
+  TwitterXIcon,
+  TikTokIcon,
+} from "@/components/social-icons";
+
+interface SocialItem {
+  enabled: boolean;
+  url: string;
+  label: string;
+  handle?: string;
+}
+
+interface SocialLinksSettings {
+  facebook: SocialItem;
+  youtube: SocialItem;
+  telegram: SocialItem;
+  whatsapp: SocialItem;
+  instagram: SocialItem;
+  linkedin: SocialItem;
+  twitter: SocialItem;
+  tiktok: SocialItem;
+  communityTitle?: string;
+  communitySubtitle?: string;
+}
+
+const defaultSocialSettings: SocialLinksSettings = {
+  facebook: {
+    enabled: true,
+    url: "https://facebook.com/ormission",
+    label: "ফেসবুক পেজ",
+    handle: "@ormission",
+  },
+  youtube: {
+    enabled: true,
+    url: "https://youtube.com/@ormission",
+    label: "ইউটিউব চ্যানেল",
+    handle: "@ormission",
+  },
+  telegram: {
+    enabled: true,
+    url: "https://t.me/ormission_community",
+    label: "টেলিগ্রাম গ্রুপ",
+    handle: "@ormission_community",
+  },
+  whatsapp: {
+    enabled: true,
+    url: "https://wa.me/8801700000000",
+    label: "হোয়াটসঅ্যাপ সাপোর্ট",
+    handle: "+880 1700-000000",
+  },
+  instagram: {
+    enabled: true,
+    url: "https://instagram.com/ormission",
+    label: "ইনস্টাগ্রাম",
+    handle: "@ormission",
+  },
+  linkedin: {
+    enabled: false,
+    url: "https://linkedin.com/company/ormission",
+    label: "লিংকডইন",
+    handle: "Ormission",
+  },
+  twitter: {
+    enabled: false,
+    url: "https://twitter.com/ormission",
+    label: "টুইটার / X",
+    handle: "@ormission",
+  },
+  tiktok: {
+    enabled: false,
+    url: "https://tiktok.com/@ormission",
+    label: "টিকটক",
+    handle: "@ormission",
+  },
+  communityTitle: "আমাদের অফিশিয়াল কমিউনিটিতে যুক্ত হোন",
+  communitySubtitle: "যেকোনো আপডেট, লাইভ ক্লাস অ্যালার্ট এবং সরাসরি মেন্টর সাপোর্টের জন্য ফেসবুক ও টেলিগ্রামে আমাদের সাথে থাকুন।",
+};
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -22,6 +118,8 @@ export default function AdminSettingsPage() {
     isSandbox: true,
   });
 
+  const [social, setSocial] = useState<SocialLinksSettings>(defaultSocialSettings);
+
   const loadSettings = async () => {
     setLoading(true);
     const data = await dbService.getSiteSettings();
@@ -36,6 +134,26 @@ export default function AdminSettingsPage() {
       sslStoreId: data.ssl_store_id || prev.sslStoreId,
       isSandbox: data.ssl_is_sandbox !== undefined ? data.ssl_is_sandbox : prev.isSandbox,
     }));
+
+    if (data.social_links) {
+      let parsed = data.social_links;
+      if (typeof parsed === "string") {
+        try { parsed = JSON.parse(parsed); } catch {}
+      }
+      setSocial({
+        ...defaultSocialSettings,
+        ...parsed,
+        facebook: { ...defaultSocialSettings.facebook, ...(parsed.facebook || {}) },
+        youtube: { ...defaultSocialSettings.youtube, ...(parsed.youtube || {}) },
+        telegram: { ...defaultSocialSettings.telegram, ...(parsed.telegram || {}) },
+        whatsapp: { ...defaultSocialSettings.whatsapp, ...(parsed.whatsapp || {}) },
+        instagram: { ...defaultSocialSettings.instagram, ...(parsed.instagram || {}) },
+        linkedin: { ...defaultSocialSettings.linkedin, ...(parsed.linkedin || {}) },
+        twitter: { ...defaultSocialSettings.twitter, ...(parsed.twitter || {}) },
+        tiktok: { ...defaultSocialSettings.tiktok, ...(parsed.tiktok || {}) },
+      });
+    }
+
     setLoading(false);
   };
 
@@ -55,6 +173,7 @@ export default function AdminSettingsPage() {
       dbService.updateSiteSetting("contact_address", settings.address),
       dbService.updateSiteSetting("ssl_store_id", settings.sslStoreId),
       dbService.updateSiteSetting("ssl_is_sandbox", settings.isSandbox),
+      dbService.updateSiteSetting("social_links", social),
     ]);
     setSaving(false);
     setSaved(true);
@@ -252,6 +371,253 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setSettings({ ...settings, address: e.target.value })}
                 className="input text-xs font-bengali w-full"
               />
+            </div>
+          </div>
+
+          {/* Social Media & Community Links */}
+          <div className="bg-surface rounded-xl border border-border p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <Share2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-text font-bengali">
+                    সোশ্যাল মিডিয়া ও কমিউনিটি লিংক সেটিংস
+                  </h3>
+                  <p className="text-[11px] text-text-muted font-bengali">
+                    এখানে দেওয়া লিঙ্কগুলো ওয়েবসাইটের ফুটার এবং স্টুডেন্টদের ড্যাশবোর্ডে স্বয়ংক্রিয়ভাবে প্রদর্শিত হবে।
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bengali">
+                ফুটার ও ড্যাশবোর্ড সিঙ্ক
+              </span>
+            </div>
+
+            {/* Community Banner Copy */}
+            <div className="p-4 bg-surface-secondary/50 rounded-xl border border-border/80 space-y-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-text font-bengali">
+                  স্টুডেন্ট ড্যাশবোর্ড কমিউনিটি ব্যানার টেক্সট
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted font-bengali mb-1">
+                    ব্যানার শিরোনাম (Title)
+                  </label>
+                  <input
+                    type="text"
+                    value={social.communityTitle || ""}
+                    onChange={(e) => setSocial({ ...social, communityTitle: e.target.value })}
+                    placeholder="আমাদের অফিশিয়াল কমিউনিটিতে যুক্ত হোন"
+                    className="input text-xs font-bengali w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-text-muted font-bengali mb-1">
+                    ব্যানার সাবটাইটেল (Description)
+                  </label>
+                  <input
+                    type="text"
+                    value={social.communitySubtitle || ""}
+                    onChange={(e) => setSocial({ ...social, communitySubtitle: e.target.value })}
+                    placeholder="লাইভ ক্লাস নোটিফিকেশন, সরাসরি মেন্টরশিপ..."
+                    className="input text-xs font-bengali w-full"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Platform Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  key: "facebook" as const,
+                  name: "Facebook (ফেসবুক)",
+                  icon: FacebookIcon,
+                  iconColor: "text-[#1877F2]",
+                  bgColor: "bg-[#1877F2]/10 border-[#1877F2]/20",
+                  placeholder: "https://facebook.com/ormission",
+                  defaultLabel: "ফেসবুক পেজ / গ্রুপ",
+                },
+                {
+                  key: "youtube" as const,
+                  name: "YouTube (ইউটিউব)",
+                  icon: YouTubeIcon,
+                  iconColor: "text-[#FF0000]",
+                  bgColor: "bg-[#FF0000]/10 border-[#FF0000]/20",
+                  placeholder: "https://youtube.com/@ormission",
+                  defaultLabel: "ইউটিউব চ্যানেল",
+                },
+                {
+                  key: "telegram" as const,
+                  name: "Telegram (টেলিগ্রাম)",
+                  icon: TelegramIcon,
+                  iconColor: "text-[#229ED9]",
+                  bgColor: "bg-[#229ED9]/10 border-[#229ED9]/20",
+                  placeholder: "https://t.me/ormission_community",
+                  defaultLabel: "টেলিগ্রাম গ্রুপ ও চ্যানেল",
+                },
+                {
+                  key: "whatsapp" as const,
+                  name: "WhatsApp (হোয়াটসঅ্যাপ)",
+                  icon: WhatsAppIcon,
+                  iconColor: "text-[#25D366]",
+                  bgColor: "bg-[#25D366]/10 border-[#25D366]/20",
+                  placeholder: "https://wa.me/8801700000000",
+                  defaultLabel: "হোয়াটসঅ্যাপ সাপোর্ট",
+                },
+                {
+                  key: "instagram" as const,
+                  name: "Instagram (ইনস্টাগ্রাম)",
+                  icon: InstagramIcon,
+                  iconColor: "text-[#E4405F]",
+                  bgColor: "bg-[#E4405F]/10 border-[#E4405F]/20",
+                  placeholder: "https://instagram.com/ormission",
+                  defaultLabel: "ইনস্টাগ্রাম প্রোফাইল",
+                },
+                {
+                  key: "linkedin" as const,
+                  name: "LinkedIn (লিংকডইন)",
+                  icon: LinkedInIcon,
+                  iconColor: "text-[#0A66C2]",
+                  bgColor: "bg-[#0A66C2]/10 border-[#0A66C2]/20",
+                  placeholder: "https://linkedin.com/company/ormission",
+                  defaultLabel: "লিংকডইন পেজ",
+                },
+                {
+                  key: "twitter" as const,
+                  name: "Twitter / X (টুইটার)",
+                  icon: TwitterXIcon,
+                  iconColor: "text-slate-900 dark:text-white",
+                  bgColor: "bg-slate-500/10 border-border",
+                  placeholder: "https://twitter.com/ormission",
+                  defaultLabel: "টুইটার / X",
+                },
+                {
+                  key: "tiktok" as const,
+                  name: "TikTok (টিকটক)",
+                  icon: TikTokIcon,
+                  iconColor: "text-slate-900 dark:text-white",
+                  bgColor: "bg-slate-500/10 border-border",
+                  placeholder: "https://tiktok.com/@ormission",
+                  defaultLabel: "টিকটক চ্যানেল",
+                },
+              ].map(({ key, name, icon: Icon, iconColor, bgColor, placeholder, defaultLabel }) => {
+                const item = social[key] || { enabled: false, url: "", label: defaultLabel, handle: "" };
+                return (
+                  <div
+                    key={key}
+                    className={`rounded-xl border p-4 transition-all ${
+                      item.enabled
+                        ? "bg-surface border-border shadow-2xs"
+                        : "bg-surface-secondary/40 border-border/60 opacity-75"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/70">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-7 h-7 rounded-lg ${bgColor} flex items-center justify-center shrink-0 ${iconColor}`}>
+                          <Icon size={15} />
+                        </div>
+                        <span className="text-xs font-bold text-text font-bengali">
+                          {name}
+                        </span>
+                      </div>
+
+                      <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={item.enabled}
+                          onChange={(e) =>
+                            setSocial({
+                              ...social,
+                              [key]: { ...item, enabled: e.target.checked },
+                            })
+                          }
+                          className="w-3.5 h-3.5 text-primary rounded border-border"
+                        />
+                        <span className={`text-[10px] font-bold font-bengali ${item.enabled ? "text-emerald-600 dark:text-emerald-400" : "text-text-muted"}`}>
+                          {item.enabled ? "সক্রিয়" : "বন্ধ"}
+                        </span>
+                      </label>
+                    </div>
+
+                    <div className="space-y-2.5">
+                      <div>
+                        <label className="block text-[10px] font-medium text-text-muted font-bengali mb-0.5">
+                          লিংক URL (Full Web Link)
+                        </label>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="url"
+                            value={item.url || ""}
+                            onChange={(e) =>
+                              setSocial({
+                                ...social,
+                                [key]: { ...item, url: e.target.value },
+                              })
+                            }
+                            placeholder={placeholder}
+                            className="input text-xs font-mono w-full"
+                          />
+                          {item.url && (
+                            <a
+                              href={item.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="টেস্ট লিংক"
+                              className="p-2 rounded-lg bg-surface-secondary border border-border hover:text-primary transition-colors shrink-0"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-medium text-text-muted font-bengali mb-0.5">
+                            বাটন লেবেল
+                          </label>
+                          <input
+                            type="text"
+                            value={item.label || ""}
+                            onChange={(e) =>
+                              setSocial({
+                                ...social,
+                                [key]: { ...item, label: e.target.value },
+                              })
+                            }
+                            placeholder={defaultLabel}
+                            className="input text-xs font-bengali w-full"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-medium text-text-muted font-bengali mb-0.5">
+                            হ্যান্ডেল / ইউজারনেম
+                          </label>
+                          <input
+                            type="text"
+                            value={item.handle || ""}
+                            onChange={(e) =>
+                              setSocial({
+                                ...social,
+                                [key]: { ...item, handle: e.target.value },
+                              })
+                            }
+                            placeholder="@ormission"
+                            className="input text-xs font-mono w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

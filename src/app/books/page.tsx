@@ -35,7 +35,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { dbService } from "@/lib/supabase/db-service";
+import { dbService, DbCategory } from "@/lib/supabase/db-service";
 
 export interface OrmissionBook {
   id: string;
@@ -45,6 +45,8 @@ export interface OrmissionBook {
   edition?: string;
   publisher?: string;
   category: string;
+  category_id?: number | string;
+  category_slug?: string;
   price: number;
   original_price: number;
   cover_gradient?: string;
@@ -95,6 +97,7 @@ const STOCK_STATUS_OPTIONS = [
 
 export default function AdminBooksPage() {
   const [books, setBooks] = useState<OrmissionBook[]>([]);
+  const [dbCategories, setDbCategories] = useState<DbCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -126,10 +129,12 @@ export default function AdminBooksPage() {
   const [form, setForm] = useState({
     title: "",
     subtitle: "",
-    author: "",
+    author: "অরমিশন একাডেমি টিম",
     edition: "১ম সংস্করণ ২০২৬",
     publisher: "অরমিশন পাবলিকেশন্স",
-    category: "এইচএসসি বিজ্ঞান",
+    category: "SSC",
+    category_id: "" as number | string,
+    category_slug: "ssc",
     price: 380,
     original_price: 500,
     cover_gradient: GRADIENT_OPTIONS[0].value,
@@ -149,18 +154,64 @@ export default function AdminBooksPage() {
     isbn: "",
   });
 
+  const loadCategories = async () => {
+    try {
+      const cats = await dbService.getCategories();
+      if (Array.isArray(cats) && cats.length > 0) {
+        setDbCategories(cats);
+      }
+    } catch (err) {
+      console.warn("Could not load categories in books admin:", err);
+    }
+  };
+
   const loadBooks = async () => {
     setLoading(true);
     try {
       const settings = await dbService.getSiteSettings();
       if (Array.isArray(settings?.ormission_books)) {
-        // Ensure display_order is sanitized
-        const sanitized = settings.ormission_books.map((b: OrmissionBook, index: number) => ({
-          ...b,
-          display_order: typeof b.display_order === "number" ? b.display_order : index + 1,
-          author: b.author || "অরমিশন একাডেমি টিম",
-          stock_status: b.stock_status || "in_stock",
-        }));
+        // Ensure display_order and category mapping are sanitized
+        const sanitized = settings.ormission_books.map((b: OrmissionBook, index: number) => {
+          let catId = b.category_id;
+          let catSlug = b.category_slug;
+          let catName = b.category || "";
+
+          // Auto-normalize existing books that only have string categories
+          if (!catSlug && catName) {
+            const lower = catName.toLowerCase().trim();
+            if (lower === "ssc" || lower.includes("স্কুল")) {
+              catSlug = "ssc";
+              catId = 9;
+              catName = "SSC";
+            } else if (lower.includes("hsc") || lower.includes("এইচএসসি")) {
+              catSlug = "hsc";
+              catId = 6;
+              catName = "HSC";
+            } else if (lower.includes("admission") || lower.includes("ভর্তি") || lower.includes("ইঞ্জিনিয়ারিং")) {
+              catSlug = "admission";
+              catId = 5;
+              catName = "Admission";
+            } else if (lower.includes("medical") || lower.includes("মেডিকেল") || lower.includes("নার্সিং")) {
+              catSlug = "nursing-medical";
+              catId = 17;
+              catName = "Medical & Nursing";
+            } else if (lower.includes("arts") || lower.includes("commerce") || lower.includes("মানবিক")) {
+              catSlug = "arts-commerce";
+              catId = 10;
+              catName = "Arts & Commerce";
+            }
+          }
+
+          return {
+            ...b,
+            category: catName,
+            category_id: catId,
+            category_slug: catSlug,
+            display_order: typeof b.display_order === "number" ? b.display_order : index + 1,
+            author: b.author || "অরমিশন একাডেমি টিম",
+            stock_status: b.stock_status || "in_stock",
+          };
+        });
         setBooks(sanitized);
       } else {
         setBooks([]);
@@ -174,6 +225,7 @@ export default function AdminBooksPage() {
 
   useEffect(() => {
     loadBooks();
+    loadCategories();
   }, []);
 
   const saveBooksToDb = async (updatedList: OrmissionBook[]) => {
@@ -255,16 +307,43 @@ export default function AdminBooksPage() {
     setDeleteConfirm(null);
   };
 
+  // Find matching database category
+  const findMatchingCategory = (bCat: string, catId?: number | string, catSlug?: string) => {
+    if (catId) {
+      const match = dbCategories.find((c) => String(c.id) === String(catId));
+      if (match) return match;
+    }
+    if (catSlug) {
+      const match = dbCategories.find((c) => c.slug.toLowerCase() === catSlug.toLowerCase());
+      if (match) return match;
+    }
+    const clean = (bCat || "").toLowerCase().trim();
+    return dbCategories.find(
+      (c) =>
+        c.slug.toLowerCase() === clean ||
+        c.name.toLowerCase() === clean ||
+        (c.name_bn && clean.includes(c.name_bn.toLowerCase())) ||
+        (c.slug === "ssc" && clean.includes("ssc")) ||
+        (c.slug === "hsc" && (clean.includes("hsc") || clean.includes("এইচএসসি"))) ||
+        (c.slug === "admission" && (clean.includes("admission") || clean.includes("ভর্তি") || clean.includes("ইঞ্জিনিয়ারিং"))) ||
+        (c.slug === "nursing-medical" && (clean.includes("medical") || clean.includes("মেডিকেল") || clean.includes("নার্সিং"))) ||
+        (c.slug === "arts-commerce" && (clean.includes("arts") || clean.includes("commerce") || clean.includes("মানবিক")))
+    );
+  };
+
   // Open Add Modal
   const handleOpenAdd = () => {
     setEditingBook(null);
+    const defaultCat = dbCategories.find((c) => c.slug === "ssc") || dbCategories[0];
     setForm({
       title: "",
       subtitle: "",
       author: "অরমিশন একাডেমি টিম",
       edition: "১ম সংস্করণ ২০২৬",
       publisher: "অরমিশন পাবলিকেশন্স",
-      category: "এইচএসসি বিজ্ঞান",
+      category: defaultCat ? defaultCat.name : "SSC",
+      category_id: defaultCat ? defaultCat.id : 9,
+      category_slug: defaultCat ? defaultCat.slug : "ssc",
       price: 380,
       original_price: 500,
       cover_gradient: GRADIENT_OPTIONS[0].value,
@@ -289,13 +368,16 @@ export default function AdminBooksPage() {
   // Open Edit Modal
   const handleOpenEdit = (b: OrmissionBook) => {
     setEditingBook(b);
+    const matched = findMatchingCategory(b.category, b.category_id, b.category_slug);
     setForm({
       title: b.title || "",
       subtitle: b.subtitle || "",
       author: b.author || "অরমিশন একাডেমি টিম",
       edition: b.edition || "১ম সংস্করণ ২০২৬",
       publisher: b.publisher || "অরমিশন পাবলিকেশন্স",
-      category: b.category || "এইচএসসি বিজ্ঞান",
+      category: b.category || (matched ? matched.name : "SSC"),
+      category_id: b.category_id || (matched ? matched.id : ""),
+      category_slug: b.category_slug || (matched ? matched.slug : ""),
       price: b.price || 0,
       original_price: b.original_price || 0,
       cover_gradient: b.cover_gradient || GRADIENT_OPTIONS[0].value,
@@ -368,6 +450,8 @@ export default function AdminBooksPage() {
               edition: form.edition.trim(),
               publisher: form.publisher.trim(),
               category: form.category.trim(),
+              category_id: form.category_id || undefined,
+              category_slug: form.category_slug || undefined,
               price: Number(form.price) || 0,
               original_price: Number(form.original_price) || 0,
               cover_gradient: form.cover_gradient,
@@ -397,6 +481,8 @@ export default function AdminBooksPage() {
         edition: form.edition.trim(),
         publisher: form.publisher.trim(),
         category: form.category.trim(),
+        category_id: form.category_id || undefined,
+        category_slug: form.category_slug || undefined,
         price: Number(form.price) || 0,
         original_price: Number(form.original_price) || 0,
         cover_gradient: form.cover_gradient,
@@ -428,11 +514,12 @@ export default function AdminBooksPage() {
     }
   };
 
-  // Categories list derived from current books + defaults
+  // Categories list derived from DB categories + current books
   const categories = useMemo(() => {
-    const set = new Set([...DEFAULT_CATEGORIES, ...books.map((b) => b.category).filter(Boolean)]);
+    const dbCatNames = dbCategories.map((c) => c.name);
+    const set = new Set([...dbCatNames, ...DEFAULT_CATEGORIES, ...books.map((b) => b.category).filter(Boolean)]);
     return Array.from(set);
-  }, [books]);
+  }, [books, dbCategories]);
 
   // Filtering & Sorting
   const filteredAndSortedBooks = useMemo(() => {
@@ -443,9 +530,38 @@ export default function AdminBooksPage() {
         b.title.toLowerCase().includes(q) ||
         (b.subtitle && b.subtitle.toLowerCase().includes(q)) ||
         (b.author && b.author.toLowerCase().includes(q)) ||
-        b.category.toLowerCase().includes(q);
+        b.category.toLowerCase().includes(q) ||
+        (b.category_slug && b.category_slug.toLowerCase().includes(q));
 
-      const matchesCat = filterCategory === "all" || b.category === filterCategory;
+      let matchesCat = filterCategory === "all";
+      if (!matchesCat) {
+        if (b.category_id && String(b.category_id) === filterCategory) {
+          matchesCat = true;
+        } else if (b.category_slug && b.category_slug.toLowerCase() === filterCategory.toLowerCase()) {
+          matchesCat = true;
+        } else {
+          const bCat = (b.category || "").toLowerCase();
+          const selectedDbCat = dbCategories.find(
+            (c) => c.slug.toLowerCase() === filterCategory.toLowerCase() || String(c.id) === filterCategory
+          );
+          if (selectedDbCat) {
+            matchesCat =
+              bCat === selectedDbCat.slug.toLowerCase() ||
+              bCat === selectedDbCat.name.toLowerCase() ||
+              (selectedDbCat.name_bn && bCat.includes(selectedDbCat.name_bn.toLowerCase())) ||
+              (selectedDbCat.slug === "ssc" && bCat.includes("ssc")) ||
+              (selectedDbCat.slug === "hsc" && (bCat.includes("hsc") || b.category.includes("এইচএসসি"))) ||
+              (selectedDbCat.slug === "admission" &&
+                (bCat.includes("admission") || b.category.includes("ভর্তি") || b.category.includes("ইঞ্জিনিয়ারিং"))) ||
+              (selectedDbCat.slug === "nursing-medical" &&
+                (bCat.includes("medical") || b.category.includes("মেডিকেল") || b.category.includes("নার্সিং"))) ||
+              (selectedDbCat.slug === "arts-commerce" &&
+                (bCat.includes("arts") || bCat.includes("commerce") || b.category.includes("মানবিক")));
+          } else {
+            matchesCat = b.category === filterCategory;
+          }
+        }
+      }
 
       let matchesStatus = true;
       if (filterStatus === "pinned") matchesStatus = !!b.is_pinned;
@@ -667,14 +783,34 @@ export default function AdminBooksPage() {
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="input text-xs font-bengali py-1.5 h-9"
+            className="input text-xs font-bengali py-1.5 h-9 font-bold"
           >
             <option value="all">সকল ক্যাটাগরি ({books.length})</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat} ({books.filter((b) => b.category === cat).length})
-              </option>
-            ))}
+            {dbCategories.map((c) => {
+              const count = books.filter((b) => {
+                if (b.category_id && String(b.category_id) === String(c.id)) return true;
+                if (b.category_slug && b.category_slug.toLowerCase() === c.slug.toLowerCase()) return true;
+                const bCat = (b.category || "").toLowerCase();
+                return (
+                  bCat === c.slug.toLowerCase() ||
+                  bCat === c.name.toLowerCase() ||
+                  (c.name_bn && bCat.includes(c.name_bn.toLowerCase())) ||
+                  (c.slug === "ssc" && bCat.includes("ssc")) ||
+                  (c.slug === "hsc" && (bCat.includes("hsc") || b.category.includes("এইচএসসি"))) ||
+                  (c.slug === "admission" &&
+                    (bCat.includes("admission") || b.category.includes("ভর্তি") || b.category.includes("ইঞ্জিনিয়ারিং"))) ||
+                  (c.slug === "nursing-medical" &&
+                    (bCat.includes("medical") || b.category.includes("মেডিকেল") || b.category.includes("নার্সিং"))) ||
+                  (c.slug === "arts-commerce" &&
+                    (bCat.includes("arts") || bCat.includes("commerce") || b.category.includes("মানবিক")))
+                );
+              }).length;
+              return (
+                <option key={c.id} value={c.slug}>
+                  {c.name} {c.name_bn ? `(${c.name_bn})` : ""} ({count})
+                </option>
+              );
+            })}
           </select>
 
           {/* Status Filter */}
@@ -1290,22 +1426,50 @@ export default function AdminBooksPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold text-text mb-1">ক্যাটাগরি</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={form.category}
-                          onChange={(e) => setForm({ ...form, category: e.target.value })}
-                          className="input text-xs w-full font-bengali"
-                          placeholder="উদা: এইচএসসি বিজ্ঞান"
-                          list="category-suggestions"
-                        />
-                        <datalist id="category-suggestions">
-                          {categories.map((c) => (
-                            <option key={c} value={c} />
-                          ))}
-                        </datalist>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-xs font-bold text-text">ক্যাটাগরি নির্ধারণ *</label>
+                        {form.category_slug && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono font-bold">
+                            slug: {form.category_slug}
+                          </span>
+                        )}
                       </div>
+                      <select
+                        value={
+                          form.category_id
+                            ? String(form.category_id)
+                            : form.category_slug || form.category
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const matched = dbCategories.find(
+                            (c) => String(c.id) === val || c.slug === val
+                          );
+                          if (matched) {
+                            setForm((prev) => ({
+                              ...prev,
+                              category_id: matched.id,
+                              category_slug: matched.slug,
+                              category: matched.name,
+                            }));
+                          } else {
+                            setForm((prev) => ({
+                              ...prev,
+                              category: val,
+                              category_id: "",
+                              category_slug: "",
+                            }));
+                          }
+                        }}
+                        className="input text-xs w-full font-bengali h-10 font-bold"
+                      >
+                        <option value="">-- ক্যাটাগরি বেছে নিন --</option>
+                        {dbCategories.map((c) => (
+                          <option key={c.id} value={String(c.id)}>
+                            {c.name} {c.name_bn ? `(${c.name_bn})` : ""} [ID: {c.id}]
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
