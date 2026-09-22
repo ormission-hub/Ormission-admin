@@ -9,7 +9,21 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
   if (!Array.isArray(curriculum)) return { success: true, sectionsCount: 0, lessonsCount: 0 };
 
   try {
-    // 1. Delete existing sections (lessons cascade-delete via foreign key)
+    // 1. Delete existing lesson_resources for lessons belonging to this course
+    const { data: oldLessons } = await supabaseAdmin
+      .from("lessons")
+      .select("id")
+      .eq("course_id", courseId);
+
+    if (oldLessons && oldLessons.length > 0) {
+      const oldLessonIds = oldLessons.map((l: any) => l.id);
+      await supabaseAdmin
+        .from("lesson_resources")
+        .delete()
+        .in("lesson_id", oldLessonIds);
+    }
+
+    // Delete existing sections (lessons cascade-delete via foreign key)
     const { error: delErr } = await supabaseAdmin
       .from("course_sections")
       .delete()
@@ -90,9 +104,10 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
           return { success: false, error: `ক্লাস সংরক্ষণ ব্যর্থ: ${lesErr.message}` };
         }
 
-        // Insert lesson_servers for each lesson
+        // Insert lesson_servers and lesson_resources for each lesson
         if (insertedLessons && insertedLessons.length > 0) {
           const allServersToInsert: any[] = [];
+          const allResourcesToInsert: any[] = [];
 
           for (let lIdx = 0; lIdx < sec.lessons.length; lIdx++) {
             const lesFormData = sec.lessons[lIdx];
@@ -128,6 +143,26 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
                 sort_order: 1,
               });
             }
+
+            // Collect class materials / resources (PDF, notes, docs, drive links)
+            const materials = Array.isArray(lesFormData.materials)
+              ? lesFormData.materials
+              : (Array.isArray(lesFormData.resources) ? lesFormData.resources : []);
+
+            for (let mIdx = 0; mIdx < materials.length; mIdx++) {
+              const mat = materials[mIdx];
+              const fileUrl = mat.fileUrl || mat.file_url || mat.url;
+              if (fileUrl && fileUrl.trim() !== "") {
+                allResourcesToInsert.push({
+                  lesson_id: insertedLesson.id,
+                  title: (mat.title && mat.title.trim()) ? mat.title.trim() : `Material ${mIdx + 1}`,
+                  file_url: fileUrl.trim(),
+                  file_type: mat.fileType || mat.file_type || (fileUrl.split(".").pop()?.toLowerCase().split("?")[0] || "pdf"),
+                  file_size: typeof mat.fileSize === "number" ? mat.fileSize : (typeof mat.file_size === "number" ? mat.file_size : null),
+                  sort_order: mat.sortOrder || mat.sort_order || mIdx + 1,
+                });
+              }
+            }
           }
 
           if (allServersToInsert.length > 0) {
@@ -138,6 +173,17 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
             if (srvErr) {
               console.error("Error inserting lesson_servers:", srvErr);
               return { success: false, error: `সার্ভার সংরক্ষণ ব্যর্থ: ${srvErr.message}` };
+            }
+          }
+
+          if (allResourcesToInsert.length > 0) {
+            const { error: resErr } = await supabaseAdmin
+              .from("lesson_resources")
+              .insert(allResourcesToInsert);
+
+            if (resErr) {
+              console.error("Error inserting lesson_resources:", resErr);
+              // Non-blocking warning: log error but do not break entire course sync
             }
           }
         }
@@ -210,6 +256,15 @@ export async function GET(request: Request) {
                 video_url,
                 is_enabled,
                 sort_order
+              ),
+              lesson_resources (
+                id,
+                lesson_id,
+                title,
+                file_url,
+                file_type,
+                file_size,
+                sort_order
               )
             )
           )
@@ -233,7 +288,7 @@ export async function GET(request: Request) {
         .eq("course_id", id);
       data.enrollment_count = enrollCount ?? 0;
 
-      // Sort sections and lessons by sort_order
+      // Sort sections, lessons, servers and materials by sort_order
       if (Array.isArray(data.course_sections)) {
         data.course_sections.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
         data.course_sections.forEach((s: any) => {
@@ -242,6 +297,9 @@ export async function GET(request: Request) {
             s.lessons.forEach((les: any) => {
               if (Array.isArray(les.lesson_servers)) {
                 les.lesson_servers.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+              }
+              if (Array.isArray(les.lesson_resources)) {
+                les.lesson_resources.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
               }
             });
           }

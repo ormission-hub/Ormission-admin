@@ -33,6 +33,7 @@ import {
   Star,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
+import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
 
 interface NewLesson {
   id: string;
@@ -40,6 +41,7 @@ interface NewLesson {
   duration: string;
   videoUrl: string;
   isFreePreview: boolean;
+  materials?: LessonMaterialItem[];
 }
 
 interface NewSection {
@@ -123,6 +125,7 @@ export default function CreateCourseWizardPage() {
           duration: "20:00",
           videoUrl: "https://www.youtube.com/embed/M7lc1UVf-VE",
           isFreePreview: true,
+          materials: [],
         },
       ],
     },
@@ -245,6 +248,7 @@ export default function CreateCourseWizardPage() {
                 duration: "30:00",
                 videoUrl: "",
                 isFreePreview: false,
+                materials: [],
               },
             ],
           };
@@ -1299,6 +1303,26 @@ export default function CreateCourseWizardPage() {
                               />
                             </div>
                           </div>
+
+                          {/* Lesson Study Materials & Notes (PDF/Drive) */}
+                          <LessonMaterialsManager
+                            materials={lesson.materials || []}
+                            onChange={(newMats) => {
+                              setCurriculum((prev) =>
+                                prev.map((s) =>
+                                  s.id === section.id
+                                    ? {
+                                        ...s,
+                                        lessons: s.lessons.map((l) =>
+                                          l.id === lesson.id ? { ...l, materials: newMats } : l
+                                        ),
+                                      }
+                                    : s
+                                )
+                              );
+                            }}
+                            lessonTitle={lesson.titleBn}
+                          />
                         </div>
                       ))}
                     </div>

@@ -44,6 +44,7 @@ import {
   type DbInstructor,
 } from "@/lib/supabase/db-service";
 import { cleanAndNormalizeVideoUrl, getEmbedUrl } from "@/lib/video-helpers";
+import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
 
 interface ServerFormItem {
   id: string | number;
@@ -63,6 +64,7 @@ interface LessonFormItem {
   isFreePreview: boolean;
   servers: ServerFormItem[];
   showServers?: boolean;
+  materials?: LessonMaterialItem[];
 }
 
 interface SectionFormItem {
@@ -209,6 +211,19 @@ export default function EditCourseStudioPage({
                     ? [{ id: `srv-${l.id}-1`, serverName: "Server 1", serverType: "youtube" as const, videoUrl: cleanAndNormalizeVideoUrl(l.video_url), isEnabled: true, sortOrder: 1 }]
                     : [];
 
+                const mats: LessonMaterialItem[] = Array.isArray(l.lesson_resources)
+                  ? [...l.lesson_resources]
+                      .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+                      .map((res: any) => ({
+                        id: res.id,
+                        title: res.title || "Material",
+                        fileUrl: res.file_url || "",
+                        fileType: res.file_type || "pdf",
+                        fileSize: res.file_size,
+                        sortOrder: res.sort_order || 1,
+                      }))
+                  : [];
+
                 return {
                   id: l.id,
                   title: l.title || "",
@@ -218,6 +233,7 @@ export default function EditCourseStudioPage({
                   isFreePreview: l.is_preview === true,
                   servers: srvs,
                   showServers: srvs.length > 0,
+                  materials: mats,
                 };
               })
             : [],
@@ -362,6 +378,7 @@ export default function EditCourseStudioPage({
                 videoUrl: "",
                 isFreePreview: false, // Default is Paid/Locked
                 servers: [],
+                materials: [],
               },
             ],
           };
@@ -1231,6 +1248,15 @@ export default function EditCourseStudioPage({
                           )}
                         </div>
                       )}
+
+                      {/* Class Study Materials (PDF, Notes, Drive links) */}
+                      <LessonMaterialsManager
+                        materials={lesson.materials || []}
+                        onChange={(newMats) =>
+                          updateLessonField(section.id, lesson.id, "materials", newMats)
+                        }
+                        lessonTitle={lesson.titleBn}
+                      />
                     </div>
                   ))}
                 </div>
