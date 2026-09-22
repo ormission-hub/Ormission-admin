@@ -231,70 +231,85 @@ export function LessonMaterialsManager({
   };
 
   return (
-    <div className="mt-3 p-3.5 rounded-xl bg-surface-secondary/70 border border-border/80 space-y-3">
+    <div className="mt-3 p-3 rounded-xl bg-surface/90 border border-border/70 space-y-2.5">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Paperclip className="w-4 h-4 text-primary" />
-          <span className="text-xs font-bold text-text font-bengali">
-            ক্লাস স্টাডি ম্যাটেরিয়াল ও লেকচার নোট
-          </span>
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
-            {materials.length}টি সংযুক্ত
-          </span>
-          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bengali">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            ফ্রি ক্লাউড স্টোরেজ (সুপাবেজ কোটা মুক্ত)
+      <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/50">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Paperclip className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-xs font-bold text-text font-bengali truncate">
+            ক্লাস স্টাডি ম্যাটেরিয়াল ও শিট
           </span>
         </div>
 
-        {/* Upload Buttons */}
-        <div className="flex items-center gap-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.txt,image/*"
-            className="hidden"
-          />
-
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="btn btn-outline btn-xs font-bengali text-[11px] flex items-center gap-1.5 hover:border-primary hover:text-primary cursor-pointer"
-            title="৪MB পর্যন্ত সরাসরি PDF বা ফাইল আপলোড করুন"
-          >
-            {isUploading ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin text-primary" />
-                <span>আপলোড হচ্ছে...</span>
-              </>
-            ) : (
-              <>
-                <Upload className="w-3 h-3 text-primary" />
-                <span>সরাসরি আপলোড (&lt;৪MB)</span>
-              </>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowExternalInput((prev) => !prev)}
-            className="btn btn-primary btn-xs font-bengali text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs"
-            title="বড় ফাইল বা গুগল ড্রাইভের লিংক যুক্ত করুন"
-          >
-            <Link2 className="w-3 h-3" />
-            <span>গুগল ড্রাইভ লিংক (বড় ফাইল)</span>
-          </button>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 font-bengali">
+            {materials.length}টি সংযুক্ত
+          </span>
         </div>
       </div>
 
-      {/* Upload Error */}
+      {/* Responsive 2-Button Action Bar */}
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileUpload}
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.txt,image/*"
+          className="hidden"
+        />
+
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-border bg-surface-secondary/80 hover:bg-surface-secondary text-text text-xs font-bengali font-semibold transition-all cursor-pointer shadow-2xs hover:border-primary/50"
+          title="ফাইল আপলোড করুন (সর্বোচ্চ ৪MB)"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+              <span className="truncate">আপলোড হচ্ছে...</span>
+            </>
+          ) : (
+            <>
+              <Upload className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="truncate">ফাইল আপলোড</span>
+            </>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowExternalInput((prev) => !prev)}
+          className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border text-xs font-bengali font-semibold transition-all cursor-pointer shadow-2xs ${
+            showExternalInput
+              ? "bg-primary text-white border-primary shadow-sm shadow-primary/25"
+              : "border-border bg-surface-secondary/80 hover:bg-surface-secondary text-text hover:border-primary/50"
+          }`}
+          title="গুগল ড্রাইভ বা ক্লাউড লিংক যোগ করুন"
+        >
+          <Link2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">ড্রাইভ লিংক</span>
+        </button>
+      </div>
+
+      {/* Upload Error / Notice */}
       {uploadError && (
-        <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bengali flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{uploadError}</span>
+        <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bengali flex items-start justify-between gap-2">
+          <div className="flex items-start gap-2 min-w-0">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+            <span className="leading-snug">{uploadError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setUploadError(null)}
+            className="text-rose-400 hover:text-rose-600 p-0.5 shrink-0 cursor-pointer"
+            title="বন্ধ করুন"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
@@ -302,48 +317,56 @@ export function LessonMaterialsManager({
       {showExternalInput && (
         <form
           onSubmit={handleAddExternalLink}
-          className="p-3 rounded-lg bg-surface border border-border space-y-2 text-xs font-bengali animate-in fade-in"
+          className="p-3 rounded-xl bg-surface border border-primary/30 space-y-2.5 text-xs font-bengali shadow-xs"
         >
           <div className="flex items-center justify-between">
             <span className="font-bold text-text flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5 text-sky-500" />
-              গুগল ড্রাইভ বা এক্সটার্নাল লিংক যোগ করুন
+              <Link2 className="w-3.5 h-3.5 text-primary" />
+              গুগল ড্রাইভ বা ক্লাউড লিংক যুক্ত করুন
             </span>
             <button
               type="button"
               onClick={() => setShowExternalInput(false)}
-              className="text-text-muted hover:text-text"
+              className="text-text-muted hover:text-text p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <div className="p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-[11px] leading-relaxed flex items-start gap-2">
-            <span className="shrink-0 text-sm">💡</span>
+          <div className="p-2 rounded-lg bg-primary/5 border border-primary/15 text-text-muted text-[11px] leading-relaxed">
+            💡 <strong>টিপস:</strong> গুগল ড্রাইভের শেয়ার লিংক (<em>"Anyone with the link"</em>) এখানে পেস্ট করলে স্টুডেন্টরা সরাসরি দেখতে ও ডাউনলোড করতে পারবে।
+          </div>
+
+          <div className="space-y-2">
             <div>
-              <strong>বড় সাইজের PDF/ফাইলের জন্য সমাধান:</strong> আপনার ফ্রি গুগল ড্রাইভে (১৫GB ফ্রি) ফাইলটি রাখুন এবং শেয়ার অপশন থেকে <em>"Anyone with the link can view"</em> করে লিংকটি নিচে দিন।
+              <label className="text-[11px] text-text-muted block mb-1 font-medium">
+                ফাইলের লিংক *
+              </label>
+              <input
+                type="url"
+                required
+                value={externalUrl}
+                onChange={(e) => setExternalUrl(e.target.value)}
+                placeholder="https://drive.google.com/file/d/..."
+                className="input text-xs font-mono w-full"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] text-text-muted block mb-1 font-medium">
+                টাইটেল (ঐচ্ছিক)
+              </label>
+              <input
+                type="text"
+                value={externalTitle}
+                onChange={(e) => setExternalTitle(e.target.value)}
+                placeholder="যেমন: লেকচার নোট ও হ্যান্ডআউট"
+                className="input text-xs font-bengali w-full"
+              />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input
-              type="url"
-              required
-              value={externalUrl}
-              onChange={(e) => setExternalUrl(e.target.value)}
-              placeholder="https://drive.google.com/file/d/..."
-              className="input text-xs font-mono w-full"
-            />
-            <input
-              type="text"
-              value={externalTitle}
-              onChange={(e) => setExternalTitle(e.target.value)}
-              placeholder="ম্যাটেরিয়াল টাইটেল (যেমন: অধ্যায় ১ লেকচার শিট)"
-              className="input text-xs font-bengali w-full"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => setShowExternalInput(false)}
@@ -353,7 +376,7 @@ export function LessonMaterialsManager({
             </button>
             <button
               type="submit"
-              className="btn btn-primary btn-xs font-bengali text-[11px] font-bold"
+              className="btn btn-primary btn-xs font-bengali text-[11px] font-bold shadow-xs"
             >
               যুক্ত করুন
             </button>
@@ -363,8 +386,8 @@ export function LessonMaterialsManager({
 
       {/* Materials List */}
       {materials.length === 0 ? (
-        <div className="py-2.5 px-3 rounded-lg border border-dashed border-border/80 text-center text-[11px] text-text-muted font-bengali">
-          এই ক্লাসে এখনও কোনো স্টাডি ম্যাটেরিয়াল সংযুক্ত করা হয়নি। উপরের বাটন দিয়ে PDF, ওয়ার্ড বা ড্রাইভ লিংক যুক্ত করুন।
+        <div className="py-2.5 px-3 rounded-xl border border-dashed border-border/80 text-center text-[11px] text-text-muted font-bengali">
+          এই ক্লাসে কোনো স্টাডি ম্যাটেরিয়াল নেই। উপরের বাটন দিয়ে যুক্ত করুন।
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -376,11 +399,11 @@ export function LessonMaterialsManager({
             return (
               <div
                 key={mat.id || idx}
-                className="flex items-center gap-2 p-2 rounded-lg bg-surface border border-border hover:border-primary/30 transition-all text-xs"
+                className="flex items-center gap-2.5 p-2 rounded-xl bg-surface border border-border hover:border-primary/30 transition-all text-xs shadow-2xs"
               >
                 {/* File Type Badge */}
                 <div
-                  className={`w-7 h-7 rounded-md flex items-center justify-center shrink-0 border ${meta.bg} ${meta.color}`}
+                  className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border ${meta.bg} ${meta.color}`}
                   title={meta.label}
                 >
                   <Icon size={14} />
@@ -393,12 +416,18 @@ export function LessonMaterialsManager({
                     value={mat.title}
                     onChange={(e) => handleUpdateTitle(idx, e.target.value)}
                     placeholder="ম্যাটেরিয়াল টাইটেল"
-                    className="bg-transparent border-none p-0 text-xs font-semibold text-text focus:outline-none focus:ring-0 w-full truncate"
+                    className="bg-transparent border-none p-0 text-xs font-semibold text-text focus:outline-none focus:ring-0 w-full truncate font-bengali"
                   />
-                  <div className="flex items-center gap-2 text-[10px] text-text-muted">
-                    <span className="font-mono uppercase">{meta.label}</span>
-                    {sizeStr && <span>• {sizeStr}</span>}
-                    <span className="truncate max-w-[180px] sm:max-w-xs font-mono text-text-muted/60">
+                  <div className="flex items-center gap-1.5 text-[10px] text-text-muted mt-0.5">
+                    <span className="font-mono uppercase font-bold text-text-muted/80">{meta.label}</span>
+                    {sizeStr && (
+                      <>
+                        <span>•</span>
+                        <span>{sizeStr}</span>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span className="truncate max-w-[120px] sm:max-w-[200px] font-mono text-text-muted/60">
                       {mat.fileUrl}
                     </span>
                   </div>
@@ -410,8 +439,8 @@ export function LessonMaterialsManager({
                     href={mat.fileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="p-1.5 rounded-md text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
-                    title="ফাইলটি নতুন ট্যাবে দেখুন"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors cursor-pointer"
+                    title="নতুন ট্যাবে দেখুন"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                   </a>
@@ -419,7 +448,7 @@ export function LessonMaterialsManager({
                   <button
                     type="button"
                     onClick={() => handleRemoveMaterial(idx)}
-                    className="p-1.5 rounded-md text-text-muted hover:text-error hover:bg-error/10 transition-colors"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                     title="মুছে ফেলুন"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
