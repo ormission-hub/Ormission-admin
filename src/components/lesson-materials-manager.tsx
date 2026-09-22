@@ -97,6 +97,21 @@ export function getMaterialIcon(fileType?: string, fileUrl?: string) {
   };
 }
 
+export function parseGoogleDriveLink(url: string) {
+  if (!url) return null;
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    const id = match[1];
+    return {
+      id,
+      previewUrl: `https://drive.google.com/file/d/${id}/preview`,
+      downloadUrl: `https://drive.google.com/uc?export=download&id=${id}`,
+      viewUrl: `https://drive.google.com/file/d/${id}/view`,
+    };
+  }
+  return null;
+}
+
 export function LessonMaterialsManager({
   materials,
   onChange,
@@ -113,6 +128,17 @@ export function LessonMaterialsManager({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Vercel Serverless Function request body limit check (4.5 MB hard limit)
+    const MAX_DIRECT_SIZE = 4.2 * 1024 * 1024; // 4.2 MB safe buffer
+    if (file.size > MAX_DIRECT_SIZE) {
+      setUploadError(
+        `ফাইলের সাইজ (${formatFileSize(file.size)}) ৪ মেগাবাইটের বেশি। Vercel সার্ভারলেস লিমিটের কারণে সরাসরি ৪MB এর বেশি ফাইল আপলোড করা যায় না। বড় সাইজের PDF/ফাইলের জন্য দয়া করে 'গুগল ড্রাইভ লিংক' অপশনটি ব্যবহার করুন (আপনার ফ্রি গুগল ড্রাইভে ফাইলটি রেখে লিংক দিন)।`
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setShowExternalInput(true);
+      return;
+    }
+
     setIsUploading(true);
     setUploadError(null);
 
@@ -125,7 +151,21 @@ export function LessonMaterialsManager({
         body: formData,
       });
 
-      const data = await res.json();
+      if (res.status === 413) {
+        throw new Error(
+          "ফাইলের সাইজ সার্ভার লিমিটের (৪.৫MB) চেয়ে বড় (413 Payload Too Large)। বড় সাইজের ফাইলের জন্য 'গুগল ড্রাইভ লিংক' ব্যবহার করুন।"
+        );
+      }
+
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(
+          "সার্ভার থেকে সঠিক রেসপন্স পাওয়া যায়নি। বড় ফাইল হলে দয়া করে 'গুগল ড্রাইভ লিংক' ব্যবহার করুন।"
+        );
+      }
 
       if (!res.ok || !data.success) {
         throw new Error(data.error || "ফাইল আপলোড সম্পন্ন হতে পারেনি");
@@ -157,13 +197,17 @@ export function LessonMaterialsManager({
     e.preventDefault();
     if (!externalUrl.trim()) return;
 
-    const ext = externalUrl.split(".").pop()?.toLowerCase().split("?")[0] || "link";
+    const trimmedUrl = externalUrl.trim();
+    const gDrive = parseGoogleDriveLink(trimmedUrl);
+    const ext = trimmedUrl.split(".").pop()?.toLowerCase().split("?")[0] || "link";
 
     const newMaterial: LessonMaterialItem = {
       id: `ext-${Date.now()}`,
-      title: externalTitle.trim() || "ড্রাইভ স্টাডি রিসোর্স",
-      fileUrl: externalUrl.trim(),
-      fileType: ext.length > 5 ? "link" : ext,
+      title:
+        externalTitle.trim() ||
+        (gDrive ? "লেকচার শিট (গুগল ড্রাইভ)" : "ক্লাস স্টাডি রিসোর্স"),
+      fileUrl: gDrive ? gDrive.viewUrl : trimmedUrl,
+      fileType: gDrive ? "pdf" : (ext.length > 5 ? "link" : ext),
       fileSize: null,
       sortOrder: materials.length + 1,
     };
@@ -172,6 +216,7 @@ export function LessonMaterialsManager({
     setExternalUrl("");
     setExternalTitle("");
     setShowExternalInput(false);
+    setUploadError(null);
   };
 
   const handleUpdateTitle = (index: number, newTitle: string) => {
@@ -199,7 +244,7 @@ export function LessonMaterialsManager({
           </span>
           <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bengali">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            ফ্রি স্টোরেজ (সুপাবেজ স্টোরেজ খরচ মুক্ত • ২০০MB)
+            ফ্রি ক্লাউড স্টোরেজ (সুপাবেজ কোটা মুক্ত)
           </span>
         </div>
 
@@ -217,8 +262,8 @@ export function LessonMaterialsManager({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="btn btn-outline btn-xs font-bengali text-[11px] flex items-center gap-1.5 hover:border-primary hover:text-primary"
-            title="কম্পিউটার/মোবাইল থেকে সরাসরি PDF বা ফাইল আপলোড করুন"
+            className="btn btn-outline btn-xs font-bengali text-[11px] flex items-center gap-1.5 hover:border-primary hover:text-primary cursor-pointer"
+            title="৪MB পর্যন্ত সরাসরি PDF বা ফাইল আপলোড করুন"
           >
             {isUploading ? (
               <>
@@ -228,7 +273,7 @@ export function LessonMaterialsManager({
             ) : (
               <>
                 <Upload className="w-3 h-3 text-primary" />
-                <span>PDF বা ফাইল আপলোড</span>
+                <span>সরাসরি আপলোড (&lt;৪MB)</span>
               </>
             )}
           </button>
@@ -236,11 +281,11 @@ export function LessonMaterialsManager({
           <button
             type="button"
             onClick={() => setShowExternalInput((prev) => !prev)}
-            className="btn btn-outline btn-xs font-bengali text-[11px] flex items-center gap-1.5"
-            title="গুগল ড্রাইভ বা এক্সটার্নাল লিংক যোগ করুন"
+            className="btn btn-primary btn-xs font-bengali text-[11px] flex items-center gap-1.5 cursor-pointer shadow-xs"
+            title="বড় ফাইল বা গুগল ড্রাইভের লিংক যুক্ত করুন"
           >
-            <Link2 className="w-3 h-3 text-sky-500" />
-            <span>ড্রাইভ লিংক</span>
+            <Link2 className="w-3 h-3" />
+            <span>গুগল ড্রাইভ লিংক (বড় ফাইল)</span>
           </button>
         </div>
       </div>
@@ -271,6 +316,13 @@ export function LessonMaterialsManager({
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          </div>
+
+          <div className="p-2.5 rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-700 dark:text-sky-300 text-[11px] leading-relaxed flex items-start gap-2">
+            <span className="shrink-0 text-sm">💡</span>
+            <div>
+              <strong>বড় সাইজের PDF/ফাইলের জন্য সমাধান:</strong> আপনার ফ্রি গুগল ড্রাইভে (১৫GB ফ্রি) ফাইলটি রাখুন এবং শেয়ার অপশন থেকে <em>"Anyone with the link can view"</em> করে লিংকটি নিচে দিন।
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
