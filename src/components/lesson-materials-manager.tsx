@@ -1,22 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import {
   FileText,
-  Upload,
   Link2,
   Trash2,
   ExternalLink,
-  Loader2,
   Paperclip,
-  CheckCircle2,
-  AlertCircle,
-  FileDown,
-  Archive,
-  FileCode,
-  Image as ImageIcon,
   Plus,
   X,
+  Archive,
+  Image as ImageIcon,
 } from "lucide-react";
 
 export interface LessonMaterialItem {
@@ -45,15 +39,30 @@ export function formatFileSize(bytes?: number | string | null): string {
   return `${parseFloat((num / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
+export function parseGoogleDriveLink(url: string) {
+  if (!url) return null;
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    const id = match[1];
+    return {
+      id,
+      previewUrl: `https://drive.google.com/file/d/${id}/preview`,
+      downloadUrl: `https://drive.google.com/uc?export=download&id=${id}`,
+      viewUrl: `https://drive.google.com/file/d/${id}/view`,
+    };
+  }
+  return null;
+}
+
 export function getMaterialIcon(fileType?: string, fileUrl?: string) {
   const type = (fileType || fileUrl?.split(".").pop() || "").toLowerCase();
 
-  if (type.includes("pdf")) {
+  if (type.includes("pdf") || fileUrl?.includes("drive.google.com")) {
     return {
       icon: FileText,
       color: "text-rose-500",
       bg: "bg-rose-500/10 border-rose-500/20",
-      label: "PDF",
+      label: fileUrl?.includes("drive.google.com") ? "DRIVE" : "PDF",
     };
   }
   if (type.includes("doc") || type.includes("word") || type.includes("txt")) {
@@ -97,115 +106,28 @@ export function getMaterialIcon(fileType?: string, fileUrl?: string) {
   };
 }
 
-export function parseGoogleDriveLink(url: string) {
-  if (!url) return null;
-  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (match && match[1]) {
-    const id = match[1];
-    return {
-      id,
-      previewUrl: `https://drive.google.com/file/d/${id}/preview`,
-      downloadUrl: `https://drive.google.com/uc?export=download&id=${id}`,
-      viewUrl: `https://drive.google.com/file/d/${id}/view`,
-    };
-  }
-  return null;
-}
-
 export function LessonMaterialsManager({
   materials,
   onChange,
   lessonTitle,
 }: LessonMaterialsManagerProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [showExternalInput, setShowExternalInput] = useState(false);
-  const [externalUrl, setExternalUrl] = useState("");
-  const [externalTitle, setExternalTitle] = useState("");
+  const [showInput, setShowInput] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [titleInput, setTitleInput] = useState("");
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Vercel Serverless Function request body limit check (4.5 MB hard limit)
-    const MAX_DIRECT_SIZE = 4.2 * 1024 * 1024; // 4.2 MB safe buffer
-    if (file.size > MAX_DIRECT_SIZE) {
-      setUploadError(
-        `ফাইলের সাইজ (${formatFileSize(file.size)}) ৪ মেগাবাইটের বেশি। Vercel সার্ভারলেস লিমিটের কারণে সরাসরি ৪MB এর বেশি ফাইল আপলোড করা যায় না। বড় সাইজের PDF/ফাইলের জন্য দয়া করে 'গুগল ড্রাইভ লিংক' অপশনটি ব্যবহার করুন (আপনার ফ্রি গুগল ড্রাইভে ফাইলটি রেখে লিংক দিন)।`
-      );
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setShowExternalInput(true);
-      return;
-    }
-
-    setIsUploading(true);
-    setUploadError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload/material", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (res.status === 413) {
-        throw new Error(
-          "ফাইলের সাইজ সার্ভার লিমিটের (৪.৫MB) চেয়ে বড় (413 Payload Too Large)। বড় সাইজের ফাইলের জন্য 'গুগল ড্রাইভ লিংক' ব্যবহার করুন।"
-        );
-      }
-
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(
-          "সার্ভার থেকে সঠিক রেসপন্স পাওয়া যায়নি। বড় ফাইল হলে দয়া করে 'গুগল ড্রাইভ লিংক' ব্যবহার করুন।"
-        );
-      }
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || "ফাইল আপলোড সম্পন্ন হতে পারেনি");
-      }
-
-      const newMaterial: LessonMaterialItem = {
-        id: `mat-${Date.now()}`,
-        title: data.fileName || file.name,
-        fileUrl: data.url,
-        fileType: data.fileType || file.name.split(".").pop()?.toLowerCase(),
-        fileSize: data.fileSize || file.size,
-        fileSizeFormatted: data.fileSizeFormatted || formatFileSize(file.size),
-        sortOrder: materials.length + 1,
-      };
-
-      onChange([...materials, newMaterial]);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "আপলোড ব্যর্থ হয়েছে";
-      setUploadError(msg);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleAddExternalLink = (e: React.FormEvent) => {
+  const handleAddLink = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!externalUrl.trim()) return;
+    if (!urlInput.trim()) return;
 
-    const trimmedUrl = externalUrl.trim();
+    const trimmedUrl = urlInput.trim();
     const gDrive = parseGoogleDriveLink(trimmedUrl);
     const ext = trimmedUrl.split(".").pop()?.toLowerCase().split("?")[0] || "link";
 
     const newMaterial: LessonMaterialItem = {
-      id: `ext-${Date.now()}`,
+      id: `mat-${Date.now()}`,
       title:
-        externalTitle.trim() ||
-        (gDrive ? "লেকচার শিট (গুগল ড্রাইভ)" : "ক্লাস স্টাডি রিসোর্স"),
+        titleInput.trim() ||
+        (gDrive ? "লেকচার শিট (গুগল ড্রাইভ)" : "ক্লাস স্টাডি ম্যাটেরিয়াল"),
       fileUrl: gDrive ? gDrive.viewUrl : trimmedUrl,
       fileType: gDrive ? "pdf" : (ext.length > 5 ? "link" : ext),
       fileSize: null,
@@ -213,10 +135,9 @@ export function LessonMaterialsManager({
     };
 
     onChange([...materials, newMaterial]);
-    setExternalUrl("");
-    setExternalTitle("");
-    setShowExternalInput(false);
-    setUploadError(null);
+    setUrlInput("");
+    setTitleInput("");
+    setShowInput(false);
   };
 
   const handleUpdateTitle = (index: number, newTitle: string) => {
@@ -243,81 +164,40 @@ export function LessonMaterialsManager({
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 font-bengali">
             {materials.length}টি সংযুক্ত
           </span>
-        </div>
-      </div>
 
-      {/* Responsive 2-Button Action Bar */}
-      <div className="grid grid-cols-2 gap-2">
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.txt,image/*"
-          className="hidden"
-        />
-
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
-          className="flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border border-border bg-surface-secondary/80 hover:bg-surface-secondary text-text text-xs font-bengali font-semibold transition-all cursor-pointer shadow-2xs hover:border-primary/50"
-          title="ফাইল আপলোড করুন (সর্বোচ্চ ৪MB)"
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
-              <span className="truncate">আপলোড হচ্ছে...</span>
-            </>
-          ) : (
-            <>
-              <Upload className="w-3.5 h-3.5 text-primary shrink-0" />
-              <span className="truncate">ফাইল আপলোড</span>
-            </>
-          )}
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setShowExternalInput((prev) => !prev)}
-          className={`flex items-center justify-center gap-1.5 py-2 px-2.5 rounded-xl border text-xs font-bengali font-semibold transition-all cursor-pointer shadow-2xs ${
-            showExternalInput
-              ? "bg-primary text-white border-primary shadow-sm shadow-primary/25"
-              : "border-border bg-surface-secondary/80 hover:bg-surface-secondary text-text hover:border-primary/50"
-          }`}
-          title="গুগল ড্রাইভ বা ক্লাউড লিংক যোগ করুন"
-        >
-          <Link2 className="w-3.5 h-3.5 shrink-0" />
-          <span className="truncate">ড্রাইভ লিংক</span>
-        </button>
-      </div>
-
-      {/* Upload Error / Notice */}
-      {uploadError && (
-        <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bengali flex items-start justify-between gap-2">
-          <div className="flex items-start gap-2 min-w-0">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-            <span className="leading-snug">{uploadError}</span>
-          </div>
           <button
             type="button"
-            onClick={() => setUploadError(null)}
-            className="text-rose-400 hover:text-rose-600 p-0.5 shrink-0 cursor-pointer"
-            title="বন্ধ করুন"
+            onClick={() => setShowInput((prev) => !prev)}
+            className={`btn btn-xs font-bengali text-xs flex items-center gap-1 cursor-pointer transition-all ${
+              showInput
+                ? "bg-primary text-white border-primary shadow-xs"
+                : "btn-outline border-border hover:border-primary/50 text-text"
+            }`}
           >
-            <X className="w-3.5 h-3.5" />
+            {showInput ? (
+              <>
+                <X className="w-3 h-3" />
+                <span>বন্ধ করুন</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-3 h-3 text-primary" />
+                <span>লিংক যুক্ত করুন</span>
+              </>
+            )}
           </button>
         </div>
-      )}
+      </div>
 
-      {/* Inline External Link Form */}
-      {showExternalInput && (
+      {/* Add Material Form */}
+      {showInput && (
         <form
-          onSubmit={handleAddExternalLink}
-          className="p-3 rounded-xl bg-surface border border-primary/30 space-y-2.5 text-xs font-bengali shadow-xs"
+          onSubmit={handleAddLink}
+          className="p-3 rounded-xl bg-surface border border-primary/30 space-y-2.5 text-xs font-bengali shadow-xs animate-in fade-in"
         >
           <div className="flex items-center justify-between">
             <span className="font-bold text-text flex items-center gap-1.5">
@@ -326,7 +206,7 @@ export function LessonMaterialsManager({
             </span>
             <button
               type="button"
-              onClick={() => setShowExternalInput(false)}
+              onClick={() => setShowInput(false)}
               className="text-text-muted hover:text-text p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
@@ -334,19 +214,19 @@ export function LessonMaterialsManager({
           </div>
 
           <div className="p-2 rounded-lg bg-primary/5 border border-primary/15 text-text-muted text-[11px] leading-relaxed">
-            💡 <strong>টিপস:</strong> গুগল ড্রাইভের শেয়ার লিংক (<em>"Anyone with the link"</em>) এখানে পেস্ট করলে স্টুডেন্টরা সরাসরি দেখতে ও ডাউনলোড করতে পারবে।
+            💡 <strong>টিপস:</strong> গুগল ড্রাইভের শেয়ার লিংক (<em>"Anyone with the link can view"</em>) পেস্ট করলে ছাত্রছাত্রীরা সরাসরি ফুল স্ক্রিনে দেখতে ও ১-ক্লিকে ডাউনলোড করতে পারবে।
           </div>
 
           <div className="space-y-2">
             <div>
               <label className="text-[11px] text-text-muted block mb-1 font-medium">
-                ফাইলের লিংক *
+                ফাইলের লিংক (Google Drive / Dropbox / PDF লিঙ্ক) *
               </label>
               <input
                 type="url"
                 required
-                value={externalUrl}
-                onChange={(e) => setExternalUrl(e.target.value)}
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="https://drive.google.com/file/d/..."
                 className="input text-xs font-mono w-full"
               />
@@ -358,9 +238,9 @@ export function LessonMaterialsManager({
               </label>
               <input
                 type="text"
-                value={externalTitle}
-                onChange={(e) => setExternalTitle(e.target.value)}
-                placeholder="যেমন: লেকচার নোট ও হ্যান্ডআউট"
+                value={titleInput}
+                onChange={(e) => setTitleInput(e.target.value)}
+                placeholder="যেমন: লেকচার শিট ও প্র্যাকটিস প্রশ্ন"
                 className="input text-xs font-bengali w-full"
               />
             </div>
@@ -369,7 +249,7 @@ export function LessonMaterialsManager({
           <div className="flex items-center justify-end gap-2 pt-1">
             <button
               type="button"
-              onClick={() => setShowExternalInput(false)}
+              onClick={() => setShowInput(false)}
               className="btn btn-outline btn-xs font-bengali text-[11px]"
             >
               বাতিল
@@ -378,7 +258,7 @@ export function LessonMaterialsManager({
               type="submit"
               className="btn btn-primary btn-xs font-bengali text-[11px] font-bold shadow-xs"
             >
-              যুক্ত করুন
+              সংরক্ষণ করুন
             </button>
           </div>
         </form>
@@ -386,8 +266,8 @@ export function LessonMaterialsManager({
 
       {/* Materials List */}
       {materials.length === 0 ? (
-        <div className="py-2.5 px-3 rounded-xl border border-dashed border-border/80 text-center text-[11px] text-text-muted font-bengali">
-          এই ক্লাসে কোনো স্টাডি ম্যাটেরিয়াল নেই। উপরের বাটন দিয়ে যুক্ত করুন।
+        <div className="py-3 px-3 rounded-xl border border-dashed border-border/80 text-center text-[11px] text-text-muted font-bengali">
+          এই ক্লাসে কোনো স্টাডি ম্যাটেরিয়াল যুক্ত করা হয়নি। উপরের <strong>"লিংক যুক্ত করুন"</strong> বাটনে ক্লিক করে গুগল ড্রাইভ বা ক্লাউড লিংক দিন।
         </div>
       ) : (
         <div className="space-y-1.5">
@@ -427,7 +307,7 @@ export function LessonMaterialsManager({
                       </>
                     )}
                     <span>•</span>
-                    <span className="truncate max-w-[120px] sm:max-w-[200px] font-mono text-text-muted/60">
+                    <span className="truncate max-w-[140px] sm:max-w-[240px] font-mono text-text-muted/60">
                       {mat.fileUrl}
                     </span>
                   </div>
