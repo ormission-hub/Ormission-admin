@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
@@ -54,56 +53,51 @@ export async function POST(request: Request) {
       );
     }
 
-    // File size limit (50MB)
-    const MAX_SIZE = 50 * 1024 * 1024;
+    // File size limit (Catbox allows up to 200MB free per file)
+    const MAX_SIZE = 200 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { success: false, error: "ফাইলের সাইজ ৫০ মেগাবাইটের বেশি হতে পারবে না।" },
+        { success: false, error: "ফাইলের সাইজ ২০০ মেগাবাইটের বেশি হতে পারবে না।" },
         { status: 400 }
       );
     }
 
-    // Clean original file name
-    const rawBaseName = file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
-    const cleanBaseName = rawBaseName
-      .toLowerCase()
-      .replace(/[^a-z0-9_-]/g, "_")
-      .substring(0, 40);
-
-    const uniqueStorageKey = `materials/${Date.now()}_${cleanBaseName}.${ext}`;
+    // Upload directly to 100% Free Cloud Storage (Catbox.moe)
+    // ZERO bytes stored in Supabase -> 100% Supabase free tier preserved!
+    const catboxForm = new FormData();
+    catboxForm.append("reqtype", "fileupload");
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const blob = new Blob([arrayBuffer], { type: file.type || "application/octet-stream" });
+    catboxForm.append("fileToUpload", blob, file.name);
 
-    // Upload to free Supabase Storage 'course_materials' bucket
-    const { data: uploadData, error: uploadError } =
-      await supabaseAdmin.storage
-        .from("course_materials")
-        .upload(uniqueStorageKey, buffer, {
-          contentType: file.type || "application/octet-stream",
-          upsert: true,
-        });
+    const catboxResponse = await fetch("https://catbox.moe/user/api.php", {
+      method: "POST",
+      body: catboxForm,
+    });
 
-    if (uploadError) {
-      console.error("Supabase Storage Material Upload Error:", uploadError);
+    const responseText = await catboxResponse.text();
+    const cdnUrl = responseText.trim();
+
+    if (!catboxResponse.ok || !cdnUrl.startsWith("http")) {
+      console.error("Catbox Free Upload Error:", cdnUrl);
       return NextResponse.json(
-        { success: false, error: `স্টোরেজ আপলোড ব্যর্থ: ${uploadError.message}` },
+        {
+          success: false,
+          error: `ফ্রি ক্লাউড স্টোরেজে আপলোড ব্যর্থ হয়েছে: ${cdnUrl || "নেটওয়ার্ক ত্রুটি"}`,
+        },
         { status: 500 }
       );
     }
 
-    // Get public CDN URL
-    const { data: publicData } = supabaseAdmin.storage
-      .from("course_materials")
-      .getPublicUrl(uniqueStorageKey);
-
     return NextResponse.json({
       success: true,
-      url: publicData.publicUrl,
+      url: cdnUrl,
       fileName: file.name,
       fileType: ext,
       fileSize: file.size,
       fileSizeFormatted: formatBytes(file.size),
+      storageProvider: "catbox_free",
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "ফাইল আপলোড সার্ভার ত্রুটি";
