@@ -77,7 +77,6 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Hero Banner & CMS", labelBn: "হিরো ফটো ও ব্যানার", href: "/hero", icon: Layers, badge: "Live" },
       { label: "Free Resources", labelBn: "ফ্রি রিসোর্স CMS", href: "/resources", icon: FileDown },
-      { label: "Blog & Articles", labelBn: "ব্লগ ও আর্টিকেল", href: "/blog", icon: FileText },
       { label: "Testimonials", labelBn: "টেস্টিমোনিয়াল", href: "/testimonials", icon: MessageSquare },
       { label: "SEO & Metadata", labelBn: "এসইও মেটাডাটা", href: "/seo", icon: Search },
       { label: "Site Settings", labelBn: "সাইট সেটিংস", href: "/settings", icon: Settings },
