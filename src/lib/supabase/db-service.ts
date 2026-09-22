@@ -116,14 +116,37 @@ export interface DbInstructor {
 export interface DbStudent {
   id: string;
   full_name: string;
+  email?: string;
   phone?: string;
-  avatar_url?: string;
+  address?: string;
+  academic_level?: string;
+  avatar_url?: string | null;
   role: string;
   is_active: boolean;
+  email_verified?: boolean;
   created_at: string;
+  last_sign_in_at?: string | null;
   college?: string;
   target?: string;
   enrollments_count?: number;
+  orders_count?: number;
+  enrollments?: Array<{
+    id: string | number;
+    course_id: number;
+    enrolled_at?: string;
+    is_active?: boolean;
+    courses?: { id: number; title: string; title_bn: string; slug: string } | null;
+  }>;
+  orders?: Array<{
+    id: string;
+    order_number: string;
+    course_id?: number;
+    final_amount: number;
+    status: string;
+    payment_method?: string;
+    created_at: string;
+    courses?: { id: number; title: string; title_bn: string; slug: string } | null;
+  }>;
 }
 
 export interface DbOrder {
@@ -565,9 +588,16 @@ export const dbService = {
     }
   },
 
-  // ---- STUDENTS (PROFILES) ----
+  // ---- STUDENTS (PROFILES & AUTH USERS) ----
   async getStudents(): Promise<DbStudent[]> {
     try {
+      const res = await fetch("/api/students", { cache: "no-store" });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return json.data;
+      }
+
+      // Fallback directly to supabase profiles if API not reachable
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
@@ -576,13 +606,21 @@ export const dbService = {
       if (error) throw error;
       return data || [];
     } catch (e) {
-      console.error("Error fetching students from Supabase:", e);
+      console.error("Error fetching students:", e);
       return [];
     }
   },
 
   async toggleStudentStatus(id: string, currentStatus: boolean): Promise<boolean> {
     try {
+      const res = await fetch("/api/students", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, is_active: !currentStatus }),
+      });
+      const json = await res.json();
+      if (json.success) return true;
+
       const { error } = await supabase
         .from("profiles")
         .update({ is_active: !currentStatus })
