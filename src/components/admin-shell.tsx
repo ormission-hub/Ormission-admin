@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -31,6 +31,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Headphones,
+  Share2,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
@@ -76,6 +77,7 @@ const navGroups: NavGroup[] = [
     titleBn: "কন্টেন্ট ও মার্কেটিং CMS",
     items: [
       { label: "Hero Banner & CMS", labelBn: "হিরো ফটো ও ব্যানার", href: "/hero", icon: Layers, badge: "Live" },
+      { label: "Social Media Links", labelBn: "সোশ্যাল ও কমিউনিটি লিংক", href: "/social", icon: Share2, badge: "Live" },
       { label: "Free Resources", labelBn: "ফ্রি রিসোর্স CMS", href: "/resources", icon: FileDown },
       { label: "Testimonials", labelBn: "টেস্টিমোনিয়াল", href: "/testimonials", icon: MessageSquare },
       { label: "SEO & Metadata", labelBn: "এসইও মেটাডাটা", href: "/seo", icon: Search },
@@ -89,6 +91,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { resolvedTheme, toggleTheme } = useTheme();
+  const navScrollRef = useRef<HTMLDivElement>(null);
+  const activeNavRef = useRef<HTMLAnchorElement>(null);
 
   // Load saved sidebar state from localStorage safely after mount
   useEffect(() => {
@@ -102,7 +106,25 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const toggleCollapse = () => {
+  // Auto-scroll active nav item into view when pathname changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (activeNavRef.current && navScrollRef.current) {
+        activeNavRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "nearest",
+        });
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [pathname]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  const toggleCollapse = useCallback(() => {
     setIsCollapsed((prev) => {
       const next = !prev;
       try {
@@ -112,7 +134,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       }
       return next;
     });
-  };
+  }, []);
 
   // Keyboard shortcut: Ctrl + B or Cmd + B to toggle sidebar
   useEffect(() => {
@@ -127,7 +149,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, toggleCollapse]);
 
   // Determine current breadcrumb
   const currentNav = navGroups
@@ -135,15 +157,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     .find((item) => item.href === pathname);
 
   return (
-    <div className="min-h-screen flex flex-col bg-background text-text transition-colors duration-200">
-      {/* Top Header Bar */}
-      <header className="h-16 bg-surface/95 backdrop-blur-sm border-b border-border px-3 sm:px-4 lg:px-6 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-2 sm:gap-3">
+    <div className="admin-shell-root">
+      {/* Top Header Bar — fixed at top */}
+      <header className="admin-header">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           {/* Mobile hamburger toggle */}
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-colors border border-border/60"
+            className="lg:hidden p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-colors border border-border/60 shrink-0"
             aria-label="Toggle mobile navigation menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -153,8 +175,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={toggleCollapse}
-            className="hidden lg:flex items-center justify-center p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-all border border-transparent hover:border-border"
-            title={isCollapsed ? "সাইডবার বড় করুন / Expand sidebar (Ctrl+B)" : "সাইডবার লুকান / Collapse sidebar (Ctrl+B)"}
+            className="hidden lg:flex items-center justify-center p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-all border border-transparent hover:border-border shrink-0"
+            title={isCollapsed ? "সাইডবার বড় করুন / Expand sidebar (Ctrl+B)" : "সাইডবার লুকান / Collapse sidebar (Ctrl+B)"}
             aria-label="Toggle sidebar collapse"
           >
             {isCollapsed ? (
@@ -165,7 +187,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </button>
 
           {/* Brand Logo & Tag */}
-          <Link href="/" className="flex items-center gap-2.5 group">
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative w-9 h-9 rounded-xl overflow-hidden shadow-xs border border-blue-600/30 bg-[#012c94] flex items-center justify-center group-hover:border-blue-500 transition-colors shrink-0">
               <Image
                 src={brandLogoImg}
@@ -186,17 +208,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           {/* Breadcrumbs on Desktop */}
-          <div className="hidden md:flex items-center gap-2 text-xs text-text-muted ml-3 pl-3 border-l border-border">
-            <span>Console</span>
-            <ChevronRight className="w-3 h-3 text-text-muted/60" />
-            <span className="text-text font-semibold">
+          <div className="hidden md:flex items-center gap-2 text-xs text-text-muted ml-3 pl-3 border-l border-border min-w-0">
+            <span className="shrink-0">Console</span>
+            <ChevronRight className="w-3 h-3 text-text-muted/60 shrink-0" />
+            <span className="text-text font-semibold truncate">
               {currentNav ? currentNav.label : "Dashboard"}
             </span>
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           {/* Dark Mode Toggle Button */}
           <button
             type="button"
@@ -235,8 +257,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main Layout Area */}
-      <div className="flex-1 flex overflow-hidden relative">
+      {/* Body: Sidebar + Content */}
+      <div className="admin-body">
         {/* Backdrop for Mobile Drawer */}
         {isMobileMenuOpen && (
           <div
@@ -246,23 +268,16 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           />
         )}
 
-        {/* Left Sidebar (Desktop Collapsible + Mobile Slide-over Drawer) */}
+        {/* Left Sidebar */}
         <aside
-          className={`
-            fixed lg:static inset-y-0 left-0 z-50 lg:z-30
-            bg-surface border-r border-border
-            transition-all duration-300 ease-in-out
-            flex flex-col justify-between
-            ${
-              isMobileMenuOpen
-                ? "translate-x-0 w-72 max-w-[85vw] shadow-2xl"
-                : "-translate-x-full lg:translate-x-0"
-            }
-            ${isCollapsed ? "lg:w-[72px]" : "lg:w-68"}
-          `}
+          className={`admin-sidebar ${
+            isMobileMenuOpen
+              ? "admin-sidebar--open"
+              : "admin-sidebar--closed"
+          } ${isCollapsed ? "admin-sidebar--collapsed" : "admin-sidebar--expanded"}`}
         >
           {/* Mobile Drawer Top Header */}
-          <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-surface-secondary/50">
+          <div className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-surface-secondary/50 shrink-0">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#012c94] p-0.5 border border-blue-600/40">
                 <Image
@@ -289,12 +304,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
 
-          {/* Nav groups */}
+          {/* Scrollable Nav groups */}
           <div
-            className={`
-              flex-1 p-3 space-y-5
-              ${isCollapsed ? "overflow-y-auto lg:overflow-visible" : "overflow-y-auto"}
-            `}
+            ref={navScrollRef}
+            className="admin-sidebar-nav"
           >
             {navGroups.map((group) => (
               <div key={group.title} className="space-y-1">
@@ -306,7 +319,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 ) : (
                   <div className="px-3 flex items-center justify-between text-[11px] font-bold text-text-muted uppercase tracking-wider mb-1.5">
                     <span>{group.title}</span>
-                    <span className="text-[10px] font-normal text-text-muted/60 font-bengali">
+                    <span className="text-[10px] font-normal text-text-muted/60 font-bengali hidden sm:inline">
                       {group.titleBn}
                     </span>
                   </div>
@@ -320,6 +333,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                     return (
                       <Link
                         key={item.href}
+                        ref={isActive ? activeNavRef : undefined}
                         href={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
                         title={`${item.label} (${item.labelBn})`}
@@ -362,7 +376,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                         {/* Badge */}
                         {item.badge && (
                           <span
-                            className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 ${
+                            className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 shrink-0 ${
                               isCollapsed ? "lg:hidden" : "inline-block"
                             }`}
                           >
@@ -404,7 +418,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
 
           {/* Footer Controls in Sidebar */}
-          <div className="p-3 border-t border-border bg-surface-secondary/40 space-y-2">
+          <div className="p-3 border-t border-border bg-surface-secondary/40 space-y-2 shrink-0">
             {/* Dedicated Desktop Collapse / Expand Button */}
             <button
               type="button"
@@ -414,7 +428,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 hover:text-text hover:bg-surface-secondary transition-all w-full border border-border/50
                 ${isCollapsed ? "justify-center p-2.5" : "justify-between px-3 py-2"}
               `}
-              title={isCollapsed ? "সাইডবার বড় করুন / Expand (Ctrl+B)" : "সাইডবার লুকান / Collapse (Ctrl+B)"}
+              title={isCollapsed ? "সাইডবার বড় করুন / Expand (Ctrl+B)" : "সাইডবার লুকান / Collapse (Ctrl+B)"}
             >
               <div className="flex items-center gap-2">
                 {isCollapsed ? (
@@ -455,11 +469,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </aside>
 
         {/* Page Content Container */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 transition-all duration-300">
+        <main className="admin-main">
           {children}
         </main>
       </div>
     </div>
   );
 }
-

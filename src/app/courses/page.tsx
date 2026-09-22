@@ -364,7 +364,8 @@ export default function AdminCoursesPage() {
               className="btn btn-primary flex-1 sm:flex-initial h-10 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white shadow-md shadow-primary/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <PlusCircle className="w-4 h-4" />
-              <span>নতুন কোর্স তৈরি</span>
+              <span className="hidden sm:inline">নতুন কোর্স তৈরি</span>
+              <span className="sm:hidden">কোর্স তৈরি</span>
             </Link>
           </div>
         </div>

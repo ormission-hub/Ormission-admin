@@ -256,9 +256,9 @@ export default function AdminInstructorsPage() {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-3 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text font-bengali">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-text font-bengali">
               শিক্ষক ও মেন্টর প্যানেল ({instructors.length})
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
@@ -270,7 +270,7 @@ export default function AdminInstructorsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={loadInstructors}
@@ -287,7 +287,8 @@ export default function AdminInstructorsPage() {
             className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 shadow-xs"
           >
             <Plus className="w-4 h-4" />
-            <span>নতুন শিক্ষক যোগ করুন</span>
+            <span className="hidden sm:inline">নতুন শিক্ষক যোগ করুন</span>
+            <span className="sm:hidden">যোগ করুন</span>
           </button>
         </div>
       </div>

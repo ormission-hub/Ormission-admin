@@ -64,9 +64,9 @@ export default function AdminDashboardPage() {
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Top Banner & Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl lg:text-3xl font-bold text-text font-bengali tracking-tight">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl lg:text-3xl font-bold text-text font-bengali tracking-tight">
               অ্যাডমিন ড্যাশবোর্ড ও বিশ্লেষণ
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
@@ -101,7 +101,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Revenue */}
         <div className="bg-surface rounded-xl border border-border p-5 shadow-xs hover:border-primary/40 transition-colors">
           <div className="flex items-center justify-between mb-3">

@@ -46,10 +46,10 @@ export default function AdminSEOPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text font-bengali">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 border-b border-border">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-text font-bengali">
               সার্চ ইঞ্জিন অপটিমাইজেশন (SEO) সেটিংস
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">

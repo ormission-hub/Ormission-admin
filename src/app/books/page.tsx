@@ -654,7 +654,7 @@ export default function AdminBooksPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start md:self-auto">
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
           <button
             type="button"
             onClick={loadBooks}
@@ -672,7 +672,8 @@ export default function AdminBooksPage() {
             className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-2 shadow-md shadow-primary/20"
           >
             <PlusCircle className="w-4 h-4" />
-            <span>নতুন বই যুক্ত করুন</span>
+            <span className="hidden sm:inline">নতুন বই যুক্ত করুন</span>
+            <span className="sm:hidden">বই যুক্ত করুন</span>
           </button>
         </div>
       </div>

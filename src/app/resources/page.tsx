@@ -203,9 +203,9 @@ export default function AdminResourcesPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text font-bengali">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-text font-bengali">
               ফ্রি রিসোর্স ও লেকচার শিট CMS ({resources.length})
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
@@ -217,7 +217,7 @@ export default function AdminResourcesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={loadResources}
@@ -234,7 +234,8 @@ export default function AdminResourcesPage() {
             className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 shadow-xs"
           >
             <Plus className="w-4 h-4" />
-            <span>নতুন শিট আপলোড</span>
+            <span className="hidden sm:inline">নতুন শিট আপলোড</span>
+            <span className="sm:hidden">যোগ করুন</span>
           </button>
         </div>
       </div>

@@ -192,9 +192,9 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text font-bengali">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-text font-bengali">
               প্ল্যাটফর্ম ও পেমেন্ট গেটওয়ে সেটিংস
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
@@ -390,9 +390,18 @@ export default function AdminSettingsPage() {
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bengali">
-                ফুটার ও ড্যাশবোর্ড সিঙ্ক
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bengali">
+                  ফুটার ও ড্যাশবোর্ড সিঙ্ক
+                </span>
+                <Link
+                  href="/social"
+                  className="btn btn-outline btn-xs font-bengali text-[11px] flex items-center gap-1"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  <span>ফুল পেজে ম্যানেজ করুন →</span>
+                </Link>
+              </div>
             </div>
 
             {/* Community Banner Copy */}

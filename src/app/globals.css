@@ -75,12 +75,25 @@
   --text-muted: #94A3B8;
   --border: #2D3A4F;
 
+  --primary: #3B82F6;
+  --primary-hover: #2563EB;
+  --primary-light: #1E3A8A;
+
+  --secondary: #2DD4BF;
+  --secondary-light: #134E4A;
+
+  --accent: #F4B942;
+  --accent-light: #422006;
+
   --success: #34D399;
   --warning: #FBBF24;
   --error: #F87171;
 }
 
 html, body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
   background-color: var(--background);
   color: var(--text);
   font-family: var(--font-base);
@@ -93,44 +106,106 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea {
   font-family: inherit;
 }
 
+/* ================================================================
+   Button Design System
+   ================================================================ */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.375rem;
   font-weight: 600;
   border-radius: var(--radius-md);
-  transition: all 150ms ease;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  text-decoration: none;
+  line-height: 1.25;
+}
+
+.btn:disabled, .btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn-primary {
   background-color: var(--primary);
-  color: #ffffff;
+  color: #ffffff !important;
+  box-shadow: 0 1px 3px 0 rgba(37, 99, 235, 0.3), 0 1px 2px -1px rgba(37, 99, 235, 0.2);
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background-color: var(--primary-hover);
+  box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
   background-color: var(--secondary);
-  color: #ffffff;
+  color: #ffffff !important;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
 }
 
 .btn-outline {
-  border: 1px solid var(--border);
+  border-color: color-mix(in srgb, var(--border) 70%, var(--text) 30%);
   background-color: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.btn-outline:hover:not(:disabled) {
+  background-color: var(--surface-secondary);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.dark .btn-outline {
+  border-color: rgba(255, 255, 255, 0.2);
+  background-color: var(--surface-secondary);
   color: var(--text);
 }
 
-.btn-outline:hover {
-  background-color: var(--surface-secondary);
-  border-color: var(--text-muted);
+.dark .btn-outline:hover:not(:disabled) {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-xs {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  border-radius: var(--radius-sm);
 }
 
 .btn-sm {
-  padding: 0.375rem 0.75rem;
+  padding: 0.4rem 0.85rem;
   font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.btn-md, .btn-base {
+  padding: 0.55rem 1.15rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
 }
 
 .input {
@@ -145,7 +220,7 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea {
 
 .input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(91, 141, 239, 0.2);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
 }
 
 /* Custom scrollbar */
@@ -162,4 +237,205 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
+}
+
+/* ================================================================
+   Admin Shell Layout System (Independent Scroll & Mobile Drawer)
+   ================================================================ */
+
+/* Root container: exactly fills viewport height, NO window scroll */
+.admin-shell-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  max-height: 100vh;
+  max-height: 100dvh;
+  overflow: hidden;
+  background-color: var(--background);
+  color: var(--text);
+  transition: background-color 200ms ease, color 200ms ease;
+}
+
+/* Fixed header at top */
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 3.5rem; /* 56px */
+  min-height: 3.5rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  background-color: color-mix(in srgb, var(--surface) 95%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+@media (min-width: 640px) {
+  .admin-header {
+    height: 4rem; /* 64px */
+    min-height: 4rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+@media (min-width: 1024px) {
+  .admin-header {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Body: sidebar + main content, takes remaining height */
+.admin-body {
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  position: relative;
+  height: calc(100vh - 3.5rem);
+  height: calc(100dvh - 3.5rem);
+  overflow: hidden;
+}
+@media (min-width: 640px) {
+  .admin-body {
+    height: calc(100vh - 4rem);
+    height: calc(100dvh - 4rem);
+  }
+}
+
+/* Sidebar base */
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
+  transition: transform 300ms ease-in-out, width 300ms ease-in-out;
+  overflow: hidden;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+}
+
+/* Mobile: fixed slide-over drawer */
+@media (max-width: 1023px) {
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 50;
+    width: 18rem; /* 288px */
+    max-width: 85vw;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  }
+  .admin-sidebar--open {
+    transform: translateX(0);
+  }
+  .admin-sidebar--closed {
+    transform: translateX(-100%);
+  }
+}
+
+/* Desktop: sticky sidebar that fills the body container */
+@media (min-width: 1024px) {
+  .admin-sidebar {
+    position: relative;
+    height: 100%;
+    flex-shrink: 0;
+    z-index: 30;
+  }
+  .admin-sidebar--collapsed {
+    width: 72px;
+  }
+  .admin-sidebar--expanded {
+    width: 17rem; /* 272px */
+  }
+}
+
+/* Sidebar scrollable navigation area: STRICT INDEPENDENT SCROLL */
+.admin-sidebar-nav {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Main content area: STRICT INDEPENDENT SCROLL */
+.admin-main {
+  flex: 1 1 0%;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem;
+  transition: all 300ms ease;
+}
+@media (min-width: 640px) {
+  .admin-main {
+    padding: 1.5rem;
+  }
+}
+@media (min-width: 1024px) {
+  .admin-main {
+    padding: 2rem;
+  }
+}
+
+/* ================================================================
+   Responsive utility overrides for admin pages
+   ================================================================ */
+
+/* Ensure page headers wrap on mobile */
+.admin-page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+@media (min-width: 640px) {
+  .admin-page-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+/* Action button groups: wrap on mobile */
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Force tables to scroll horizontally on mobile */
+.admin-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-left: -1rem;
+  margin-right: -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .admin-table-wrapper {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }

@@ -177,11 +177,11 @@ export default function AdminOrdersPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-bengali">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text font-bengali">
-              ম্যানুয়াল পেমেন্ট ভেরিফিকেশন ও অর্ডার অডিট
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 pb-2 border-b border-border">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-text font-bengali">
+              ম্যানুয়াল পেমেন্ট ভেরিফিকেশন ও অর্ডার অডিট
             </h1>
             {pendingCount > 0 && (
               <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500 text-white animate-pulse">
@@ -194,7 +194,7 @@ export default function AdminOrdersPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={loadOrders}
@@ -211,7 +211,8 @@ export default function AdminOrdersPage() {
             className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 shadow-xs"
           >
             <Download className="w-4 h-4" />
-            <span>CSV রিপোর্ট ডাউনলোড</span>
+            <span className="hidden sm:inline">CSV রিপোর্ট ডাউনলোড</span>
+            <span className="sm:hidden">CSV</span>
           </button>
         </div>
       </div>

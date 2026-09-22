@@ -297,12 +297,12 @@ export default function AdminSupportPage() {
     <div className="space-y-6 font-bengali p-2 lg:p-4 max-w-7xl mx-auto">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary px-2.5 py-0.5 rounded-full bg-primary/10 mb-1">
             <Headphones className="w-3.5 h-3.5" />
             <span>অ্যাডমিন হেল্পডেস্ক ও সাপোর্ট প্যানেল</span>
           </div>
-          <h1 className="text-2xl lg:text-3xl font-black text-text">
+          <h1 className="text-lg sm:text-2xl lg:text-3xl font-black text-text">
             সাপোর্ট টিকিট ও শিক্ষার্থী সহায়তা
           </h1>
           <p className="text-xs text-text-muted mt-0.5">
@@ -310,14 +310,16 @@ export default function AdminSupportPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={loadTickets}
-          className="btn btn-outline btn-sm text-xs flex items-center gap-2"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-          <span>রিফ্রেশ</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+          <button
+            type="button"
+            onClick={loadTickets}
+            className="btn btn-outline btn-sm text-xs flex items-center gap-2"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
+            <span>রিফ্রেশ</span>
+          </button>
+        </div>
       </div>
 
       {/* Metric Cards */}

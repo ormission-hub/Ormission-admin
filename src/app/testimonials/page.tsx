@@ -290,9 +290,9 @@ export default function AdminTestimonialsPage() {
     <div className="space-y-6 max-w-7xl mx-auto font-bengali">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black text-text tracking-tight">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-lg sm:text-2xl font-black text-text tracking-tight">
               শিক্ষার্থীদের মতামত ও রিভিউ ({list.length})
             </h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20">
@@ -304,7 +304,7 @@ export default function AdminTestimonialsPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
             onClick={loadTestimonials}
@@ -321,7 +321,8 @@ export default function AdminTestimonialsPage() {
             className="btn btn-primary btn-sm font-bold flex items-center gap-1.5 shadow-sm shadow-primary/25"
           >
             <Plus className="w-4 h-4" />
-            <span>নতুন রিভিউ যোগ করুন</span>
+            <span className="hidden sm:inline">নতুন রিভিউ যোগ করুন</span>
+            <span className="sm:hidden">যোগ করুন</span>
           </button>
         </div>
       </div>

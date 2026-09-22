@@ -105,9 +105,9 @@ export default function AdminStudentsPage() {
     <div className="space-y-6 max-w-7xl mx-auto pb-12 font-bengali">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-text">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-lg sm:text-2xl font-bold text-text">
               শিক্ষার্থী ব্যবস্থাপনা ({students.length})
             </h1>
             <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">

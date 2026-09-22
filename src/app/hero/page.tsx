@@ -662,7 +662,7 @@ export default function HeroSettingsPage() {
               <span className="text-[11px] text-text-muted font-bengali">হিরো ব্যানার কন্ট্রোল</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-text tracking-tight flex items-center gap-3">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-text tracking-tight flex items-center gap-3">
               Hero Section & Media Studio
             </h1>
 
