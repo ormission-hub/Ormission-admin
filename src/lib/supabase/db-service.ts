@@ -702,6 +702,14 @@ export const dbService = {
 
   async createResource(resData: Partial<DbResource>): Promise<DbResource | null> {
     try {
+      const res = await fetch("/api/resources", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(resData),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return json.data;
+
       const { data, error } = await supabase
         .from("resources")
         .insert([resData])
@@ -714,6 +722,36 @@ export const dbService = {
       console.error("Error creating resource in Supabase:", e);
       return null;
     }
+  },
+
+  async updateResource(id: number | string, resData: Partial<DbResource>): Promise<DbResource | null> {
+    try {
+      const res = await fetch("/api/resources", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...resData }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return json.data;
+
+      const { data, error } = await supabase
+        .from("resources")
+        .update(resData)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (e) {
+      console.error("Error updating resource in Supabase:", e);
+      return null;
+    }
+  },
+
+  async toggleResourcePublished(id: number | string, isPublished: boolean): Promise<boolean> {
+    const updated = await this.updateResource(id, { is_published: isPublished });
+    return !!updated;
   },
 
   async deleteResource(id: number | string): Promise<boolean> {
