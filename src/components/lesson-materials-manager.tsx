@@ -21,6 +21,7 @@ export interface LessonMaterialItem {
   fileSize?: number | string | null;
   fileSizeFormatted?: string;
   sortOrder?: number;
+  isFree?: boolean;
 }
 
 interface LessonMaterialsManagerProps {
@@ -114,6 +115,7 @@ export function LessonMaterialsManager({
   const [showInput, setShowInput] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [titleInput, setTitleInput] = useState("");
+  const [isFreeInput, setIsFreeInput] = useState(false);
 
   const handleAddLink = (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,17 +134,25 @@ export function LessonMaterialsManager({
       fileType: gDrive ? "pdf" : (ext.length > 5 ? "link" : ext),
       fileSize: null,
       sortOrder: materials.length + 1,
+      isFree: isFreeInput,
     };
 
     onChange([...materials, newMaterial]);
     setUrlInput("");
     setTitleInput("");
+    setIsFreeInput(false);
     setShowInput(false);
   };
 
   const handleUpdateTitle = (index: number, newTitle: string) => {
     const updated = [...materials];
     updated[index] = { ...updated[index], title: newTitle };
+    onChange(updated);
+  };
+
+  const handleToggleFree = (index: number) => {
+    const updated = [...materials];
+    updated[index] = { ...updated[index], isFree: !updated[index].isFree };
     onChange(updated);
   };
 
@@ -244,6 +254,24 @@ export function LessonMaterialsManager({
                 className="input text-xs font-bengali w-full"
               />
             </div>
+
+            {/* Free Material Checkbox */}
+            <label className="flex items-center gap-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isFreeInput}
+                onChange={(e) => setIsFreeInput(e.target.checked)}
+                className="checkbox checkbox-xs rounded text-emerald-500"
+              />
+              <div>
+                <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
+                  ফ্রি প্রিভিউ ম্যাটেরিয়াল (সবার জন্য উন্মুক্ত)
+                </span>
+                <span className="block text-[10.5px] text-text-muted">
+                  কোর্স বা ক্লাস পেইড হলেও শিক্ষার্থীরা কেনার আগে এই PDF/নোট ফ্রিতে প্রিভিউ দেখতে পারবে।
+                </span>
+              </div>
+            </label>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-1">
@@ -312,6 +340,20 @@ export function LessonMaterialsManager({
                     </span>
                   </div>
                 </div>
+
+                {/* Free / Paid Toggle Badge */}
+                <button
+                  type="button"
+                  onClick={() => handleToggleFree(idx)}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-bengali border transition-all cursor-pointer shrink-0 ${
+                    mat.isFree
+                      ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
+                      : "bg-surface-secondary border-border text-text-muted hover:text-text hover:border-slate-500"
+                  }`}
+                  title={mat.isFree ? "ফ্রি প্রিভিউ (ক্লিক করে পেইড করুন)" : "পেইড অনলি (ক্লিক করে ফ্রি করুন)"}
+                >
+                  {mat.isFree ? "✓ ফ্রি" : "পেইড"}
+                </button>
 
                 {/* Actions */}
                 <div className="flex items-center gap-1 shrink-0">

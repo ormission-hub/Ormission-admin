@@ -214,14 +214,19 @@ export default function EditCourseStudioPage({
                 const mats: LessonMaterialItem[] = Array.isArray(l.lesson_resources)
                   ? [...l.lesson_resources]
                       .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
-                      .map((res: any) => ({
-                        id: res.id,
-                        title: res.title || "Material",
-                        fileUrl: res.file_url || "",
-                        fileType: res.file_type || "pdf",
-                        fileSize: res.file_size,
-                        sortOrder: res.sort_order || 1,
-                      }))
+                      .map((res: any) => {
+                        const isFree = Boolean(res.isFree || res.is_free || (typeof res.title === "string" && res.title.includes("[FREE]")));
+                        const cleanTitle = typeof res.title === "string" ? res.title.replace(/\[FREE\]/gi, "").trim() : "Material";
+                        return {
+                          id: res.id,
+                          title: cleanTitle || "Material",
+                          fileUrl: res.file_url || "",
+                          fileType: res.file_type || "pdf",
+                          fileSize: res.file_size,
+                          sortOrder: res.sort_order || 1,
+                          isFree,
+                        };
+                      })
                   : [];
 
                 return {

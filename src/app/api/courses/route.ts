@@ -153,11 +153,21 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
               const mat = materials[mIdx];
               const fileUrl = mat.fileUrl || mat.file_url || mat.url;
               if (fileUrl && fileUrl.trim() !== "") {
+                const isFree = Boolean(mat.isFree || mat.is_free);
+                const rawTitle = (mat.title && mat.title.trim())
+                  ? mat.title.replace(/\[FREE\]/gi, "").trim()
+                  : `Material ${mIdx + 1}`;
+                const finalTitle = isFree ? `${rawTitle} [FREE]` : rawTitle;
+
+                const rawType = (mat.fileType || mat.file_type || fileUrl.split(".").pop()?.toLowerCase().split("?")[0] || "pdf").toLowerCase();
+                const allowedTypes = ["pdf", "doc", "link", "image", "other"];
+                const fileType = allowedTypes.includes(rawType) ? rawType : (rawType.includes("pdf") ? "pdf" : (rawType.includes("doc") ? "doc" : "other"));
+
                 allResourcesToInsert.push({
                   lesson_id: insertedLesson.id,
-                  title: (mat.title && mat.title.trim()) ? mat.title.trim() : `Material ${mIdx + 1}`,
+                  title: finalTitle,
                   file_url: fileUrl.trim(),
-                  file_type: mat.fileType || mat.file_type || (fileUrl.split(".").pop()?.toLowerCase().split("?")[0] || "pdf"),
+                  file_type: fileType,
                   file_size: typeof mat.fileSize === "number" ? mat.fileSize : (typeof mat.file_size === "number" ? mat.file_size : null),
                   sort_order: mat.sortOrder || mat.sort_order || mIdx + 1,
                 });
@@ -300,6 +310,14 @@ export async function GET(request: Request) {
               }
               if (Array.isArray(les.lesson_resources)) {
                 les.lesson_resources.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0));
+                les.lesson_resources.forEach((r: any) => {
+                  const isFree = Boolean(r.is_free || (typeof r.title === "string" && r.title.includes("[FREE]")));
+                  r.isFree = isFree;
+                  r.is_free = isFree;
+                  if (typeof r.title === "string") {
+                    r.title = r.title.replace(/\[FREE\]/gi, "").trim();
+                  }
+                });
               }
             });
           }
