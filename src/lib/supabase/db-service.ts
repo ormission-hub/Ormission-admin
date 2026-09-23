@@ -50,6 +50,7 @@ export interface DbCourse {
   category_id?: number | null;
   subcategory_id?: number | null;
   instructor_id?: number | null;
+  instructor_ids?: number[];
   price: number;
   original_price?: number;
   is_free: boolean;

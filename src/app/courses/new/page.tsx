@@ -31,6 +31,7 @@ import {
   AlertTriangle,
   Loader2,
   Star,
+  GraduationCap,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
@@ -91,6 +92,7 @@ export default function CreateCourseWizardPage() {
     subtitleBn: "",
     categorySlug: "",
     instructorId: "",
+    instructorIds: [] as string[],
     level: "Intermediate",
     badge: "নতুন ব্যাচ",
     initialEnrolled: "0",
@@ -148,13 +150,31 @@ export default function CreateCourseWizardPage() {
           setBasicInfo((prev) => ({ ...prev, categorySlug: cats[0].id.toString() }));
         }
         if (insts.length > 0) {
-          setBasicInfo((prev) => ({ ...prev, instructorId: insts[0].id.toString() }));
+          setBasicInfo((prev) => ({
+            ...prev,
+            instructorId: insts[0].id.toString(),
+            instructorIds: [insts[0].id.toString()],
+          }));
         }
       })
       .finally(() => {
         setIsLoadingLists(false);
       });
   }, []);
+
+  const toggleInstructor = (instId: string) => {
+    setBasicInfo((prev) => {
+      const exists = prev.instructorIds.includes(instId);
+      const nextIds = exists
+        ? prev.instructorIds.filter((id) => id !== instId)
+        : [...prev.instructorIds, instId];
+      return {
+        ...prev,
+        instructorIds: nextIds,
+        instructorId: nextIds[0] || "",
+      };
+    });
+  };
 
   // Handle direct device file upload
   const handleDeviceFileUpload = async (file: File) => {
@@ -325,13 +345,17 @@ export default function CreateCourseWizardPage() {
             .replace(/^-|-$/g, "")
         : `course-${Date.now()}`;
 
+      const selectedInstIds = (basicInfo.instructorIds || []).map(Number).filter((n) => !isNaN(n) && n > 0);
+      const primaryInstId = selectedInstIds[0] || (basicInfo.instructorId ? Number(basicInfo.instructorId) : null);
+
       const res = await dbService.createCourse({
         title: basicInfo.titleEn || basicInfo.titleBn,
         title_bn: basicInfo.titleBn,
         slug: slug,
         short_description: basicInfo.subtitleBn,
         category_id: Number(basicInfo.categorySlug) || null,
-        instructor_id: Number(basicInfo.instructorId) || null,
+        instructor_id: primaryInstId,
+        instructor_ids: selectedInstIds,
         price: Number(pricing.discountPrice) || 0,
         original_price: Number(pricing.originalPrice) || 0,
         is_free: Number(pricing.discountPrice) === 0,
@@ -345,6 +369,7 @@ export default function CreateCourseWizardPage() {
           rating: Number(basicInfo.ratingScore) || 5.0,
           reviews_count: Number(basicInfo.reviewsCount) || 125,
           show_rating: basicInfo.showRating,
+          instructor_ids: selectedInstIds,
         },
         curriculum: curriculum,
       } as any);
@@ -614,26 +639,88 @@ export default function CreateCourseWizardPage() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-text font-bengali mb-1.5">
-                    ইন্সট্রাক্টর নির্বাচন করুন <span className="text-error">*</span>
-                  </label>
-                  <select
-                    value={basicInfo.instructorId}
-                    onChange={(e) => setBasicInfo({ ...basicInfo, instructorId: e.target.value })}
-                    className="input text-xs sm:text-sm font-bengali w-full"
-                  >
-                    {isLoadingLists ? (
-                      <option value="">ইন্সট্রাক্টর লোড হচ্ছে...</option>
-                    ) : (
-                      instructorsList.map((inst) => (
-                        <option key={inst.id} value={inst.id.toString()}>
-                          {inst.name_bn || inst.name} ({inst.institution || "মেন্টর"})
-                        </option>
-                      ))
-                    )}
-                  </select>
+              <div className="space-y-2 pt-2 border-t border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div>
+                    <label className="text-xs font-bold text-text flex items-center gap-1.5 font-bengali">
+                      <GraduationCap className="w-4 h-4 text-primary" />
+                      <span>কোর্স ইন্সট্রাক্টরবৃন্দ / শিক্ষক (একাধিক নির্বাচনযোগ্য) <span className="text-error">*</span></span>
+                    </label>
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      একটি কোর্সে ১ জন বা তার বেশি শিক্ষক নির্বাচন করুন। প্রথমে নির্বাচিত শিক্ষক প্রধান শিক্ষক হিসেবে থাকবেন।
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 shrink-0 self-start sm:self-auto">
+                    নির্বাচিত: {basicInfo.instructorIds.length} জন
+                  </span>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                  {instructorsList.map((inst) => {
+                    const isSelected = basicInfo.instructorIds.includes(String(inst.id));
+                    const isPrimary = basicInfo.instructorIds[0] === String(inst.id);
+
+                    return (
+                      <div
+                        key={inst.id}
+                        onClick={() => toggleInstructor(String(inst.id))}
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all select-none ${
+                          isSelected
+                            ? "bg-primary/10 border-primary/60 shadow-xs"
+                            : "bg-surface-secondary/40 border-border hover:border-border-hover hover:bg-surface-secondary"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-border bg-slate-800">
+                            {inst.photo_url ? (
+                              <img
+                                src={inst.photo_url}
+                                alt={inst.name_bn || inst.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-bold text-xs text-primary bg-primary/10">
+                                {(inst.name_bn?.[0] || inst.name?.[0] || "I").toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="font-bold text-xs text-text truncate">
+                              {inst.name_bn || inst.name}
+                            </h5>
+                            <p className="text-[10px] text-text-muted truncate">
+                              {inst.institution || "Ormission Faculty"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isPrimary && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              প্রধান
+                            </span>
+                          )}
+                          <div
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? "bg-primary border-primary text-white"
+                                : "border-border bg-surface"
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {basicInfo.instructorIds.length === 0 && (
+                  <p className="text-[11px] text-rose-500 font-bold mt-1">
+                    * অনুগ্রহ করে কমপক্ষে একজন ইন্সট্রাক্টর নির্বাচন করুন।
+                  </p>
+                )}
+              </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

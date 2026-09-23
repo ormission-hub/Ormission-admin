@@ -372,6 +372,9 @@ export async function GET(request: Request) {
     const enrichedCourses = (data || []).map((c: any) => ({
       ...c,
       enrollment_count: enrollmentMap[c.id] !== undefined ? enrollmentMap[c.id] : 0,
+      instructor_ids: Array.isArray(c.features?.instructor_ids)
+        ? c.features.instructor_ids
+        : (c.instructor_id ? [c.instructor_id] : []),
     }));
 
     return NextResponse.json({ success: true, data: enrichedCourses });
@@ -388,11 +391,16 @@ export async function POST(request: Request) {
     const { curriculum, ...rest } = body;
 
     const incomingFeatures = (rest.features && typeof rest.features === "object") ? rest.features : {};
+    const rawInstIds = Array.isArray(rest.instructor_ids)
+      ? rest.instructor_ids.map(Number).filter((n: number) => !isNaN(n) && n > 0)
+      : (rest.instructor_id ? [Number(rest.instructor_id)].filter((n: number) => !isNaN(n) && n > 0) : []);
+
     const features = {
       ...incomingFeatures,
       rating: rest.rating !== undefined ? Number(rest.rating) : (incomingFeatures.rating !== undefined ? Number(incomingFeatures.rating) : 5.0),
       reviews_count: rest.reviews_count !== undefined ? Number(rest.reviews_count) : (incomingFeatures.reviews_count !== undefined ? Number(incomingFeatures.reviews_count) : 125),
       show_rating: rest.show_rating !== undefined ? Boolean(rest.show_rating) : (incomingFeatures.show_rating !== undefined ? Boolean(incomingFeatures.show_rating) : true),
+      instructor_ids: rawInstIds,
     };
 
     const coursePayload = {
@@ -404,7 +412,7 @@ export async function POST(request: Request) {
       thumbnail_url: rest.thumbnail_url || null,
       category_id: rest.category_id ? Number(rest.category_id) : null,
       subcategory_id: rest.subcategory_id ? Number(rest.subcategory_id) : null,
-      instructor_id: rest.instructor_id ? Number(rest.instructor_id) : null,
+      instructor_id: rawInstIds[0] || (rest.instructor_id ? Number(rest.instructor_id) : null),
       price: Number(rest.price) || 0,
       original_price: rest.original_price ? Number(rest.original_price) : null,
       is_free: rest.is_free ?? false,
@@ -448,14 +456,20 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, categories, instructors, course_sections, curriculum, rating, reviews_count, show_rating, ...updates } = body;
+    const { id, categories, instructors, course_sections, curriculum, rating, reviews_count, show_rating, instructor_ids, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Course ID is required" }, { status: 400 });
     }
 
-    // Merge rating metadata into features JSONB column cleanly
-    if (rating !== undefined || reviews_count !== undefined || show_rating !== undefined || updates.features !== undefined) {
+    let rawInstIds: number[] | undefined = undefined;
+    if (Array.isArray(instructor_ids)) {
+      rawInstIds = instructor_ids.map(Number).filter((n: number) => !isNaN(n) && n > 0);
+      updates.instructor_id = rawInstIds[0] || null;
+    }
+
+    // Merge rating and instructor metadata into features JSONB column cleanly
+    if (rating !== undefined || reviews_count !== undefined || show_rating !== undefined || updates.features !== undefined || rawInstIds !== undefined) {
       let mergedFeatures: Record<string, any> = {};
       if (updates.features && typeof updates.features === "object") {
         mergedFeatures = { ...updates.features };
@@ -473,6 +487,7 @@ export async function PUT(request: Request) {
       if (rating !== undefined) mergedFeatures.rating = Number(rating);
       if (reviews_count !== undefined) mergedFeatures.reviews_count = Number(reviews_count);
       if (show_rating !== undefined) mergedFeatures.show_rating = Boolean(show_rating);
+      if (rawInstIds !== undefined) mergedFeatures.instructor_ids = rawInstIds;
       updates.features = mergedFeatures;
     }
 

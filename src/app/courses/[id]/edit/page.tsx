@@ -36,6 +36,7 @@ import {
   ToggleRight,
   Globe,
   Star,
+  GraduationCap,
 } from "lucide-react";
 import {
   dbService,
@@ -126,6 +127,7 @@ export default function EditCourseStudioPage({
     original_price: 0,
     category_id: "",
     instructor_id: "",
+    instructor_ids: [] as string[],
     status: "published" as DbCourse["status"],
     is_featured: false,
     enrollment_count: 0,
@@ -164,6 +166,14 @@ export default function EditCourseStudioPage({
         return;
       }
 
+      const initialInstructorIds: string[] = (
+        Array.isArray(courseData.instructor_ids) && courseData.instructor_ids.length > 0
+          ? courseData.instructor_ids.map(String)
+          : (Array.isArray(courseData.features?.instructor_ids) && courseData.features.instructor_ids.length > 0
+              ? courseData.features.instructor_ids.map(String)
+              : (courseData.instructor_id ? [String(courseData.instructor_id)] : []))
+      );
+
       setDetailsForm({
         title_bn: courseData.title_bn || "",
         title: courseData.title || "",
@@ -173,7 +183,8 @@ export default function EditCourseStudioPage({
         price: courseData.price || 0,
         original_price: courseData.original_price || 0,
         category_id: courseData.category_id ? String(courseData.category_id) : "",
-        instructor_id: courseData.instructor_id ? String(courseData.instructor_id) : "",
+        instructor_id: initialInstructorIds[0] || (courseData.instructor_id ? String(courseData.instructor_id) : ""),
+        instructor_ids: initialInstructorIds,
         status: courseData.status || "published",
         is_featured: !!courseData.is_featured,
         enrollment_count: courseData.enrollment_count ?? 0,
@@ -333,6 +344,20 @@ export default function EditCourseStudioPage({
       ],
     };
     setSections([...sections, newSec]);
+  };
+
+  const toggleInstructor = (instId: string) => {
+    setDetailsForm((prev) => {
+      const exists = prev.instructor_ids.includes(instId);
+      const nextIds = exists
+        ? prev.instructor_ids.filter((id) => id !== instId)
+        : [...prev.instructor_ids, instId];
+      return {
+        ...prev,
+        instructor_ids: nextIds,
+        instructor_id: nextIds[0] || "",
+      };
+    });
   };
 
   const removeSection = (secId: string | number) => {
@@ -598,7 +623,8 @@ export default function EditCourseStudioPage({
         original_price: detailsForm.original_price ? Number(detailsForm.original_price) : null,
         is_free: Number(detailsForm.price) === 0,
         category_id: detailsForm.category_id ? Number(detailsForm.category_id) : null,
-        instructor_id: detailsForm.instructor_id ? Number(detailsForm.instructor_id) : null,
+        instructor_id: detailsForm.instructor_ids?.[0] ? Number(detailsForm.instructor_ids[0]) : (detailsForm.instructor_id ? Number(detailsForm.instructor_id) : null),
+        instructor_ids: (detailsForm.instructor_ids || []).map(Number).filter((n) => !isNaN(n) && n > 0),
         status: detailsForm.status,
         is_featured: detailsForm.is_featured,
         enrollment_count: Number(detailsForm.enrollment_count) || 0,
@@ -1330,20 +1356,87 @@ export default function EditCourseStudioPage({
                 </select>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-text">ইন্সট্রাক্টর / শিক্ষক</label>
-                <select
-                  value={detailsForm.instructor_id}
-                  onChange={(e) => setDetailsForm({ ...detailsForm, instructor_id: e.target.value })}
-                  className="input text-xs w-full"
-                >
-                  <option value="">ইন্সট্রাক্টর নির্বাচন করুন</option>
-                  {instructors.map((inst) => (
-                    <option key={inst.id} value={inst.id.toString()}>
-                      {inst.name_bn || inst.name} ({inst.institution || "Ormission"})
-                    </option>
-                  ))}
-                </select>
+              <div className="space-y-2 md:col-span-2 pt-2 border-t border-border">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <div>
+                    <label className="text-xs font-bold text-text flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-primary" />
+                      <span>কোর্স ইন্সট্রাক্টরবৃন্দ / শিক্ষক (একাধিক নির্বাচনযোগ্য) *</span>
+                    </label>
+                    <p className="text-[11px] text-text-muted mt-0.5">
+                      একটি কোর্সে ১ জন বা তার বেশি শিক্ষক যুক্ত করতে পারেন। প্রথমে নির্বাচিত শিক্ষক মূল (Primary) শিক্ষক হিসেবে প্রদর্শিত হবেন।
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20 shrink-0 self-start sm:self-auto">
+                    নির্বাচিত: {detailsForm.instructor_ids.length} জন
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+                  {instructors.map((inst) => {
+                    const isSelected = detailsForm.instructor_ids.includes(String(inst.id));
+                    const isPrimary = detailsForm.instructor_ids[0] === String(inst.id);
+
+                    return (
+                      <div
+                        key={inst.id}
+                        onClick={() => toggleInstructor(String(inst.id))}
+                        className={`p-3 rounded-xl border flex items-center justify-between gap-3 cursor-pointer transition-all select-none ${
+                          isSelected
+                            ? "bg-primary/10 border-primary/60 shadow-xs"
+                            : "bg-surface-secondary/40 border-border hover:border-border-hover hover:bg-surface-secondary"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-border bg-slate-800">
+                            {inst.photo_url ? (
+                              <img
+                                src={inst.photo_url}
+                                alt={inst.name_bn || inst.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center font-bold text-xs text-primary bg-primary/10">
+                                {(inst.name_bn?.[0] || inst.name?.[0] || "I").toUpperCase()}
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <h5 className="font-bold text-xs text-text truncate">
+                              {inst.name_bn || inst.name}
+                            </h5>
+                            <p className="text-[10px] text-text-muted truncate">
+                              {inst.institution || "Ormission Faculty"}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {isPrimary && (
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                              প্রধান
+                            </span>
+                          )}
+                          <div
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-colors ${
+                              isSelected
+                                ? "bg-primary border-primary text-white"
+                                : "border-border bg-surface"
+                            }`}
+                          >
+                            {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {detailsForm.instructor_ids.length === 0 && (
+                  <p className="text-[11px] text-rose-500 font-bold mt-1">
+                    * অনুগ্রহ করে কমপক্ষে একজন ইন্সট্রাক্টর নির্বাচন করুন।
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5 md:col-span-2">
