@@ -29,6 +29,7 @@ import {
   Tag,
   ArrowUpRight,
   Filter,
+  FileText,
 } from "lucide-react";
 import {
   dbService,
@@ -358,6 +359,15 @@ export default function AdminCoursesPage() {
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : "text-text-muted"}`} />
               <span>রিফ্রেশ</span>
             </button>
+
+            <Link
+              href="/courses/enrollments"
+              className="btn btn-outline border-primary/30 text-primary hover:bg-primary/10 flex-1 sm:flex-initial h-10 px-3.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              title="কোর্সভিত্তিক ভর্তি পরিসংখ্যান ও অফিশিয়াল PDF ডাউনলোড"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>ভর্তি রিপোর্ট (PDF)</span>
+            </Link>
 
             <Link
               href="/courses/new"

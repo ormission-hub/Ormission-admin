@@ -56,6 +56,7 @@ const navGroups: NavGroup[] = [
     items: [
       { label: "Dashboard", labelBn: "ড্যাশবোর্ড", href: "/", icon: LayoutDashboard },
       { label: "All Courses", labelBn: "সকল কোর্স", href: "/courses", icon: BookOpen },
+      { label: "Enrollment Reports", labelBn: "ভর্তি ও এনরোলমেন্ট রিপোর্ট", href: "/courses/enrollments", icon: FileText, badge: "PDF" },
       { label: "Book Management", labelBn: "বই ব্যবস্থাপনা", href: "/books", icon: BookOpen, badge: "Live" },
       { label: "Create Course", labelBn: "নতুন কোর্স তৈরি", href: "/courses/new", icon: PlusCircle },
       { label: "Categories", labelBn: "ক্যাটাগরি ও বিষয়", href: "/categories", icon: FolderTree },
