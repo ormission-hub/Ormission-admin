@@ -69,9 +69,9 @@ const defaultSocialSettings: SocialLinksSettings = {
   },
   whatsapp: {
     enabled: true,
-    url: "https://wa.me/8801700000000",
+    url: "https://wa.me/8801728477095",
     label: "হোয়াটসঅ্যাপ সাপোর্ট",
-    handle: "+880 1700-000000",
+    handle: "+880 1728-477095",
   },
   instagram: {
     enabled: true,
@@ -109,8 +109,8 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
     brandName: "Ormission",
     tagline: "Learn · Build · Grow",
-    hotline: "+880 1700-000000",
-    whatsapp: "+880 1700-000000",
+    hotline: "+880 1728-477095",
+    whatsapp: "+880 1728-477095",
     email: "info@ormission.com",
     address: "লেভেল ৪, রূপায়ন টাওয়ার, ধানমন্ডি ২৭, ঢাকা-১২০৯",
     sslStoreId: "ormission_live",
@@ -123,24 +123,14 @@ export default function AdminSettingsPage() {
   const loadSettings = async () => {
     setLoading(true);
     const data = await dbService.getSiteSettings();
-    setSettings((prev) => ({
-      ...prev,
-      brandName: data.site_name || prev.brandName,
-      tagline: data.site_tagline || prev.tagline,
-      email: data.contact_email || prev.email,
-      hotline: data.contact_phone || prev.hotline,
-      whatsapp: data.contact_whatsapp || prev.whatsapp,
-      address: data.contact_address || prev.address,
-      sslStoreId: data.ssl_store_id || prev.sslStoreId,
-      isSandbox: data.ssl_is_sandbox !== undefined ? data.ssl_is_sandbox : prev.isSandbox,
-    }));
 
+    let parsedSocial = defaultSocialSettings;
     if (data.social_links) {
       let parsed = data.social_links;
       if (typeof parsed === "string") {
         try { parsed = JSON.parse(parsed); } catch {}
       }
-      setSocial({
+      parsedSocial = {
         ...defaultSocialSettings,
         ...parsed,
         facebook: { ...defaultSocialSettings.facebook, ...(parsed.facebook || {}) },
@@ -151,8 +141,21 @@ export default function AdminSettingsPage() {
         linkedin: { ...defaultSocialSettings.linkedin, ...(parsed.linkedin || {}) },
         twitter: { ...defaultSocialSettings.twitter, ...(parsed.twitter || {}) },
         tiktok: { ...defaultSocialSettings.tiktok, ...(parsed.tiktok || {}) },
-      });
+      };
+      setSocial(parsedSocial);
     }
+
+    setSettings((prev) => ({
+      ...prev,
+      brandName: data.site_name || prev.brandName,
+      tagline: data.site_tagline || prev.tagline,
+      email: data.contact_email || prev.email,
+      hotline: data.contact_phone || prev.hotline,
+      whatsapp: data.contact_whatsapp || parsedSocial?.whatsapp?.handle || parsedSocial?.whatsapp?.url || prev.whatsapp,
+      address: data.contact_address || prev.address,
+      sslStoreId: data.ssl_store_id || prev.sslStoreId,
+      isSandbox: data.ssl_is_sandbox !== undefined ? data.ssl_is_sandbox : prev.isSandbox,
+    }));
 
     setLoading(false);
   };
@@ -164,6 +167,25 @@ export default function AdminSettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
+
+    const rawWa = settings.whatsapp?.trim() || "";
+    let waDigits = rawWa.replace(/[^0-9]/g, "");
+    if (waDigits.startsWith("0")) {
+      waDigits = "880" + waDigits.slice(1);
+    } else if (waDigits.length === 10 && waDigits.startsWith("1")) {
+      waDigits = "880" + waDigits;
+    }
+    const waUrl = rawWa.startsWith("http") ? rawWa : (waDigits ? `https://wa.me/${waDigits}` : social.whatsapp.url);
+
+    const updatedSocial = {
+      ...social,
+      whatsapp: {
+        ...social.whatsapp,
+        url: waUrl,
+        handle: rawWa || social.whatsapp.handle,
+      },
+    };
+
     await Promise.all([
       dbService.updateSiteSetting("site_name", settings.brandName),
       dbService.updateSiteSetting("site_tagline", settings.tagline),
@@ -173,7 +195,7 @@ export default function AdminSettingsPage() {
       dbService.updateSiteSetting("contact_address", settings.address),
       dbService.updateSiteSetting("ssl_store_id", settings.sslStoreId),
       dbService.updateSiteSetting("ssl_is_sandbox", settings.isSandbox),
-      dbService.updateSiteSetting("social_links", social),
+      dbService.updateSiteSetting("social_links", updatedSocial),
     ]);
     setSaving(false);
     setSaved(true);
