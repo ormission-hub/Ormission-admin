@@ -117,6 +117,7 @@ export function printAllCoursesEnrollmentPdf(
     <html lang="bn">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>কোর্স ভর্তি ও এনরোলমেন্ট প্রতিবেদন — Ormission</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -559,6 +560,7 @@ export function printSingleCourseRosterPdf(course: CourseReportItem) {
     <html lang="bn">
     <head>
       <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>${course.title_bn} — ভর্তিকৃত শিক্ষার্থী তালিকা</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

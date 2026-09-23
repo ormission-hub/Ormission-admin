@@ -6,30 +6,21 @@ import Image from "next/image";
 import {
   FileText,
   Printer,
-  Download,
   Users,
   Search,
-  Filter,
-  ArrowUpDown,
   BookOpen,
   DollarSign,
-  TrendingUp,
   Award,
-  Calendar,
-  CheckCircle2,
   XCircle,
-  ExternalLink,
   ChevronRight,
   RefreshCw,
-  Eye,
   X,
-  CreditCard,
-  Phone,
-  Mail,
   Copy,
   Check,
-  GraduationCap,
-  Sparkles,
+  Phone,
+  Mail,
+  Calendar,
+  CreditCard,
 } from "lucide-react";
 import {
   CourseReportItem,
@@ -145,44 +136,44 @@ export default function CourseEnrollmentsReportPage() {
   }, [data?.courses]);
 
   return (
-    <div className="space-y-6 pb-16 font-bengali">
+    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto px-2 sm:px-4 lg:px-6 pb-16 font-bengali">
       {/* Top Header & Breadcrumbs */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-border/80 pb-4 sm:pb-5">
         <div>
-          <div className="flex items-center gap-2 text-xs text-text-muted mb-1.5">
-            <Link href="/" className="hover:text-primary transition-colors">
+          <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-text-muted mb-1.5 overflow-x-auto no-scrollbar">
+            <Link href="/" className="hover:text-primary transition-colors shrink-0">
               ড্যাশবোর্ড
             </Link>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <Link href="/courses" className="hover:text-primary transition-colors">
+            <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-border" />
+            <Link href="/courses" className="hover:text-primary transition-colors shrink-0">
               কোর্সসমূহ
             </Link>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span className="text-text font-bold">ভর্তি ও এনরোলমেন্ট রিপোর্ট</span>
+            <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 text-border" />
+            <span className="text-text font-bold truncate shrink-0">ভর্তি রিপোর্ট</span>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-black text-text flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary border border-primary/20">
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+          <h1 className="text-lg sm:text-2xl font-black text-text flex items-center gap-2">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
+              <FileText className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
             <span>কোর্স ভর্তি ও এনরোলমেন্ট প্রতিবেদন</span>
           </h1>
-          <p className="text-xs sm:text-sm text-text-muted mt-1">
+          <p className="text-[11px] sm:text-sm text-text-muted mt-1 leading-relaxed">
             কোন কোর্সে কতজন শিক্ষার্থী ভর্তি হয়েছে, রাজস্ব আয় এবং অফিশিয়াল প্রিন্ট/PDF ডাউনলোড
           </p>
         </div>
 
-        {/* Global Action Buttons */}
-        <div className="flex items-center gap-2.5 shrink-0">
+        {/* Global Action Buttons (Full width on mobile phones) */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto shrink-0 pt-1 sm:pt-0">
           <button
             type="button"
             onClick={fetchReportData}
             disabled={loading}
-            className="btn btn-outline border-border/80 text-text hover:bg-surface-secondary text-xs flex items-center gap-1.5 px-3 py-2 rounded-xl cursor-pointer"
+            className="btn btn-outline border-border/80 text-text hover:bg-surface-secondary text-xs flex items-center justify-center gap-1.5 px-3.5 py-2.5 sm:py-2 rounded-xl cursor-pointer w-full sm:w-auto transition-colors"
             title="ডাটা রিফ্রেশ করুন"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
-            <span className="hidden sm:inline">রিফ্রেশ</span>
+            <span>ডাটা রিফ্রেশ</span>
           </button>
 
           <button
@@ -193,7 +184,7 @@ export default function CourseEnrollmentsReportPage() {
               }
             }}
             disabled={loading || !data || filteredCourses.length === 0}
-            className="btn btn-primary text-xs font-bold flex items-center gap-2 px-4 py-2 rounded-xl shadow-md shadow-primary/25 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all"
+            className="btn btn-primary text-xs font-bold flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 rounded-xl shadow-md shadow-primary/25 cursor-pointer hover:scale-[1.02] active:scale-[0.98] transition-all w-full sm:w-auto"
           >
             <Printer className="w-4 h-4" />
             <span>সম্পূর্ণ রিপোর্ট PDF ডাউনলোড</span>
@@ -203,7 +194,7 @@ export default function CourseEnrollmentsReportPage() {
 
       {/* Error Alert */}
       {error && (
-        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-500 text-xs sm:text-sm flex items-center justify-between">
+        <div className="p-3.5 sm:p-4 rounded-xl sm:rounded-2xl bg-rose-500/10 border border-rose-500/25 text-rose-500 text-xs sm:text-sm flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <XCircle className="w-5 h-5 shrink-0" />
             <span>{error}</span>
@@ -211,82 +202,82 @@ export default function CourseEnrollmentsReportPage() {
           <button
             type="button"
             onClick={fetchReportData}
-            className="underline font-bold hover:text-rose-400 cursor-pointer"
+            className="underline font-bold hover:text-rose-400 cursor-pointer shrink-0"
           >
             আবার চেষ্টা করুন
           </button>
         </div>
       )}
 
-      {/* Summary KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+      {/* Summary KPI Cards Grid (Phone optimized 2-columns) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Courses */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-border/80 shadow-xs relative overflow-hidden group">
-          <div className="flex items-center justify-between text-text-muted mb-2">
-            <span className="text-xs font-bold">মোট সক্রিয় কোর্স</span>
-            <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
-              <BookOpen className="w-4 h-4" />
+        <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-surface border border-border/80 shadow-xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-text-muted mb-1.5">
+            <span className="text-[10px] sm:text-xs font-bold">মোট কোর্স</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-blue-500/10 text-blue-500">
+              <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-text font-sans">
+          <div className="text-lg sm:text-2xl font-black text-text font-sans">
             {loading ? "..." : (data?.summary.totalCourses || 0).toLocaleString("en-US")}
-            <span className="text-xs font-bold text-text-muted ml-1.5 font-bengali">টি</span>
+            <span className="text-[11px] sm:text-xs font-bold text-text-muted ml-1 font-bengali">টি</span>
           </div>
-          <p className="text-[11px] text-text-muted mt-1.5">প্ল্যাটফর্মে প্রস্তুতকৃত কোর্স</p>
+          <p className="text-[10px] sm:text-[11px] text-text-muted mt-1 truncate">প্ল্যাটফর্মের সকল কোর্স</p>
         </div>
 
         {/* Total Enrolled Students */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-primary/25 bg-gradient-to-br from-primary/5 via-transparent to-transparent shadow-xs relative overflow-hidden group">
-          <div className="flex items-center justify-between text-text-muted mb-2">
-            <span className="text-xs font-bold text-primary">সর্বমোট ভর্তি (Admissions)</span>
-            <div className="p-2 rounded-xl bg-primary text-white shadow-xs">
-              <Users className="w-4 h-4" />
+        <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-surface border border-primary/25 bg-gradient-to-br from-primary/5 via-transparent to-transparent shadow-xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-text-muted mb-1.5">
+            <span className="text-[10px] sm:text-xs font-bold text-primary">সর্বমোট ভর্তি</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-primary text-white shadow-xs">
+              <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-primary font-sans">
+          <div className="text-lg sm:text-2xl font-black text-primary font-sans">
             {loading ? "..." : (data?.summary.totalEnrollments || 0).toLocaleString("en-US")}
-            <span className="text-xs font-bold text-primary/80 ml-1.5 font-bengali">জন</span>
+            <span className="text-[11px] sm:text-xs font-bold text-primary/80 ml-1 font-bengali">জন</span>
           </div>
-          <p className="text-[11px] text-text-muted mt-1.5">
-            সক্রিয়: <strong>{(data?.summary.totalActiveEnrollments || 0).toLocaleString("en-US")}</strong> জন শিক্ষার্থী
+          <p className="text-[10px] sm:text-[11px] text-text-muted mt-1 truncate">
+            সক্রিয়: <strong>{(data?.summary.totalActiveEnrollments || 0).toLocaleString("en-US")}</strong> জন
           </p>
         </div>
 
         {/* Total Revenue */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-emerald-500/25 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent shadow-xs relative overflow-hidden group">
-          <div className="flex items-center justify-between text-text-muted mb-2">
-            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">মোট সংগৃহীত কোর্স ফি</span>
-            <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-              <DollarSign className="w-4 h-4" />
+        <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-surface border border-emerald-500/25 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent shadow-xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-text-muted mb-1.5">
+            <span className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400">মোট কোর্স ফি আয়</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 font-sans">
+          <div className="text-base sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 font-sans truncate">
             {loading ? "..." : `৳ ${(data?.summary.totalRevenue || 0).toLocaleString("en-IN")}`}
           </div>
-          <p className="text-[11px] text-text-muted mt-1.5">সকল সফল ভর্তির রাজস্ব হিসাব</p>
+          <p className="text-[10px] sm:text-[11px] text-text-muted mt-1 truncate">ভর্তির মোট সংগৃহীত ফি</p>
         </div>
 
         {/* Top Enrolled Course */}
-        <div className="p-4 sm:p-5 rounded-2xl bg-surface border border-amber-500/25 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent shadow-xs relative overflow-hidden group">
-          <div className="flex items-center justify-between text-text-muted mb-2">
-            <span className="text-xs font-bold text-amber-600 dark:text-amber-400">শীর্ষ জনপ্রিয় কোর্স</span>
-            <div className="p-2 rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
-              <Award className="w-4 h-4" />
+        <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-surface border border-amber-500/25 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent shadow-xs relative overflow-hidden">
+          <div className="flex items-center justify-between text-text-muted mb-1.5">
+            <span className="text-[10px] sm:text-xs font-bold text-amber-600 dark:text-amber-400">শীর্ষ কোর্স</span>
+            <div className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+              <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </div>
           </div>
-          <div className="text-sm sm:text-base font-black text-text truncate max-w-full" title={data?.summary.topCourse?.title_bn}>
+          <div className="text-xs sm:text-base font-black text-text truncate max-w-full" title={data?.summary.topCourse?.title_bn}>
             {loading ? "..." : data?.summary.topCourse?.title_bn || "কোনো কোর্স নেই"}
           </div>
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-1.5">
+          <p className="text-[10px] sm:text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-1 truncate">
             {data?.summary.topCourse
-              ? `${data.summary.topCourse.total_enrolled.toLocaleString("en-US")} জন শিক্ষার্থী ভর্তি`
+              ? `${data.summary.topCourse.total_enrolled.toLocaleString("en-US")} জন শিক্ষার্থী`
               : "—"}
           </p>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-surface rounded-2xl border border-border/80 p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+      {/* Filter and Search Bar (Phone Responsive) */}
+      <div className="bg-surface rounded-xl sm:rounded-2xl border border-border/80 p-3 sm:p-4 shadow-xs space-y-2.5 md:space-y-0 md:flex md:items-center md:justify-between md:gap-3">
         {/* Search Input */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -299,64 +290,60 @@ export default function CourseEnrollmentsReportPage() {
           />
         </div>
 
-        {/* Filter Dropdowns */}
-        <div className="flex flex-wrap items-center gap-2.5">
+        {/* Filter Dropdowns Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {/* Category Filter */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="bg-surface-secondary/60 border border-border/80 rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary cursor-pointer"
-            >
-              <option value="all">সকল ক্যাটাগরি</option>
-              {categoriesList.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full bg-surface-secondary/60 border border-border/80 rounded-xl px-2.5 py-2 text-xs text-text focus:outline-none focus:border-primary cursor-pointer truncate"
+          >
+            <option value="all">সকল ক্যাটাগরি</option>
+            {categoriesList.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
 
           {/* Status Filter */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-surface-secondary/60 border border-border/80 rounded-xl px-3 py-2 text-xs text-text focus:outline-none focus:border-primary cursor-pointer"
-            >
-              <option value="all">সকল স্ট্যাটাস</option>
-              <option value="published">চলমান (Published)</option>
-              <option value="draft">ড্রাফট (Draft)</option>
-            </select>
-          </div>
+          <select
+            value={selectedStatus}
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className="w-full bg-surface-secondary/60 border border-border/80 rounded-xl px-2.5 py-2 text-xs text-text focus:outline-none focus:border-primary cursor-pointer"
+          >
+            <option value="all">সকল স্ট্যাটাস</option>
+            <option value="published">চলমান (Live)</option>
+            <option value="draft">ড্রাফট (Draft)</option>
+          </select>
 
-          {/* Sort By */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="bg-surface-secondary/60 border border-border/80 rounded-xl px-3 py-2 text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer"
-            >
-              <option value="enrolled_desc">ভর্তি সংখ্যা (সর্বোচ্চ আগে)</option>
-              <option value="revenue_desc">আয় / রাজস্ব (সর্বোচ্চ আগে)</option>
-              <option value="name_asc">কোর্সের নাম (অ-হ)</option>
-            </select>
-          </div>
+          {/* Sort By (spans 2 cols on mobile) */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="col-span-2 sm:col-span-1 w-full bg-surface-secondary/60 border border-border/80 rounded-xl px-2.5 py-2 text-xs text-text font-bold focus:outline-none focus:border-primary cursor-pointer truncate"
+          >
+            <option value="enrolled_desc">ভর্তি সংখ্যা (সর্বোচ্চ আগে)</option>
+            <option value="revenue_desc">আয় / রাজস্ব (সর্বোচ্চ আগে)</option>
+            <option value="name_asc">কোর্সের নাম (অ-হ)</option>
+          </select>
         </div>
       </div>
 
-      {/* Main Table Container */}
-      <div className="bg-surface rounded-2xl border border-border/80 shadow-xs overflow-hidden">
+      {/* ========================================================================= */}
+      {/* 1. DESKTOP TABLE VIEW (Visible on tablet & desktop >= 768px)             */}
+      {/* ========================================================================= */}
+      <div className="hidden md:block bg-surface rounded-2xl border border-border/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-border/80 bg-surface-secondary/50 text-text-muted text-[11px] sm:text-xs uppercase tracking-wider font-bold">
                 <th className="py-3.5 px-4 text-center w-12">#</th>
                 <th className="py-3.5 px-4">কোর্সের বিবরণ</th>
-                <th className="py-3.5 px-4 hidden md:table-cell">ক্যাটাগরি ও মেন্টর</th>
+                <th className="py-3.5 px-4">ক্যাটাগরি ও মেন্টর</th>
                 <th className="py-3.5 px-4 text-center">কোর্স ফি</th>
                 <th className="py-3.5 px-4 text-center">ভর্তিকৃত শিক্ষার্থী</th>
-                <th className="py-3.5 px-4 text-right hidden sm:table-cell">মোট সংগৃহীত আয়</th>
+                <th className="py-3.5 px-4 text-right">মোট সংগৃহীত আয়</th>
                 <th className="py-3.5 px-4 text-center">স্ট্যাটাস</th>
                 <th className="py-3.5 px-4 text-right">অ্যাকশন</th>
               </tr>
@@ -423,7 +410,7 @@ export default function CourseEnrollmentsReportPage() {
                       </td>
 
                       {/* Category & Instructors */}
-                      <td className="py-3 px-4 hidden md:table-cell">
+                      <td className="py-3 px-4">
                         <div className="space-y-1">
                           <span className="inline-block px-2 py-0.5 rounded-md bg-surface-secondary text-text font-medium text-[11px] border border-border/60">
                             {course.category_name}
@@ -464,7 +451,7 @@ export default function CourseEnrollmentsReportPage() {
                       </td>
 
                       {/* Total Revenue */}
-                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400 hidden sm:table-cell">
+                      <td className="py-3 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                         ৳ {course.total_revenue.toLocaleString("en-IN")}
                       </td>
 
@@ -492,11 +479,11 @@ export default function CourseEnrollmentsReportPage() {
                               setRosterCourse(course);
                               setRosterSearch("");
                             }}
-                            className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-surface-secondary hover:bg-primary/10 hover:text-primary border border-border/80 text-text text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
+                            className="px-2.5 py-1.5 rounded-lg bg-surface-secondary hover:bg-primary/10 hover:text-primary border border-border/80 text-text text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
                             title="ভর্তিকৃত শিক্ষার্থীদের তালিকা দেখুন"
                           >
                             <Users className="w-3.5 h-3.5 text-primary" />
-                            <span className="hidden sm:inline">শিক্ষার্থী তালিকা</span>
+                            <span>শিক্ষার্থী তালিকা</span>
                             <span className="font-mono text-[11px] ml-0.5 bg-primary/10 text-primary px-1.5 py-0.2 rounded-full">
                               {course.total_enrolled}
                             </span>
@@ -522,45 +509,181 @@ export default function CourseEnrollmentsReportPage() {
         </div>
       </div>
 
-      {/* Course Student Roster Drawer / Modal */}
+      {/* ========================================================================= */}
+      {/* 2. MOBILE COURSE CARDS VIEW (Visible only on smartphone screens < 768px)  */}
+      {/* ========================================================================= */}
+      <div className="block md:hidden space-y-3">
+        {loading ? (
+          <div className="p-8 text-center bg-surface rounded-2xl border border-border/80 text-text-muted">
+            <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
+            <p className="text-xs">রিপোর্ট ডাটা প্রস্তুত হচ্ছে...</p>
+          </div>
+        ) : filteredCourses.length === 0 ? (
+          <div className="p-8 text-center bg-surface rounded-2xl border border-border/80 text-text-muted">
+            <p className="font-bold text-sm">কোনো কোর্স পাওয়া যায়নি</p>
+            <p className="text-xs mt-1">অনুগ্রহ করে ফিল্টার পরিবর্তন করুন।</p>
+          </div>
+        ) : (
+          filteredCourses.map((course, idx) => {
+            const percentOfMax = Math.min(100, Math.round((course.total_enrolled / maxEnrolledCount) * 100));
+
+            return (
+              <div
+                key={course.id}
+                className="bg-surface rounded-2xl border border-border/80 p-3.5 shadow-xs space-y-3"
+              >
+                {/* Top Row: Thumbnail + Category + Status */}
+                <div className="flex items-start gap-2.5">
+                  {course.thumbnail_url ? (
+                    <div className="relative w-14 h-10 rounded-lg overflow-hidden shrink-0 border border-border/80">
+                      <Image
+                        src={course.thumbnail_url}
+                        alt={course.title_bn}
+                        fill
+                        sizes="56px"
+                        className="object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-14 h-10 rounded-lg bg-surface-secondary flex items-center justify-center shrink-0 text-text-muted border border-border/80">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-surface-secondary text-text-muted">
+                        #{idx + 1}
+                      </span>
+                      <span className="px-2 py-0.2 rounded text-[10px] font-bold bg-primary/10 text-primary">
+                        {course.category_name}
+                      </span>
+                      {course.status === "published" ? (
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500">
+                          চলমান
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-500/10 text-slate-400">
+                          ড্রাফট
+                        </span>
+                      )}
+                    </div>
+                    <h3 className="font-bold text-xs sm:text-sm text-text leading-snug line-clamp-2">
+                      {course.title_bn}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Instructors & Fee */}
+                <div className="flex items-center justify-between text-xs border-t border-border/60 pt-2 text-[11px]">
+                  <div className="text-text-muted truncate max-w-[180px]" title={course.instructor_names}>
+                    ইন্সট্রাক্টর: <strong className="text-text">{course.instructor_names}</strong>
+                  </div>
+                  <div>
+                    {course.is_free ? (
+                      <span className="px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 text-[10px] font-bold">
+                        বিনামূল্যে
+                      </span>
+                    ) : (
+                      <span className="font-mono font-black text-text text-xs">
+                        ৳ {course.price.toLocaleString("en-IN")}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Admission Stats Box */}
+                <div className="bg-surface-secondary/50 rounded-xl p-2.5 border border-border/60 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <div>
+                      <span className="text-text-muted text-[11px]">ভর্তি: </span>
+                      <span className="font-mono font-black text-primary text-sm">
+                        {course.total_enrolled.toLocaleString("en-US")} জন
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-text-muted text-[11px]">মোট আয়: </span>
+                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                        ৳ {course.total_revenue.toLocaleString("en-IN")}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Visual Progress bar */}
+                  <div className="w-full h-1.5 bg-surface rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-primary to-orange-500 rounded-full"
+                      style={{ width: `${percentOfMax}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile Action Buttons */}
+                <div className="grid grid-cols-2 gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRosterCourse(course);
+                      setRosterSearch("");
+                    }}
+                    className="btn btn-outline border-border/80 text-text hover:bg-primary/10 hover:text-primary text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1 cursor-pointer"
+                  >
+                    <Users className="w-3.5 h-3.5 text-primary" />
+                    <span>শিক্ষার্থী ({course.total_enrolled})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => printSingleCourseRosterPdf(course)}
+                    className="btn btn-primary text-xs font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>একক PDF</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. STUDENT ROSTER DRAWER / MODAL (Mobile Responsive)                     */}
+      {/* ========================================================================= */}
       {rosterCourse && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 animate-in fade-in duration-200">
-          <div className="bg-surface border border-border/80 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-surface border-t sm:border border-border/80 rounded-t-3xl sm:rounded-3xl max-w-4xl w-full h-[92vh] sm:h-auto sm:max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 border-b border-border/80 flex items-start justify-between gap-4 bg-surface-secondary/40">
+            <div className="p-4 sm:p-5 border-b border-border/80 flex items-start justify-between gap-3 bg-surface-secondary/40">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold font-bengali">
                     কোর্স ভর্তি তালিকা
                   </span>
-                  <span className="text-xs text-text-muted font-medium">
+                  <span className="text-[11px] sm:text-xs text-text-muted font-medium truncate">
                     {rosterCourse.category_name}
                   </span>
                 </div>
-                <h2 className="text-base sm:text-lg font-black text-text truncate">
+                <h2 className="text-sm sm:text-lg font-black text-text truncate">
                   {rosterCourse.title_bn}
                 </h2>
-                <div className="flex flex-wrap items-center gap-4 text-xs text-text-muted mt-2 font-bengali">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-[11px] sm:text-xs text-text-muted mt-1.5 font-bengali">
                   <div>
                     মোট ভর্তি: <strong className="text-primary font-mono font-black">{rosterCourse.total_enrolled}</strong> জন
                   </div>
                   <div>•</div>
                   <div>
-                    মোট ফি সংগ্রহ: <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-black">৳ {rosterCourse.total_revenue.toLocaleString("en-IN")}</strong>
-                  </div>
-                  <div>•</div>
-                  <div>
-                    ইন্সট্রাক্টর: <span className="font-semibold text-text">{rosterCourse.instructor_names}</span>
+                    মোট আয়: <strong className="text-emerald-600 dark:text-emerald-400 font-mono font-black">৳ {rosterCourse.total_revenue.toLocaleString("en-IN")}</strong>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => printSingleCourseRosterPdf(rosterCourse)}
-                  className="btn btn-primary text-xs font-bold flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                  className="btn btn-primary text-xs font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl shadow-xs cursor-pointer"
                   title="এই কোর্সের শিক্ষার্থী তালিকা PDF হিসেবে সেভ করুন"
                 >
                   <Printer className="w-3.5 h-3.5" />
@@ -577,7 +700,7 @@ export default function CourseEnrollmentsReportPage() {
             </div>
 
             {/* Modal Search Bar */}
-            <div className="p-4 border-b border-border/80 bg-surface">
+            <div className="p-3 sm:p-4 border-b border-border/80 bg-surface">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
                 <input
@@ -590,8 +713,8 @@ export default function CourseEnrollmentsReportPage() {
               </div>
             </div>
 
-            {/* Students Table */}
-            <div className="flex-1 overflow-y-auto p-4">
+            {/* Students Table for Desktop */}
+            <div className="hidden sm:block flex-1 overflow-y-auto p-4">
               {filteredRosterStudents.length === 0 ? (
                 <div className="py-16 text-center text-text-muted">
                   <Users className="w-10 h-10 mx-auto text-text-muted/40 mb-2" />
@@ -671,9 +794,81 @@ export default function CourseEnrollmentsReportPage() {
               )}
             </div>
 
+            {/* Students Cards for Mobile Screens */}
+            <div className="block sm:hidden flex-1 overflow-y-auto p-3 space-y-2.5">
+              {filteredRosterStudents.length === 0 ? (
+                <div className="py-12 text-center text-text-muted">
+                  <Users className="w-8 h-8 mx-auto text-text-muted/40 mb-2" />
+                  <p className="font-bold text-xs">কোনো শিক্ষার্থী পাওয়া যায়নি</p>
+                </div>
+              ) : (
+                filteredRosterStudents.map((std, idx) => (
+                  <div
+                    key={std.id || idx}
+                    className="p-3 rounded-xl bg-surface-secondary/40 border border-border/70 space-y-2 text-xs"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.2 rounded bg-surface font-mono font-bold text-[10px] text-text-muted">
+                            #{idx + 1}
+                          </span>
+                          <span className="font-bold text-text">{std.name}</span>
+                        </div>
+                        {std.email && (
+                          <div className="text-[11px] text-text-muted font-mono mt-0.5">{std.email}</div>
+                        )}
+                      </div>
+
+                      {std.isActive ? (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold shrink-0">
+                          সক্রিয়
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">
+                          নিষ্ক্রিয়
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] border-t border-border/50 pt-2 text-text-muted">
+                      <div>
+                        {std.phone ? (
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(std.phone)}
+                            className="font-mono text-text flex items-center gap-1 font-semibold"
+                          >
+                            <Phone className="w-3 h-3 text-primary" />
+                            <span>{std.phone}</span>
+                            {copiedPhone === std.phone ? (
+                              <Check className="w-3 h-3 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-text-muted opacity-60" />
+                            )}
+                          </button>
+                        ) : (
+                          <span>ফোন: নেই</span>
+                        )}
+                      </div>
+
+                      <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                        পরিশোধ: ৳ {std.amountPaid.toLocaleString("en-IN")}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-text-muted">
+                      <span>তারিখ: {new Date(std.enrolledAt).toLocaleDateString("bn-BD")}</span>
+                      {std.orderNumber && <span>অর্ডার: {std.orderNumber}</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
             {/* Modal Footer */}
-            <div className="p-3.5 border-t border-border/80 bg-surface-secondary/40 flex items-center justify-between text-xs text-text-muted">
-              <span>মোট শিক্ষার্থী: <strong>{filteredRosterStudents.length}</strong> জন</span>
+            <div className="p-3 border-t border-border/80 bg-surface-secondary/40 flex items-center justify-between text-xs text-text-muted">
+              <span>মোট: <strong>{filteredRosterStudents.length}</strong> জন শিক্ষার্থী</span>
               <button
                 type="button"
                 onClick={() => setRosterCourse(null)}
