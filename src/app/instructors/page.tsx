@@ -141,88 +141,103 @@ export default function AdminInstructorsPage() {
 
     setSubmitting(true);
 
-    const slug = form.name
-      ? form.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-      : `inst-${Date.now()}`;
+    try {
+      const sanitizedName = form.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const slug = sanitizedName || `inst-${Date.now().toString().slice(-6)}`;
 
-    if (editingInstructor) {
-      // Update existing
-      const updated = await dbService.updateInstructor(editingInstructor.id, {
-        name: form.name.trim() || form.name_bn.trim(),
-        name_bn: form.name_bn.trim(),
-        slug: editingInstructor.slug || slug,
-        institution: form.institution.trim() || "Ormission Education",
-        designation: form.designation.trim() || "শিক্ষক ও মেন্টর",
-        bio: form.bio.trim(),
-        photo_url: form.photo_url.trim(),
-        display_order: Number(form.display_order) || 1,
-        is_featured: form.is_featured,
-        is_published: form.is_published,
-      });
+      if (editingInstructor) {
+        // Update existing
+        const updated = await dbService.updateInstructor(editingInstructor.id, {
+          name: form.name.trim() || form.name_bn.trim(),
+          name_bn: form.name_bn.trim(),
+          slug: editingInstructor.slug || slug,
+          institution: form.institution.trim() || "Ormission Education",
+          designation: form.designation.trim() || "শিক্ষক ও মেন্টর",
+          bio: form.bio.trim(),
+          photo_url: form.photo_url.trim(),
+          display_order: Number(form.display_order) || 1,
+          is_featured: form.is_featured,
+          is_published: form.is_published,
+        });
 
-      if (updated) {
-        setInstructors((prev) =>
-          prev
-            .map((i) => (i.id === updated.id ? updated : i))
-            .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-        );
-        setShowModal(false);
-        showNotification("শিক্ষকের তথ্য সফলভাবে আপডেট করা হয়েছে!");
+        if (updated) {
+          setInstructors((prev) =>
+            prev
+              .map((i) => (i.id === updated.id ? updated : i))
+              .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+          );
+          setShowModal(false);
+          showNotification("শিক্ষকের তথ্য সফলভাবে আপডেট করা হয়েছে!");
+        } else {
+          alert("তথ্য আপডেট করতে সমস্যা হয়েছে।");
+        }
       } else {
-        alert("তথ্য আপডেট করতে সমস্যা হয়েছে।");
-      }
-    } else {
-      // Create new
-      const created = await dbService.createInstructor({
-        name: form.name.trim() || form.name_bn.trim(),
-        name_bn: form.name_bn.trim(),
-        slug,
-        institution: form.institution.trim() || "Ormission Education",
-        designation: form.designation.trim() || "শিক্ষক ও মেন্টর",
-        bio: form.bio.trim(),
-        photo_url: form.photo_url.trim(),
-        display_order: Number(form.display_order) || instructors.length + 1,
-        is_featured: form.is_featured,
-        is_published: form.is_published,
-      });
+        // Create new
+        const created = await dbService.createInstructor({
+          name: form.name.trim() || form.name_bn.trim(),
+          name_bn: form.name_bn.trim(),
+          slug,
+          institution: form.institution.trim() || "Ormission Education",
+          designation: form.designation.trim() || "শিক্ষক ও মেন্টর",
+          bio: form.bio.trim(),
+          photo_url: form.photo_url.trim(),
+          display_order: Number(form.display_order) || instructors.length + 1,
+          is_featured: form.is_featured,
+          is_published: form.is_published,
+        });
 
-      if (created) {
-        setInstructors((prev) =>
-          [...prev, created].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
-        );
-        setShowModal(false);
-        showNotification("নতুন শিক্ষক সফলভাবে যুক্ত করা হয়েছে!");
-      } else {
-        alert("নতুন শিক্ষক যোগ করতে সমস্যা হয়েছে।");
+        if (created) {
+          setInstructors((prev) =>
+            [...prev, created].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+          );
+          setShowModal(false);
+          showNotification("নতুন শিক্ষক সফলভাবে যুক্ত করা হয়েছে!");
+        } else {
+          alert("নতুন শিক্ষক যোগ করতে সমস্যা হয়েছে।");
+        }
       }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "সমস্যা হয়েছে, পুনরায় চেষ্টা করুন।";
+      console.error("Error saving instructor:", err);
+      alert(`শিক্ষকের তথ্য সংরক্ষণ করা যায়নি: ${msg}`);
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   };
 
   const togglePublished = async (inst: DbInstructor) => {
     const nextVal = !inst.is_published;
-    const ok = await dbService.updateInstructor(inst.id, { is_published: nextVal });
-    if (ok) {
-      setInstructors((prev) =>
-        prev.map((i) => (i.id === inst.id ? { ...i, is_published: nextVal } : i))
-      );
-      showNotification(nextVal ? "শিক্ষক প্রকাশিত হয়েছে।" : "শিক্ষক অপ্রকাশিত করা হয়েছে।");
+    try {
+      const ok = await dbService.updateInstructor(inst.id, { is_published: nextVal });
+      if (ok) {
+        setInstructors((prev) =>
+          prev.map((i) => (i.id === inst.id ? { ...i, is_published: nextVal } : i))
+        );
+        showNotification(nextVal ? "শিক্ষক প্রকাশিত হয়েছে।" : "শিক্ষক অপ্রকাশিত করা হয়েছে।");
+      }
+    } catch (err) {
+      console.error("Failed to toggle published:", err);
+      alert("স্ট্যাটাস পরিবর্তন করা সম্ভব হয়নি।");
     }
   };
 
   const toggleFeatured = async (inst: DbInstructor) => {
     const nextVal = !inst.is_featured;
-    const ok = await dbService.updateInstructor(inst.id, { is_featured: nextVal });
-    if (ok) {
-      setInstructors((prev) =>
-        prev.map((i) => (i.id === inst.id ? { ...i, is_featured: nextVal } : i))
-      );
-      showNotification(
-        nextVal
-          ? "'আমাদের সম্পর্কে' সেকশনে অন্তর্ভুক্ত করা হয়েছে।"
-          : "'আমাদের সম্পর্কে' সেকশন থেকে সরানো হয়েছে।"
-      );
+    try {
+      const ok = await dbService.updateInstructor(inst.id, { is_featured: nextVal });
+      if (ok) {
+        setInstructors((prev) =>
+          prev.map((i) => (i.id === inst.id ? { ...i, is_featured: nextVal } : i))
+        );
+        showNotification(
+          nextVal
+            ? "'আমাদের সম্পর্কে' সেকশনে অন্তর্ভুক্ত করা হয়েছে।"
+            : "'আমাদের সম্পর্কে' সেকশন থেকে সরানো হয়েছে।"
+        );
+      }
+    } catch (err) {
+      console.error("Failed to toggle featured:", err);
+      alert("স্ট্যাটাস পরিবর্তন করা সম্ভব হয়নি।");
     }
   };
 

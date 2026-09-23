@@ -523,6 +523,12 @@ export const dbService = {
   // ---- INSTRUCTORS ----
   async getInstructors(): Promise<DbInstructor[]> {
     try {
+      const res = await fetch("/api/instructors", { cache: "no-store" });
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        return json.data;
+      }
+      // Fallback directly to client supabase if API is unreachable
       const { data, error } = await supabase
         .from("instructors")
         .select("*")
@@ -532,44 +538,53 @@ export const dbService = {
       if (error) throw error;
       return data || [];
     } catch (e) {
-      console.error("Error fetching instructors from Supabase:", e);
-      return [];
+      console.error("Error fetching instructors:", e);
+      try {
+        const { data } = await supabase
+          .from("instructors")
+          .select("*")
+          .order("display_order", { ascending: true })
+          .order("id", { ascending: true });
+        return data || [];
+      } catch {
+        return [];
+      }
     }
   },
 
   async createInstructor(instructorData: Partial<DbInstructor>): Promise<DbInstructor | null> {
     try {
-      const { data, error } = await supabase
-        .from("instructors")
-        .insert([instructorData])
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const res = await fetch("/api/instructors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(instructorData),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json?.error || "Failed to create instructor");
+      }
+      return json.data;
     } catch (e) {
       console.error("Error creating instructor in Supabase:", e);
-      return null;
+      throw e;
     }
   },
 
   async updateInstructor(id: number, updates: Partial<DbInstructor>): Promise<DbInstructor | null> {
     try {
-      const { data, error } = await supabase
-        .from("instructors")
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const res = await fetch("/api/instructors", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...updates }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json?.error || "Failed to update instructor");
+      }
+      return json.data;
     } catch (e) {
       console.error("Error updating instructor in Supabase:", e);
-      return null;
+      throw e;
     }
   },
 

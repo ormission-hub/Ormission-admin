@@ -28,9 +28,57 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
+    // 1. Generate or validate slug
+    let slug = body.slug ? String(body.slug).trim() : "";
+    if (!slug || slug === "-" || /^-+$/.test(slug)) {
+      const base = (body.name || body.name_bn || "instructor")
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      slug = base ? `${base}-${Date.now().toString().slice(-4)}` : `inst-${Date.now()}`;
+    }
+
+    // Check if slug already exists; if so, make it unique
+    const { data: existing } = await supabaseAdmin
+      .from("instructors")
+      .select("id")
+      .eq("slug", slug)
+      .maybeSingle();
+
+    if (existing) {
+      slug = `${slug}-${Date.now().toString().slice(-4)}`;
+    }
+
+    const payload: Record<string, any> = {
+      name: body.name?.trim() || body.name_bn?.trim() || "Instructor",
+      name_bn: body.name_bn?.trim() || body.name?.trim() || "শিক্ষক",
+      slug,
+      institution: body.institution?.trim() || "Ormission Education",
+      designation: body.designation?.trim() || "শিক্ষক ও মেন্টর",
+      bio: body.bio?.trim() || null,
+      photo_url: body.photo_url?.trim() || null,
+      credentials: body.credentials?.trim() || null,
+      website_url: body.website_url?.trim() || null,
+      facebook_url: body.facebook_url?.trim() || null,
+      linkedin_url: body.linkedin_url?.trim() || null,
+      youtube_url: body.youtube_url?.trim() || null,
+      display_order: Number(body.display_order) || 1,
+      is_featured: body.is_featured ?? true,
+      is_published: body.is_published ?? true,
+      seo_title: body.seo_title?.trim() || null,
+      seo_description: body.seo_description?.trim() || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (body.profile_id) {
+      payload.profile_id = body.profile_id;
+    }
+
     const { data, error } = await supabaseAdmin
       .from("instructors")
-      .insert([body])
+      .insert([payload])
       .select()
       .single();
 
@@ -54,6 +102,25 @@ export async function PUT(request: Request) {
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Instructor ID is required" }, { status: 400 });
+    }
+
+    if (updates.slug) {
+      let slug = String(updates.slug).trim();
+      if (!slug || slug === "-" || /^-+$/.test(slug)) {
+        slug = `inst-${id}`;
+      }
+      
+      const { data: existing } = await supabaseAdmin
+        .from("instructors")
+        .select("id")
+        .eq("slug", slug)
+        .neq("id", id)
+        .maybeSingle();
+
+      if (existing) {
+        slug = `${slug}-${Date.now().toString().slice(-4)}`;
+      }
+      updates.slug = slug;
     }
 
     updates.updated_at = new Date().toISOString();
