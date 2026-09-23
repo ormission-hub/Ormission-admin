@@ -68,17 +68,88 @@ function formatDateBn(dateString?: string): string {
 }
 
 /**
+ * Safely prints an HTML document using an invisible iframe.
+ * This completely avoids browser popup blocker errors (since no new window is opened),
+ * and automatically triggers the native system Print / Save-as-PDF dialog.
+ */
+function printHtmlDocument(htmlContent: string) {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return;
+  }
+
+  try {
+    const existing = document.getElementById("__ormission_print_frame__");
+    if (existing) {
+      existing.remove();
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "__ormission_print_frame__";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0px";
+    iframe.style.height = "0px";
+    iframe.style.border = "none";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document || iframe.contentDocument;
+    if (doc && iframe.contentWindow) {
+      doc.open();
+      doc.write(htmlContent);
+      doc.close();
+
+      const win = iframe.contentWindow;
+      let hasPrinted = false;
+      const trigger = () => {
+        if (hasPrinted) return;
+        hasPrinted = true;
+        try {
+          win.focus();
+          win.print();
+        } catch (e) {
+          console.error("Frame print error:", e);
+        }
+      };
+
+      if (doc.readyState === "complete") {
+        setTimeout(trigger, 350);
+      } else {
+        iframe.onload = () => setTimeout(trigger, 350);
+        setTimeout(trigger, 600);
+      }
+      return;
+    }
+  } catch (err) {
+    console.warn("Iframe print error, falling back to Blob URL:", err);
+  }
+
+  // Resilient fallback using Blob URL (does not trigger typical popup blockers)
+  try {
+    const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, "_blank");
+    if (!win) {
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `Ormission_Report_${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+  } catch (fallbackErr) {
+    console.error("Print fallback error:", fallbackErr);
+  }
+}
+
+/**
  * Generate and trigger print/download for the All-Courses Enrollment Summary Report
  */
 export function printAllCoursesEnrollmentPdf(
   summary: EnrollmentSummaryData,
   courses: CourseReportItem[]
 ) {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    alert("পপ-আপ উইন্ডো ব্লক করা রয়েছে। অনুগ্রহ করে ব্রাউজারের পপ-আপ অ্যালাউ করুন।");
-    return;
-  }
 
   const generatedDateStr = formatDateBn(new Date().toISOString());
   const reportRef = `ORM-ENR-${Date.now().toString().slice(-6)}`;
@@ -498,32 +569,17 @@ export function printAllCoursesEnrollmentPdf(
         <div>পৃষ্ঠা ১ / ১ • ormission.com</div>
       </div>
 
-      <script>
-        // Auto trigger print dialog after document assets load
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            window.print();
-          }, 450);
-        });
-      </script>
     </body>
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  printHtmlDocument(html);
 }
 
 /**
  * Generate and trigger print/download for an Individual Course's Student Admission Roster
  */
 export function printSingleCourseRosterPdf(course: CourseReportItem) {
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    alert("পপ-আপ উইন্ডো ব্লক করা রয়েছে। অনুগ্রহ করে ব্রাউজারের পপ-আপ অ্যালাউ করুন।");
-    return;
-  }
 
   const generatedDateStr = formatDateBn(new Date().toISOString());
   const reportRef = `ORM-CRS-${course.id}-${Date.now().toString().slice(-4)}`;
@@ -843,18 +899,9 @@ export function printSingleCourseRosterPdf(course: CourseReportItem) {
         <div>ormission.com</div>
       </div>
 
-      <script>
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            window.print();
-          }, 450);
-        });
-      </script>
     </body>
     </html>
   `;
 
-  printWindow.document.open();
-  printWindow.document.write(html);
-  printWindow.document.close();
+  printHtmlDocument(html);
 }

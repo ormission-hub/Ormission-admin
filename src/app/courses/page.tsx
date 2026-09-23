@@ -8,7 +8,6 @@ import {
   Trash2,
   BookOpen,
   Users,
-  Eye,
   CheckCircle2,
   RefreshCw,
   Sparkles,
@@ -752,11 +751,11 @@ export default function AdminCoursesPage() {
                     </div>
 
                     {/* Action Bar (Finger-friendly mobile touch targets) */}
-                    <div className="pt-2 border-t border-border/80 grid grid-cols-4 gap-1.5">
+                    <div className="pt-2 border-t border-border/80 flex items-center gap-1.5">
                       {/* 1-Click Curriculum Edit */}
                       <Link
                         href={`/courses/${c.id}/edit?tab=curriculum`}
-                        className="col-span-2 h-8 px-2 rounded-xl text-xs font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        className="flex-1 h-8 px-2 rounded-xl text-xs font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                         title="কারিকুলাম ও ক্লাস এডিট করুন"
                       >
                         <Layers className="w-3.5 h-3.5" />
@@ -767,22 +766,21 @@ export default function AdminCoursesPage() {
                       <button
                         type="button"
                         onClick={() => handleOpenEdit(c)}
-                        className="h-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all cursor-pointer"
+                        className="h-8 w-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all cursor-pointer shrink-0"
                         title="দ্রুত সম্পাদনা"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
 
-                      {/* Live Preview */}
-                      <a
-                        href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${c.slug}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="h-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all"
-                        title="ওয়েবসাইটে দেখুন"
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c.id, c.title_bn || c.title)}
+                        className="h-8 w-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-error hover:border-error/40 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                        title="কোর্স মুছে ফেলুন"
                       >
-                        <Eye className="w-3.5 h-3.5" />
-                      </a>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -972,17 +970,6 @@ export default function AdminCoursesPage() {
                             >
                               <Sparkles className="w-4 h-4" />
                             </button>
-
-                            {/* Live Preview */}
-                            <a
-                              href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${c.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
-                              title="ওয়েবসাইটে লাইভ দেখুন"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </a>
 
                             {/* Delete */}
                             <button
