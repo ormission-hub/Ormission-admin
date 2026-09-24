@@ -32,6 +32,7 @@ import {
   Activity,
   SlidersHorizontal,
   ChevronRight,
+  HelpCircle,
 } from "lucide-react";
 import { dbService, type DbOrder } from "@/lib/supabase/db-service";
 import {
@@ -40,7 +41,7 @@ import {
   formatBDT,
 } from "@/components/revenue-analytics-chart";
 
-// Sparkline miniature SVG for stat cards
+// Sparkline miniature SVG for stat cards (Responsive width)
 function MiniSparkline({
   type,
   color = "var(--primary)",
@@ -56,7 +57,10 @@ function MiniSparkline({
   };
 
   return (
-    <svg viewBox="0 0 120 28" className="w-20 h-6 overflow-visible select-none">
+    <svg
+      viewBox="0 0 120 28"
+      className="w-14 sm:w-20 h-5 sm:h-6 overflow-visible select-none shrink-0"
+    >
       <path
         d={paths[type] || paths.revenue}
         fill="none"
@@ -142,16 +146,23 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Filtered orders for the live recent orders table
+  // Filtered orders for the live recent orders stream
   const displayedOrders = useMemo(() => {
     const source = kpis.allOrders && kpis.allOrders.length > 0 ? kpis.allOrders : kpis.recentOrders;
     return source.filter((ord: any) => {
       // Status filter
       if (orderFilter === "completed") {
-        const isDone = ord.status === "completed" || ord.status === "paid" || ord.status === "success";
+        const isDone =
+          ord.status === "completed" ||
+          ord.status === "paid" ||
+          ord.status === "success" ||
+          ord.status === "confirmed";
         if (!isDone) return false;
       } else if (orderFilter === "pending") {
-        const isPending = ord.status === "pending" || ord.status === "processing";
+        const isPending =
+          ord.status === "pending" ||
+          ord.status === "processing" ||
+          ord.status === "initiated";
         if (!isPending) return false;
       }
 
@@ -166,25 +177,25 @@ export default function AdminDashboardPage() {
       }
 
       return true;
-    }).slice(0, 7);
+    }).slice(0, 8);
   }, [kpis.allOrders, kpis.recentOrders, orderFilter, orderSearch]);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 sm:space-y-8 max-w-7xl mx-auto pb-12 px-1 sm:px-2">
       {/* ========================================================
           1. Humanized Top Welcome Banner & System Status
           ======================================================== */}
-      <div className="bg-gradient-to-r from-surface via-surface to-surface-secondary rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm relative overflow-hidden">
+      <div className="bg-gradient-to-r from-surface via-surface to-surface-secondary rounded-2xl border border-border/80 p-4 sm:p-6 shadow-sm relative overflow-hidden">
         {/* Subtle decorative glow */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-28 -mt-28" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-24 -mt-24" />
 
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 relative z-10">
-          <div>
-            <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-5 relative z-10">
+          <div className="w-full lg:w-auto">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-text font-bengali tracking-tight">
                 {greeting}
               </h1>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span>সুপাবেস লাইভ ক্লাউড</span>
               </div>
@@ -195,9 +206,9 @@ export default function AdminDashboardPage() {
             </p>
 
             {lastRefreshed && (
-              <div className="flex items-center gap-3 text-[11px] text-text-muted font-bengali mt-2">
+              <div className="flex items-center gap-2 sm:gap-3 text-[11px] text-text-muted font-bengali mt-2 flex-wrap">
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-text-muted" />
+                  <Clock className="w-3 h-3 text-text-muted shrink-0" />
                   <span>সর্বশেষ সিঙ্ক: {lastRefreshed}</span>
                 </span>
                 <span>•</span>
@@ -206,13 +217,13 @@ export default function AdminDashboardPage() {
             )}
           </div>
 
-          {/* Quick Actions Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap self-stretch sm:self-auto">
+          {/* Quick Actions Buttons (Wrap gracefully on phones) */}
+          <div className="flex items-center gap-2 flex-wrap w-full lg:w-auto">
             <button
               type="button"
               onClick={loadData}
               disabled={loading}
-              className="btn btn-outline btn-sm font-bengali text-xs flex items-center gap-1.5 shadow-xs bg-surface hover:bg-surface-secondary"
+              className="btn btn-outline btn-sm font-bengali text-xs flex-1 sm:flex-none items-center justify-center gap-1.5 shadow-xs bg-surface hover:bg-surface-secondary py-2"
               title="তথ্য রিফ্রেশ করুন"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : ""}`} />
@@ -221,7 +232,7 @@ export default function AdminDashboardPage() {
 
             <Link
               href="/courses/enrollments"
-              className="btn btn-outline btn-sm font-bengali text-xs flex items-center gap-1.5 shadow-xs bg-surface hover:bg-surface-secondary"
+              className="btn btn-outline btn-sm font-bengali text-xs flex-1 sm:flex-none items-center justify-center gap-1.5 shadow-xs bg-surface hover:bg-surface-secondary py-2"
             >
               <FileText className="w-3.5 h-3.5 text-secondary" />
               <span>ভর্তি রিপোর্ট (PDF)</span>
@@ -229,7 +240,7 @@ export default function AdminDashboardPage() {
 
             <Link
               href="/courses/new"
-              className="btn btn-primary btn-sm font-bengali text-xs font-semibold flex items-center gap-1.5 shadow-sm"
+              className="btn btn-primary btn-sm font-bengali text-xs font-semibold w-full sm:w-auto items-center justify-center gap-1.5 shadow-sm py-2"
             >
               <PlusCircle className="w-4 h-4" />
               <span>নতুন কোর্স তৈরি</span>
@@ -239,115 +250,147 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ========================================================
-          2. KPI Cards Grid with Sparklines & Soft Pastel Tints
+          2. KPI Cards Grid (Mobile-Safe Columns & Sparklines)
           ======================================================== */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Total Revenue */}
-        <div className="group bg-surface rounded-2xl border border-border/80 p-5 shadow-xs hover:border-primary/50 hover:shadow-md transition-all duration-200 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-medium text-text-muted font-bengali">মোট অর্জিত রাজস্ব</span>
-            <div className="w-9 h-9 rounded-xl bg-blue-500/10 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
-              <TrendingUp className="w-4 h-4" />
+        <div className="group bg-surface rounded-2xl border border-border/80 p-3.5 sm:p-5 shadow-xs hover:border-primary/50 hover:shadow-md transition-all duration-200 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-medium text-text-muted font-bengali truncate">
+                মোট অর্জিত রাজস্ব
+              </span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-500/10 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
+              <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-text font-sans tracking-tight truncate">
+                {loading ? "..." : formatBDT(kpis.totalRevenue)}
+              </div>
+              <div className="hidden xs:block shrink-0">
+                <MiniSparkline type="revenue" color="#2563EB" />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-text font-sans tracking-tight">
-              {loading ? "..." : formatBDT(kpis.totalRevenue)}
-            </div>
-            <MiniSparkline type="revenue" color="#2563EB" />
-          </div>
-
-          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60 text-xs">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
-              <ArrowUpRight className="w-3 h-3 stroke-[2.5]" />
-              <span>+১৮.২% এই মাসে</span>
+          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-xs">
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded truncate">
+              <ArrowUpRight className="w-3 h-3 stroke-[2.5] shrink-0" />
+              <span>+১৮.২%</span>
             </span>
-            <span className="text-[11px] text-text-muted font-bengali">নেট কোর্স ফি</span>
+            <span className="text-[10px] sm:text-[11px] text-text-muted font-bengali truncate">
+              কোর্স ফি
+            </span>
           </div>
         </div>
 
         {/* Registered Students */}
-        <div className="group bg-surface rounded-2xl border border-border/80 p-5 shadow-xs hover:border-secondary/50 hover:shadow-md transition-all duration-200 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-medium text-text-muted font-bengali">নিবন্ধিত শিক্ষার্থী</span>
-            <div className="w-9 h-9 rounded-xl bg-teal-500/10 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Users className="w-4 h-4" />
+        <div className="group bg-surface rounded-2xl border border-border/80 p-3.5 sm:p-5 shadow-xs hover:border-secondary/50 hover:shadow-md transition-all duration-200 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-medium text-text-muted font-bengali truncate">
+                নিবন্ধিত শিক্ষার্থী
+              </span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-teal-500/10 text-secondary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Users className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
+              <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-text font-sans tracking-tight truncate">
+                {loading ? "..." : `${toBengaliNumerals(kpis.totalStudents)} জন`}
+              </div>
+              <div className="hidden xs:block shrink-0">
+                <MiniSparkline type="students" color="#0F766E" />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-text font-sans tracking-tight">
-              {loading ? "..." : `${toBengaliNumerals(kpis.totalStudents)} জন`}
-            </div>
-            <MiniSparkline type="students" color="#0F766E" />
-          </div>
-
-          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60 text-xs">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-600 dark:text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded font-bengali">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>সক্রিয় শিক্ষার্থী</span>
+          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-xs">
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-teal-600 dark:text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded font-bengali truncate">
+              <CheckCircle2 className="w-3 h-3 shrink-0" />
+              <span>সক্রিয়</span>
             </span>
-            <span className="text-[11px] text-text-muted font-bengali">প্রোফাইল ভেরিফাইড</span>
+            <span className="text-[10px] sm:text-[11px] text-text-muted font-bengali truncate">
+              ভেরিফাইড
+            </span>
           </div>
         </div>
 
         {/* Active Courses */}
-        <div className="group bg-surface rounded-2xl border border-border/80 p-5 shadow-xs hover:border-accent/50 hover:shadow-md transition-all duration-200 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-medium text-text-muted font-bengali">সক্রিয় কোর্স সংখ্যা</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-accent flex items-center justify-center group-hover:scale-105 transition-transform">
-              <BookOpen className="w-4 h-4" />
+        <div className="group bg-surface rounded-2xl border border-border/80 p-3.5 sm:p-5 shadow-xs hover:border-accent/50 hover:shadow-md transition-all duration-200 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-medium text-text-muted font-bengali truncate">
+                সক্রিয় কোর্স সংখ্যা
+              </span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/10 text-accent flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <BookOpen className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
+              <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-text font-sans tracking-tight truncate">
+                {loading ? "..." : `${toBengaliNumerals(kpis.totalCourses)}টি`}
+              </div>
+              <div className="hidden xs:block shrink-0">
+                <MiniSparkline type="courses" color="#E9A23B" />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-text font-sans tracking-tight">
-              {loading ? "..." : `${toBengaliNumerals(kpis.totalCourses)}টি`}
-            </div>
-            <MiniSparkline type="courses" color="#E9A23B" />
-          </div>
-
-          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60 text-xs">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-bengali">
-              <span>ক্যাটালগ অন্তর্ভুক্ত</span>
+          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-xs">
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded font-bengali truncate">
+              <span>ক্যাটালগ</span>
             </span>
-            <span className="text-[11px] text-text-muted font-bengali">৪টি ক্যাটাগরি</span>
+            <span className="text-[10px] sm:text-[11px] text-text-muted font-bengali truncate">
+              ৪ ক্যাটাগরি
+            </span>
           </div>
         </div>
 
         {/* Total Orders */}
-        <div className="group bg-surface rounded-2xl border border-border/80 p-5 shadow-xs hover:border-indigo-500/50 hover:shadow-md transition-all duration-200 relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2.5">
-            <span className="text-xs font-medium text-text-muted font-bengali">মোট অর্ডার ও ভর্তি</span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Receipt className="w-4 h-4" />
+        <div className="group bg-surface rounded-2xl border border-border/80 p-3.5 sm:p-5 shadow-xs hover:border-indigo-500/50 hover:shadow-md transition-all duration-200 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] sm:text-xs font-medium text-text-muted font-bengali truncate">
+                মোট সফল অর্ডার
+              </span>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Receipt className="w-4 h-4" />
+              </div>
+            </div>
+
+            <div className="flex items-baseline justify-between gap-1.5 sm:gap-2">
+              <div className="text-lg sm:text-2xl lg:text-3xl font-extrabold text-text font-sans tracking-tight truncate">
+                {loading ? "..." : `${toBengaliNumerals(kpis.totalOrders)}টি`}
+              </div>
+              <div className="hidden xs:block shrink-0">
+                <MiniSparkline type="orders" color="#6366F1" />
+              </div>
             </div>
           </div>
 
-          <div className="flex items-baseline justify-between gap-2">
-            <div className="text-2xl sm:text-3xl font-extrabold text-text font-sans tracking-tight">
-              {loading ? "..." : `${toBengaliNumerals(kpis.totalOrders)}টি`}
-            </div>
-            <MiniSparkline type="orders" color="#6366F1" />
-          </div>
-
-          <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/60 text-xs">
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded font-bengali">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>সফল ট্রানজ্যাকশন</span>
+          <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/60 text-xs">
+            <span className="inline-flex items-center gap-0.5 text-[10px] sm:text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded font-bengali truncate">
+              <CheckCircle2 className="w-3 h-3 shrink-0" />
+              <span>সফল</span>
             </span>
-            <span className="text-[11px] text-text-muted font-bengali">গেটওয়ে প্রসেসড</span>
+            <span className="text-[10px] sm:text-[11px] text-text-muted font-bengali truncate">
+              স্বয়ংক্রিয়
+            </span>
           </div>
         </div>
       </div>
 
       {/* Database Empty Banner (Helpful for fresh install) */}
       {!loading && kpis.totalCourses === 0 && (
-        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+        <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
           <div className="space-y-1">
             <div className="flex items-center gap-2 font-bold text-sm text-text font-bengali">
-              <Sparkles className="w-4 h-4 text-primary" />
+              <Sparkles className="w-4 h-4 text-primary shrink-0" />
               <span>আপনার Supabase ডাটাবেজে এখনো কোনো কোর্স বা ক্যাটাগরি নেই</span>
             </div>
             <p className="text-xs text-text-muted font-bengali">
@@ -358,7 +401,7 @@ export default function AdminDashboardPage() {
             type="button"
             onClick={handleSeed}
             disabled={seeding}
-            className="btn btn-primary btn-sm font-bengali text-xs font-bold whitespace-nowrap shadow-xs"
+            className="btn btn-primary btn-sm font-bengali text-xs font-bold whitespace-nowrap shadow-xs w-full sm:w-auto"
           >
             <Sparkles className={`w-3.5 h-3.5 ${seeding ? "animate-spin" : ""}`} />
             <span>{seeding ? "সিড হচ্ছে..." : "প্রাথমিক ডেটা সিড করুন"}</span>
@@ -367,7 +410,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* ========================================================
-          3. Analytics Chart & Operations Shortcuts (Main 2:1 Grid)
+          3. Analytics Chart & Operations Shortcuts (2:1 Grid)
           ======================================================== */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column (2 Cols): Redesigned Human-Style Revenue Chart */}
@@ -381,7 +424,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Right Column (1 Col): Humanized Quick Operations Shortcuts */}
-        <div className="bg-surface rounded-2xl border border-border/80 p-5 sm:p-6 shadow-xs flex flex-col justify-between hover:border-primary/30 transition-all duration-200">
+        <div className="bg-surface rounded-2xl border border-border/80 p-4 sm:p-6 shadow-xs flex flex-col justify-between hover:border-primary/30 transition-all duration-200">
           <div>
             <div className="flex items-center justify-between mb-1">
               <h2 className="text-base font-bold text-text font-bengali">
@@ -395,14 +438,14 @@ export default function AdminDashboardPage() {
               নিয়মিত প্রশাসনিক কাজগুলোর সরাসরি অ্যাক্সেস
             </p>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2 sm:space-y-2.5">
               {/* Action 1: Create Course */}
               <Link
                 href="/courses/new"
-                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-primary/5 hover:border-primary/20 border border-transparent transition-all group min-h-[48px]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-primary flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-primary flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                     <PlusCircle className="w-4 h-4" />
                   </div>
                   <div>
@@ -414,16 +457,16 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               {/* Action 2: Free Study Sheet */}
               <Link
                 href="/resources"
-                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-teal-500/5 hover:border-teal-500/20 border border-transparent transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-teal-500/5 hover:border-teal-500/20 border border-transparent transition-all group min-h-[48px]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-teal-500/10 text-secondary flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                     <FileDown className="w-4 h-4" />
                   </div>
                   <div>
@@ -435,16 +478,16 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-secondary group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-secondary group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               {/* Action 3: Payment & Orders Audit */}
               <Link
                 href="/orders"
-                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-amber-500/5 hover:border-amber-500/20 border border-transparent transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-amber-500/5 hover:border-amber-500/20 border border-transparent transition-all group min-h-[48px]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-accent flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-accent flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                     <Receipt className="w-4 h-4" />
                   </div>
                   <div>
@@ -456,16 +499,16 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-accent group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               {/* Action 4: SSLCommerz Payment Settings */}
               <Link
                 href="/settings/payment"
-                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-emerald-500/5 hover:border-emerald-500/20 border border-transparent transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-emerald-500/5 hover:border-emerald-500/20 border border-transparent transition-all group min-h-[48px]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                     <CreditCard className="w-4 h-4" />
                   </div>
                   <div>
@@ -477,16 +520,16 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-emerald-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-emerald-600 group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
 
               {/* Action 5: Enrollment PDF Report */}
               <Link
                 href="/courses/enrollments"
-                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-rose-500/5 hover:border-rose-500/20 border border-transparent transition-all group"
+                className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary hover:bg-rose-500/5 hover:border-rose-500/20 border border-transparent transition-all group min-h-[48px]"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <div className="w-8 h-8 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                     <FileText className="w-4 h-4" />
                   </div>
                   <div>
@@ -498,7 +541,7 @@ export default function AdminDashboardPage() {
                     </span>
                   </div>
                 </div>
-                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-rose-600 group-hover:translate-x-1 transition-all" />
+                <ArrowRight className="w-3.5 h-3.5 text-text-muted group-hover:text-rose-600 group-hover:translate-x-1 transition-all shrink-0" />
               </Link>
             </div>
           </div>
@@ -507,7 +550,7 @@ export default function AdminDashboardPage() {
           <div className="pt-4 mt-4 border-t border-border/80 space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bengali text-text-muted flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                 <span>ডাটাবেজ সুরক্ষা:</span>
               </span>
               <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-[11px]">
@@ -526,11 +569,11 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ========================================================
-          4. Platform Breakdown & Channel Share Widgets (NEW)
+          4. Platform Breakdown & Channel Share Widgets
           ======================================================== */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
         {/* Payment Channels Split */}
-        <div className="bg-surface rounded-2xl border border-border/80 p-5 shadow-xs">
+        <div className="bg-surface rounded-2xl border border-border/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-text font-bengali">
               পেমেন্ট চ্যানেল শেয়ার
@@ -589,7 +632,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Popular Course Categories */}
-        <div className="bg-surface rounded-2xl border border-border/80 p-5 shadow-xs">
+        <div className="bg-surface rounded-2xl border border-border/80 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-text font-bengali">
               ক্যাটাগরি অনুযায়ী আগ্রহ
@@ -638,10 +681,10 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Operational Highlights & Tips */}
-        <div className="bg-surface rounded-2xl border border-border/80 p-5 shadow-xs flex flex-col justify-between">
+        <div className="bg-surface rounded-2xl border border-border/80 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-accent" />
+              <Sparkles className="w-4 h-4 text-accent shrink-0" />
               <h3 className="text-sm font-bold text-text font-bengali">
                 অ্যাডমিন টিপস ও ইনসাইট
               </h3>
@@ -665,17 +708,19 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ========================================================
-          5. Live Recent Orders Stream & Quick Inspection Table
+          5. Live Recent Orders Stream & Quick Inspection
+             - Mobile Cards List View (`block sm:hidden`)
+             - Desktop Table View (`hidden sm:block`)
           ======================================================== */}
-      <div className="bg-surface rounded-2xl border border-border/80 p-5 sm:p-6 shadow-xs">
+      <div className="bg-surface rounded-2xl border border-border/80 p-4 sm:p-6 shadow-xs">
         {/* Table Header with Filters and Search */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-border/70">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-border/70">
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-base sm:text-lg font-bold text-text font-bengali">
                 সাম্প্রতিক শিক্ষার্থী ভর্তি ও অর্ডার
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20 shrink-0">
                 লাইভ ট্র্যাকার
               </span>
             </div>
@@ -737,7 +782,7 @@ export default function AdminDashboardPage() {
 
             <Link
               href="/orders"
-              className="text-xs font-bold text-primary hover:underline flex items-center gap-1 font-bengali ml-1"
+              className="text-xs font-bold text-primary hover:underline flex items-center gap-1 font-bengali ml-auto sm:ml-1"
             >
               <span>সকল দেখুন</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -745,14 +790,14 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Orders Table */}
+        {/* Content Area */}
         {loading ? (
-          <div className="py-16 text-center text-xs text-text-muted font-bengali">
+          <div className="py-14 text-center text-xs text-text-muted font-bengali">
             <RefreshCw className="w-6 h-6 mx-auto mb-2 animate-spin text-primary" />
             ডাটাবেজ থেকে সাম্প্রতিক অর্ডার লোড করা হচ্ছে...
           </div>
         ) : displayedOrders.length === 0 ? (
-          <div className="py-16 text-center text-xs text-text-muted font-bengali">
+          <div className="py-14 text-center text-xs text-text-muted font-bengali">
             <Receipt className="w-10 h-10 mx-auto mb-2 opacity-30 text-text-muted" />
             <p className="font-bold text-text text-sm">কোনো অর্ডার পাওয়া যায়নি</p>
             <p className="mt-1">
@@ -762,121 +807,225 @@ export default function AdminDashboardPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-border/80 text-text-muted uppercase tracking-wider text-[10px] font-sans">
-                <tr>
-                  <th className="py-3 px-3 font-semibold">অর্ডার আইডি</th>
-                  <th className="py-3 px-3 font-semibold font-bengali">শিক্ষার্থী</th>
-                  <th className="py-3 px-3 font-semibold font-bengali">কোর্স নাম</th>
-                  <th className="py-3 px-3 font-semibold font-bengali">পরিমাণ</th>
-                  <th className="py-3 px-3 font-semibold font-bengali">পদ্ধতি</th>
-                  <th className="py-3 px-3 font-semibold font-bengali">স্ট্যাটাস</th>
-                  <th className="py-3 px-3 font-semibold font-bengali text-right">অ্যাকশন</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
-                {displayedOrders.map((ord: any) => {
-                  const studentName = ord.profiles?.full_name || "নাম অপ্রাপ্ত";
-                  const studentPhone = ord.profiles?.phone || "";
-                  const courseTitle = ord.courses?.title_bn || ord.courses?.title || "অনলাইন ব্যাচ";
-                  const orderNum = ord.order_number || ord.id.slice(0, 8);
-                  const isSuccess =
-                    ord.status === "completed" || ord.status === "paid" || ord.status === "success";
+          <>
+            {/* ========================================================
+                A. MOBILE VIEW: Dedicated Touch-Friendly Order Cards (`block sm:hidden`)
+                ======================================================== */}
+            <div className="block sm:hidden space-y-3">
+              {displayedOrders.map((ord: any) => {
+                const studentName = ord.profiles?.full_name || "নাম অপ্রাপ্ত";
+                const studentPhone = ord.profiles?.phone || "";
+                const courseTitle = ord.courses?.title_bn || ord.courses?.title || "অনলাইন ব্যাচ";
+                const orderNum = ord.order_number || ord.id.slice(0, 8);
+                const isSuccess =
+                  ord.status === "completed" ||
+                  ord.status === "paid" ||
+                  ord.status === "success" ||
+                  ord.status === "confirmed";
 
-                  // Color for student initial avatar
-                  const initial = studentName.charAt(0);
+                const initial = studentName.charAt(0);
 
-                  return (
-                    <tr
-                      key={ord.id}
-                      className="hover:bg-surface-secondary/60 transition-colors group"
-                    >
-                      {/* Order Number + Copy */}
-                      <td className="py-3.5 px-3 font-mono font-medium text-text">
-                        <div className="flex items-center gap-1.5">
-                          <span>{orderNum}</span>
-                          <button
-                            type="button"
-                            onClick={() => copyOrderNumber(orderNum, ord.id)}
-                            className="text-text-muted hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"
-                            title="অর্ডার নম্বর কপি করুন"
-                          >
-                            {copiedId === ord.id ? (
-                              <Check className="w-3 h-3 text-success" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </button>
+                return (
+                  <div
+                    key={ord.id}
+                    className="p-3 rounded-xl bg-surface-secondary/70 border border-border/70 space-y-2.5"
+                  >
+                    {/* Top Row: Student + Status Badge */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                          {initial}
                         </div>
-                      </td>
-
-                      {/* Student info */}
-                      <td className="py-3.5 px-3">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
-                            {initial}
-                          </div>
-                          <div>
-                            <span className="font-bold text-text block font-bengali">
-                              {studentName}
+                        <div>
+                          <span className="font-bold text-text block text-xs font-bengali">
+                            {studentName}
+                          </span>
+                          {studentPhone && (
+                            <span className="text-[10px] text-text-muted font-sans block">
+                              {studentPhone}
                             </span>
-                            {studentPhone && (
-                              <span className="text-[10px] text-text-muted font-sans block">
-                                {studentPhone}
-                              </span>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      </td>
+                      </div>
 
-                      {/* Course */}
-                      <td className="py-3.5 px-3 font-bengali text-text max-w-xs truncate">
-                        <span title={courseTitle}>{courseTitle}</span>
-                      </td>
+                      {isSuccess ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] font-bengali bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3 shrink-0" />
+                          <span>সফল</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold text-[11px] font-bengali bg-amber-500/10 px-2 py-0.5 rounded-full">
+                          <Clock className="w-3 h-3 shrink-0" />
+                          <span>পেন্ডিং</span>
+                        </span>
+                      )}
+                    </div>
 
-                      {/* Amount */}
-                      <td className="py-3.5 px-3 font-bold text-text font-sans text-sm">
-                        {formatBDT(Number(ord.paid_amount || ord.total_amount || 0))}
-                      </td>
+                    {/* Middle: Course Title */}
+                    <div className="text-xs font-bengali text-text line-clamp-1 bg-surface px-2.5 py-1 rounded-lg border border-border/50">
+                      <span className="text-text-muted text-[10px] mr-1">কোর্স:</span>
+                      <span className="font-medium">{courseTitle}</span>
+                    </div>
 
-                      {/* Payment Method */}
-                      <td className="py-3.5 px-3 text-text-muted">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-secondary text-text border border-border">
+                    {/* Bottom Row: Order # + Amount + Payment Method + Action */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-border/50">
+                      <div className="flex items-center gap-1.5 font-mono text-[11px] text-text-muted">
+                        <span>{orderNum}</span>
+                        <button
+                          type="button"
+                          onClick={() => copyOrderNumber(orderNum, ord.id)}
+                          className="text-text-muted hover:text-text"
+                          title="কপি"
+                        >
+                          {copiedId === ord.id ? (
+                            <Check className="w-3 h-3 text-success" />
+                          ) : (
+                            <Copy className="w-3 h-3" />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface text-text border border-border">
                           {ord.payment_method || "bKash"}
                         </span>
-                      </td>
-
-                      {/* Status */}
-                      <td className="py-3.5 px-3">
-                        {isSuccess ? (
-                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] font-bengali">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>সফল</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold text-[11px] font-bengali">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>পেন্ডিং</span>
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-3.5 px-3 text-right">
+                        <span className="font-bold text-text font-sans">
+                          {formatBDT(Number(ord.paid_amount || ord.total_amount || 0))}
+                        </span>
                         <Link
                           href="/orders"
-                          className="text-[11px] text-primary hover:underline font-bengali font-semibold"
+                          className="text-[11px] text-primary font-bold hover:underline font-bengali ml-1"
                         >
                           বিস্তারিত
                         </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ========================================================
+                B. DESKTOP VIEW: Full Data Table (`hidden sm:block`)
+                ======================================================== */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="border-b border-border/80 text-text-muted uppercase tracking-wider text-[10px] font-sans">
+                  <tr>
+                    <th className="py-3 px-3 font-semibold">অর্ডার আইডি</th>
+                    <th className="py-3 px-3 font-semibold font-bengali">শিক্ষার্থী</th>
+                    <th className="py-3 px-3 font-semibold font-bengali">কোর্স নাম</th>
+                    <th className="py-3 px-3 font-semibold font-bengali">পরিমাণ</th>
+                    <th className="py-3 px-3 font-semibold font-bengali">পদ্ধতি</th>
+                    <th className="py-3 px-3 font-semibold font-bengali">স্ট্যাটাস</th>
+                    <th className="py-3 px-3 font-semibold font-bengali text-right">অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {displayedOrders.map((ord: any) => {
+                    const studentName = ord.profiles?.full_name || "নাম অপ্রাপ্ত";
+                    const studentPhone = ord.profiles?.phone || "";
+                    const courseTitle = ord.courses?.title_bn || ord.courses?.title || "অনলাইন ব্যাচ";
+                    const orderNum = ord.order_number || ord.id.slice(0, 8);
+                    const isSuccess =
+                      ord.status === "completed" ||
+                      ord.status === "paid" ||
+                      ord.status === "success" ||
+                      ord.status === "confirmed";
+
+                    const initial = studentName.charAt(0);
+
+                    return (
+                      <tr
+                        key={ord.id}
+                        className="hover:bg-surface-secondary/60 transition-colors group"
+                      >
+                        {/* Order Number + Copy */}
+                        <td className="py-3.5 px-3 font-mono font-medium text-text">
+                          <div className="flex items-center gap-1.5">
+                            <span>{orderNum}</span>
+                            <button
+                              type="button"
+                              onClick={() => copyOrderNumber(orderNum, ord.id)}
+                              className="text-text-muted hover:text-text opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="অর্ডার নম্বর কপি করুন"
+                            >
+                              {copiedId === ord.id ? (
+                                <Check className="w-3 h-3 text-success" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Student info */}
+                        <td className="py-3.5 px-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-xs shrink-0">
+                              {initial}
+                            </div>
+                            <div>
+                              <span className="font-bold text-text block font-bengali">
+                                {studentName}
+                              </span>
+                              {studentPhone && (
+                                <span className="text-[10px] text-text-muted font-sans block">
+                                  {studentPhone}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Course */}
+                        <td className="py-3.5 px-3 font-bengali text-text max-w-xs truncate">
+                          <span title={courseTitle}>{courseTitle}</span>
+                        </td>
+
+                        {/* Amount */}
+                        <td className="py-3.5 px-3 font-bold text-text font-sans text-sm">
+                          {formatBDT(Number(ord.paid_amount || ord.total_amount || 0))}
+                        </td>
+
+                        {/* Payment Method */}
+                        <td className="py-3.5 px-3 text-text-muted">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-surface-secondary text-text border border-border">
+                            {ord.payment_method || "bKash"}
+                          </span>
+                        </td>
+
+                        {/* Status */}
+                        <td className="py-3.5 px-3">
+                          {isSuccess ? (
+                            <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px] font-bengali">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>সফল</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold text-[11px] font-bengali">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>পেন্ডিং</span>
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Action */}
+                        <td className="py-3.5 px-3 text-right">
+                          <Link
+                            href="/orders"
+                            className="text-[11px] text-primary hover:underline font-bengali font-semibold"
+                          >
+                            বিস্তারিত
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import {
   TrendingUp,
   DollarSign,
@@ -10,8 +10,11 @@ import {
   BarChart2,
   Activity,
   ArrowUpRight,
+  ArrowDownRight,
   Sparkles,
   Zap,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 
 interface OrderItem {
@@ -51,7 +54,7 @@ export function toBengaliNumerals(num: number | string): string {
 }
 
 export function formatBDT(amount: number): string {
-  return `৳${toBengaliNumerals(amount.toLocaleString("en-US"))}`;
+  return `৳${toBengaliNumerals(Math.round(amount).toLocaleString("en-US"))}`;
 }
 
 export function RevenueAnalyticsChart({
@@ -67,18 +70,31 @@ export function RevenueAnalyticsChart({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Generate realistic & reactive time-series data
-  const chartData = useMemo<DataPoint[]>(() => {
-    const now = new Date(2026, 8, 24); // Sept 24, 2026 (aligns with current system time)
+  // SVG Geometry Dimensions
+  const width = 840;
+  const height = 250;
+  const padding = { top: 25, right: 20, bottom: 40, left: 62 };
+  const graphWidth = width - padding.left - padding.right;
+  const graphHeight = height - padding.top - padding.bottom;
 
-    const completedOrders = orders.filter(
-      (o) => o.status === "completed" || o.status === "paid" || (o.status as any) === "success"
-    );
+  // Filter valid completed/paid orders
+  const completedOrders = useMemo(() => {
+    return orders.filter((o) => {
+      const s = String(o.status || "").toLowerCase();
+      return s === "completed" || s === "paid" || s === "success" || s === "confirmed";
+    });
+  }, [orders]);
+
+  const hasRealData = completedOrders.length > 0;
+
+  // Generate reactive time-series data with real order aggregation
+  const chartData = useMemo<DataPoint[]>(() => {
+    const now = new Date(); // dynamic real date
 
     let daysCount = 30;
     if (timeRange === "7d") daysCount = 7;
     else if (timeRange === "90d") daysCount = 90;
-    else if (timeRange === "1y") daysCount = 12; // 12 months
+    else if (timeRange === "1y") daysCount = 12;
 
     const bnWeekdays = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
     const bnMonths = [
@@ -93,16 +109,15 @@ export function RevenueAnalyticsChart({
     const points: DataPoint[] = [];
 
     if (timeRange === "1y") {
-      // 12 Months breakdown
-      const baseMonthlyRev = [28500, 34200, 41000, 39500, 52000, 68000, 74500, 89000, 94200, 82000, 88500, 96000];
-      const baseMonthlyEnr = [22, 28, 35, 31, 44, 58, 62, 75, 80, 68, 74, 82];
+      // 12 Months of current year
+      const currentYear = now.getFullYear();
 
       for (let i = 0; i < 12; i++) {
-        // If real orders exist, aggregate by month
+        // Aggregate real completed orders for month i
         const monthOrders = completedOrders.filter((o) => {
           if (!o.created_at) return false;
           const d = new Date(o.created_at);
-          return d.getMonth() === i;
+          return d.getFullYear() === currentYear && d.getMonth() === i;
         });
 
         const realRev = monthOrders.reduce(
@@ -111,31 +126,33 @@ export function RevenueAnalyticsChart({
         );
         const realEnr = monthOrders.length;
 
-        // Blend with organic baseline if early database stage
-        const rev = realRev > 0 ? realRev : baseMonthlyRev[i];
-        const enr = realEnr > 0 ? realEnr : baseMonthlyEnr[i];
+        // Realistic fallback trend if early database stage with 0 orders
+        const demoMonthlyRev = [28500, 34200, 41000, 39500, 52000, 68000, 74500, 89000, 94200, 82000, 88500, 96000];
+        const demoMonthlyEnr = [22, 28, 35, 31, 44, 58, 62, 75, 80, 68, 74, 82];
+
+        const rev = hasRealData ? realRev : demoMonthlyRev[i];
+        const enr = hasRealData ? realEnr : demoMonthlyEnr[i];
 
         points.push({
-          dateKey: `2026-${i + 1}`,
+          dateKey: `${currentYear}-${i + 1}`,
           label: bnMonths[i],
-          fullDate: `${bnFullMonths[i]} ২০২৬`,
+          fullDate: `${bnFullMonths[i]} ${toBengaliNumerals(currentYear)}`,
           revenue: rev,
           enrollments: enr,
         });
       }
     } else {
       // Days-based breakdown (7d, 30d, 90d)
-      // Realistic organic curve generator: weekend learning peaks, announcement spikes
       for (let i = daysCount - 1; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
 
         const dayOfMonth = d.getDate();
         const monthIdx = d.getMonth();
-        const dayOfWeek = d.getDay(); // 0 is Sunday, 5 is Friday
-        const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Fri/Sat in BD
+        const dayOfWeek = d.getDay();
+        const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday/Saturday in Bangladesh
 
-        // Find real orders for this specific date
+        // Filter real orders for this specific calendar date
         const dateStr = d.toISOString().slice(0, 10);
         const dayOrders = completedOrders.filter((o) => {
           if (!o.created_at) return false;
@@ -148,21 +165,22 @@ export function RevenueAnalyticsChart({
         );
         const realDayEnr = dayOrders.length;
 
-        // Generate organic human curve values
-        // Weekend admission campaigns have higher conversion
+        // Realistic organic wave fallback when 0 orders exist
         const seedMultiplier = 1 + Math.sin(i * 0.45) * 0.35 + (isWeekend ? 0.3 : 0);
-        const baseRev = Math.round((4200 + (i % 7) * 950 + (i % 5) * 1200) * seedMultiplier);
-        const baseEnr = Math.max(1, Math.round((baseRev / 1600) + (isWeekend ? 2 : 0)));
+        const demoRev = Math.round((4200 + (i % 7) * 950 + (i % 5) * 1200) * seedMultiplier);
+        const demoEnr = Math.max(1, Math.round(demoRev / 1600 + (isWeekend ? 2 : 0)));
 
-        const finalRev = realDayRev > 0 ? realDayRev : baseRev;
-        const finalEnr = realDayEnr > 0 ? realDayEnr : baseEnr;
+        const finalRev = hasRealData ? realDayRev : demoRev;
+        const finalEnr = hasRealData ? realDayEnr : demoEnr;
 
         const label =
           timeRange === "7d"
             ? `${bnWeekdays[dayOfWeek].slice(0, 3)}`
             : `${toBengaliNumerals(dayOfMonth)} ${bnMonths[monthIdx]}`;
 
-        const fullDate = `${toBengaliNumerals(dayOfMonth)} ${bnFullMonths[monthIdx]} ২০২৬, ${bnWeekdays[dayOfWeek]}`;
+        const fullDate = `${toBengaliNumerals(dayOfMonth)} ${bnFullMonths[monthIdx]} ${toBengaliNumerals(
+          d.getFullYear()
+        )}, ${bnWeekdays[dayOfWeek]}`;
 
         points.push({
           dateKey: dateStr,
@@ -174,7 +192,7 @@ export function RevenueAnalyticsChart({
       }
     }
 
-    // Mark peak point
+    // Mark peak data point
     let maxVal = -1;
     let maxIdx = 0;
     points.forEach((p, idx) => {
@@ -184,14 +202,14 @@ export function RevenueAnalyticsChart({
         maxIdx = idx;
       }
     });
-    if (points[maxIdx]) {
+    if (points[maxIdx] && maxVal > 0) {
       points[maxIdx].isPeak = true;
     }
 
     return points;
-  }, [orders, timeRange, metric]);
+  }, [completedOrders, hasRealData, timeRange, metric]);
 
-  // Aggregate metrics for summary bar
+  // Aggregate metrics & compute genuine growth rate
   const summary = useMemo(() => {
     const totalRev = chartData.reduce((acc, p) => acc + p.revenue, 0);
     const totalEnr = chartData.reduce((acc, p) => acc + p.enrollments, 0);
@@ -201,24 +219,41 @@ export function RevenueAnalyticsChart({
 
     const peakPoint = chartData.find((p) => p.isPeak) || chartData[0];
 
+    // Compute genuine growth rate comparing first half vs second half
+    const n = chartData.length;
+    const mid = Math.floor(n / 2);
+    const firstHalfSum = chartData
+      .slice(0, mid)
+      .reduce((sum, p) => sum + (metric === "revenue" ? p.revenue : p.enrollments), 0);
+    const secondHalfSum = chartData
+      .slice(mid)
+      .reduce((sum, p) => sum + (metric === "revenue" ? p.revenue : p.enrollments), 0);
+
+    let growthPct = 0;
+    if (firstHalfSum > 0) {
+      growthPct = Math.round(((secondHalfSum - firstHalfSum) / firstHalfSum) * 100);
+    } else if (secondHalfSum > 0) {
+      growthPct = 100;
+    } else {
+      growthPct = 0;
+    }
+
+    const isPositive = growthPct >= 0;
+    const growthText = `${isPositive ? "+" : ""}${toBengaliNumerals(growthPct)}%`;
+
     return {
       total: metric === "revenue" ? totalRev : totalEnr,
       avg: metric === "revenue" ? avgRev : avgEnr,
       peakDate: peakPoint?.label || "-",
       peakValue: metric === "revenue" ? peakPoint?.revenue || 0 : peakPoint?.enrollments || 0,
-      growth: "+১৮.৪%",
+      growth: growthText,
+      isPositive,
     };
   }, [chartData, metric]);
 
-  // SVG Geometry Calculation
-  const width = 840;
-  const height = 240;
-  const padding = { top: 25, right: 20, bottom: 35, left: 60 };
-  const graphWidth = width - padding.left - padding.right;
-  const graphHeight = height - padding.top - padding.bottom;
-
+  // Scaling calculations
   const values = chartData.map((d) => (metric === "revenue" ? d.revenue : d.enrollments));
-  const maxVal = Math.max(...values, 1) * 1.15; // 15% head room
+  const maxVal = Math.max(...values, 1) * 1.15;
   const minVal = 0;
 
   const points = useMemo(() => {
@@ -231,7 +266,7 @@ export function RevenueAnalyticsChart({
     });
   }, [chartData, metric, maxVal, minVal, graphWidth, graphHeight, padding]);
 
-  // Generate smooth cubic bezier curve path (Catmull-Rom to Cubic Bezier)
+  // Cubic Bezier path calculation
   const { linePath, areaPath } = useMemo(() => {
     if (points.length === 0) return { linePath: "", areaPath: "" };
 
@@ -268,7 +303,7 @@ export function RevenueAnalyticsChart({
     return { linePath: d, areaPath: area };
   }, [points, graphHeight, padding]);
 
-  // Horizontal Grid Lines with Bangla currency labels
+  // Y-axis grid lines and labels
   const yTicks = [0, 0.33, 0.66, 1].map((pct) => {
     const val = Math.round(minVal + pct * (maxVal - minVal));
     const y = padding.top + graphHeight - pct * graphHeight;
@@ -281,52 +316,125 @@ export function RevenueAnalyticsChart({
     return { y, label, val };
   });
 
-  // Calculate hovered point
-  const currentHoverPoint = hoveredIndex !== null && points[hoveredIndex] ? points[hoveredIndex] : null;
+  const currentHoverPoint =
+    hoveredIndex !== null && points[hoveredIndex] ? points[hoveredIndex] : null;
 
-  // Handle mouse movement over chart
+  // Touch and Mouse handlers for seamless phone and desktop interaction
+  const updateHoverFromClientX = useCallback(
+    (clientX: number, target: SVGSVGElement) => {
+      const rect = target.getBoundingClientRect();
+      const relX = clientX - rect.left;
+      const ratio = Math.max(0, Math.min(1, (relX - padding.left) / graphWidth));
+      const idx = Math.min(points.length - 1, Math.max(0, Math.round(ratio * (points.length - 1))));
+      setHoveredIndex(idx);
+    },
+    [padding.left, graphWidth, points.length]
+  );
+
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clientX = e.clientX - rect.left;
-    const ratio = Math.max(0, Math.min(1, (clientX - padding.left) / graphWidth));
-    const idx = Math.min(points.length - 1, Math.max(0, Math.round(ratio * (points.length - 1))));
-    setHoveredIndex(idx);
+    updateHoverFromClientX(e.clientX, e.currentTarget);
   };
 
-  const handleMouseLeave = () => {
+  const handleTouch = (e: React.TouchEvent<SVGSVGElement>) => {
+    if (e.touches && e.touches[0]) {
+      updateHoverFromClientX(e.touches[0].clientX, e.currentTarget);
+    }
+  };
+
+  const handlePointerLeave = () => {
     setHoveredIndex(null);
   };
 
-  return (
-    <div className="bg-surface rounded-2xl border border-border/80 p-5 sm:p-6 shadow-sm relative overflow-hidden transition-all duration-200 hover:border-primary/30">
-      {/* Background soft ambient tint */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+  // Safe Tooltip Positioning that never clips off screen edges
+  const tooltipStyle = useMemo(() => {
+    if (!currentHoverPoint) return {};
+    const xPct = (currentHoverPoint.x / width) * 100;
+    const yPct = (currentHoverPoint.y / height) * 100;
 
-      {/* Top Header & Interactive Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-border/70 relative z-10">
+    // Edge-clamping for small mobile screens
+    if (xPct < 25) {
+      return {
+        left: `${Math.max(4, xPct)}%`,
+        transform: "translateX(0)",
+        top: `${Math.max(6, yPct - 28)}%`,
+      };
+    } else if (xPct > 75) {
+      return {
+        left: `${Math.min(96, xPct)}%`,
+        transform: "translateX(-100%)",
+        top: `${Math.max(6, yPct - 28)}%`,
+      };
+    }
+
+    return {
+      left: `${xPct}%`,
+      transform: "translateX(-50%)",
+      top: `${Math.max(6, yPct - 28)}%`,
+    };
+  }, [currentHoverPoint, width, height]);
+
+  // Loading Skeleton State
+  if (loading) {
+    return (
+      <div className="bg-surface rounded-2xl border border-border/80 p-5 sm:p-6 shadow-xs animate-pulse">
+        <div className="flex justify-between items-center pb-4 border-b border-border/70">
+          <div className="space-y-2">
+            <div className="h-5 bg-surface-secondary rounded-lg w-48" />
+            <div className="h-3 bg-surface-secondary rounded-lg w-64" />
+          </div>
+          <div className="h-8 bg-surface-secondary rounded-lg w-32" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-16 bg-surface-secondary/70 rounded-xl" />
+          ))}
+        </div>
+        <div className="h-60 bg-surface-secondary/50 rounded-xl mt-2" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className="bg-surface rounded-2xl border border-border/80 p-4 sm:p-6 shadow-xs relative overflow-hidden transition-all duration-200 hover:border-primary/30"
+    >
+      {/* Background ambient light */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-24 -mt-24" />
+
+      {/* ========================================================
+          1. Header & Controls Toolbar (Mobile-Optimized Flex/Wrap)
+          ======================================================== */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-border/70 relative z-10">
         <div>
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <h2 className="text-base sm:text-lg font-bold text-text font-bengali tracking-tight flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
+            <h2 className="text-base sm:text-lg font-bold text-text font-bengali tracking-tight flex items-center gap-2 flex-wrap">
               <span>মাসিক রাজস্ব ও বিক্রয় বিশ্লেষণ</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-primary/10 text-primary border border-primary/20">
-                ইন্টারেক্টিভ গ্রাফ
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                  hasRealData
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                }`}
+              >
+                {hasRealData ? "লাইভ ট্রানজ্যাকশন" : "ডেমো ট্রেন্ড প্রিভিউ"}
               </span>
             </h2>
           </div>
-          <p className="text-xs text-text-muted font-bengali mt-0.5">
+          <p className="text-xs text-text-muted font-bengali mt-0.5 leading-relaxed">
             বিগত দিনের রিয়েল-টাইম আয়, কোর্স ভর্তি প্রবণতা এবং গ্রোথ ট্র্যাকার
           </p>
         </div>
 
-        {/* Controls Toolbar */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Toolbar Button Groups (Wrap smoothly on mobile) */}
+        <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
           {/* Metric Selector (Revenue vs Enrollments) */}
           <div className="flex items-center p-0.5 rounded-lg bg-surface-secondary border border-border text-xs">
             <button
               type="button"
               onClick={() => setMetric("revenue")}
-              className={`px-3 py-1 rounded-md font-bengali font-semibold transition-all duration-150 flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-bengali font-semibold transition-all duration-150 flex items-center gap-1.5 text-xs ${
                 metric === "revenue"
                   ? "bg-surface text-primary shadow-xs"
                   : "text-text-muted hover:text-text"
@@ -338,7 +446,7 @@ export function RevenueAnalyticsChart({
             <button
               type="button"
               onClick={() => setMetric("enrollments")}
-              className={`px-3 py-1 rounded-md font-bengali font-semibold transition-all duration-150 flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-md font-bengali font-semibold transition-all duration-150 flex items-center gap-1.5 text-xs ${
                 metric === "enrollments"
                   ? "bg-surface text-secondary shadow-xs"
                   : "text-text-muted hover:text-text"
@@ -349,21 +457,21 @@ export function RevenueAnalyticsChart({
             </button>
           </div>
 
-          {/* Time Range Filter */}
+          {/* Time Range Filter (7d / 30d / 90d / 1y) */}
           <div className="flex items-center p-0.5 rounded-lg bg-surface-secondary border border-border text-xs">
             {(
               [
                 { key: "7d", label: "৭ দিন" },
                 { key: "30d", label: "৩০ দিন" },
                 { key: "90d", label: "৩ মাস" },
-                { key: "1y", label: "চলতি বছর" },
+                { key: "1y", label: "১ বছর" },
               ] as const
             ).map((item) => (
               <button
                 key={item.key}
                 type="button"
                 onClick={() => setTimeRange(item.key)}
-                className={`px-2.5 py-1 rounded-md font-bengali text-xs font-medium transition-all duration-150 ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-md font-bengali text-xs font-medium transition-all duration-150 ${
                   timeRange === item.key
                     ? "bg-primary text-white font-bold shadow-xs"
                     : "text-text-muted hover:text-text"
@@ -404,100 +512,114 @@ export function RevenueAnalyticsChart({
         </div>
       </div>
 
-      {/* KPI Highlight Pills Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 py-3.5 my-1">
+      {/* ========================================================
+          2. KPI Highlight Summary Strip (Mobile-Safe Columns)
+          ======================================================== */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-3 sm:py-3.5 my-1">
         {/* Selected Period Total */}
-        <div className="bg-surface-secondary/70 rounded-xl p-3 border border-border/60">
-          <span className="text-[11px] font-bengali text-text-muted block">
+        <div className="bg-surface-secondary/70 rounded-xl p-2.5 sm:p-3 border border-border/60">
+          <span className="text-[10px] sm:text-[11px] font-bengali text-text-muted block truncate">
             {timeRange === "7d"
-              ? "বিগত ৭ দিনের মোট"
+              ? "৭ দিনের মোট"
               : timeRange === "30d"
-              ? "বিগত ৩০ দিনের মোট"
+              ? "৩০ দিনের মোট"
               : timeRange === "90d"
-              ? "বিগত ৩ মাসের মোট"
-              : "চলতি বছরের সর্বমোট"}
+              ? "৩ মাসের মোট"
+              : "১ বছরের সর্বমোট"}
           </span>
-          <div className="text-base sm:text-lg font-extrabold text-text font-sans mt-0.5 flex items-baseline gap-1">
-            <span>
-              {metric === "revenue"
-                ? formatBDT(summary.total as number)
-                : `${toBengaliNumerals(summary.total)} জন`}
-            </span>
+          <div className="text-sm sm:text-lg font-extrabold text-text font-sans mt-0.5 truncate">
+            {metric === "revenue"
+              ? formatBDT(summary.total as number)
+              : `${toBengaliNumerals(summary.total)} জন`}
           </div>
         </div>
 
         {/* Daily Average */}
-        <div className="bg-surface-secondary/70 rounded-xl p-3 border border-border/60">
-          <span className="text-[11px] font-bengali text-text-muted block">দৈনিক গড় হার</span>
-          <div className="text-base sm:text-lg font-bold text-text font-sans mt-0.5">
-            <span>
-              {metric === "revenue"
-                ? formatBDT(summary.avg as number)
-                : `${toBengaliNumerals(summary.avg)} জন/দিন`}
-            </span>
+        <div className="bg-surface-secondary/70 rounded-xl p-2.5 sm:p-3 border border-border/60">
+          <span className="text-[10px] sm:text-[11px] font-bengali text-text-muted block truncate">
+            দৈনিক গড় হার
+          </span>
+          <div className="text-sm sm:text-lg font-bold text-text font-sans mt-0.5 truncate">
+            {metric === "revenue"
+              ? formatBDT(summary.avg as number)
+              : `${toBengaliNumerals(summary.avg)} জন/দিন`}
           </div>
         </div>
 
         {/* Peak Sales Day */}
-        <div className="bg-surface-secondary/70 rounded-xl p-3 border border-border/60">
-          <span className="text-[11px] font-bengali text-text-muted flex items-center gap-1">
-            <Zap className="w-3 h-3 text-accent" />
-            <span>শীর্ষ পিক সেলস দিন</span>
+        <div className="bg-surface-secondary/70 rounded-xl p-2.5 sm:p-3 border border-border/60">
+          <span className="text-[10px] sm:text-[11px] font-bengali text-text-muted flex items-center gap-1 truncate">
+            <Zap className="w-3 h-3 text-accent shrink-0" />
+            <span>শীর্ষ পিক সেলস</span>
           </span>
-          <div className="text-sm sm:text-base font-bold text-primary font-sans mt-0.5 truncate">
+          <div className="text-xs sm:text-base font-bold text-primary font-sans mt-0.5 truncate">
             {metric === "revenue"
               ? formatBDT(summary.peakValue)
               : `${toBengaliNumerals(summary.peakValue)} জন`}
-            <span className="text-[10px] text-text-muted font-bengali font-normal ml-1">
+            <span className="text-[10px] text-text-muted font-bengali font-normal ml-1 hidden xs:inline">
               ({summary.peakDate})
             </span>
           </div>
         </div>
 
         {/* Growth Rate */}
-        <div className="bg-surface-secondary/70 rounded-xl p-3 border border-border/60">
-          <span className="text-[11px] font-bengali text-text-muted block">প্রবৃদ্ধি ট্রেন্ড</span>
-          <div className="flex items-center gap-1.5 text-success font-bold text-sm sm:text-base mt-0.5">
-            <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
-            <span>{summary.growth} এই চক্রে</span>
+        <div className="bg-surface-secondary/70 rounded-xl p-2.5 sm:p-3 border border-border/60">
+          <span className="text-[10px] sm:text-[11px] font-bengali text-text-muted block truncate">
+            প্রবৃদ্ধি ট্রেন্ড
+          </span>
+          <div
+            className={`flex items-center gap-1 font-bold text-xs sm:text-base mt-0.5 ${
+              summary.isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"
+            }`}
+          >
+            {summary.isPositive ? (
+              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+            ) : (
+              <ArrowDownRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+            )}
+            <span>{summary.growth} চক্রে</span>
           </div>
         </div>
       </div>
 
-      {/* SVG Interactive Chart Canvas */}
-      <div className="relative mt-2" ref={containerRef}>
+      {/* ========================================================
+          3. SVG Interactive Chart Canvas (Touch + Mouse Support)
+          ======================================================== */}
+      <div className="relative mt-2 touch-pan-x select-none">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="w-full h-56 sm:h-64 select-none overflow-visible"
+          className="w-full h-52 sm:h-64 select-none overflow-visible cursor-crosshair"
           onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
+          onMouseLeave={handlePointerLeave}
+          onTouchStart={handleTouch}
+          onTouchMove={handleTouch}
+          onTouchEnd={handlePointerLeave}
         >
           <defs>
-            {/* Smooth Gradient for Area */}
-            <linearGradient id="revenueAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            {/* Smooth Area Gradient */}
+            <linearGradient id="revAreaGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.32" />
-              <stop offset="60%" stopColor="var(--primary)" stopOpacity="0.08" />
+              <stop offset="65%" stopColor="var(--primary)" stopOpacity="0.08" />
               <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.0" />
             </linearGradient>
 
-            {/* Pillar Bar Gradient */}
-            <linearGradient id="barColumnGrad" x1="0" y1="0" x2="0" y2="1">
+            {/* Column Bar Gradient */}
+            <linearGradient id="colBarGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary)" stopOpacity="0.95" />
               <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.4" />
             </linearGradient>
 
-            <linearGradient id="barColumnGradHover" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="colBarHoverGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="var(--primary-hover)" stopOpacity="1" />
               <stop offset="100%" stopColor="var(--primary)" stopOpacity="0.75" />
             </linearGradient>
 
-            {/* Glowing Line Filter */}
-            <filter id="glowFilter" x="-20%" y="-20%" width="140%" height="140%">
+            <filter id="svgGlow" x="-20%" y="-20%" width="140%" height="140%">
               <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="rgba(37, 99, 235, 0.35)" />
             </filter>
           </defs>
 
-          {/* Horizontal Gridlines and Y-axis scale */}
+          {/* Horizontal Gridlines & Y-Axis Labels */}
           {yTicks.map((tick, i) => (
             <g key={i}>
               <line
@@ -507,44 +629,42 @@ export function RevenueAnalyticsChart({
                 y2={tick.y}
                 stroke="var(--border)"
                 strokeDasharray="4 4"
-                strokeOpacity="0.8"
+                strokeOpacity="0.75"
               />
               <text
-                x={padding.left - 8}
+                x={padding.left - 10}
                 y={tick.y + 4}
                 textAnchor="end"
-                className="text-[10px] fill-text-muted font-sans font-medium"
+                className="text-[12px] sm:text-[11px] fill-text-muted font-sans font-semibold"
               >
                 {tick.label}
               </text>
             </g>
           ))}
 
-          {/* Area Mode: Flowing Curve & Shaded Fill */}
+          {/* Area Mode: Flowing Curve & Fill */}
           {chartStyle === "area" && (
             <>
-              {/* Shaded Area Fill */}
-              <path d={areaPath} fill="url(#revenueAreaGrad)" />
+              <path d={areaPath} fill="url(#revAreaGradient)" />
 
-              {/* Smooth Glowing Bezier Stroke */}
               <path
                 d={linePath}
                 fill="none"
                 stroke="var(--primary)"
-                strokeWidth="2.8"
+                strokeWidth="3"
                 strokeLinecap="round"
-                filter="url(#glowFilter)"
+                filter="url(#svgGlow)"
               />
 
-              {/* Data points for 7d view or peak points */}
+              {/* Data points for 7d or short datasets */}
               {(timeRange === "7d" || points.length <= 14) &&
                 points.map((p, i) => (
                   <circle
                     key={i}
                     cx={p.x}
                     cy={p.y}
-                    r={hoveredIndex === i ? 6 : p.data.isPeak ? 4.5 : 3}
-                    className="transition-all duration-150 cursor-pointer"
+                    r={hoveredIndex === i ? 6 : p.data.isPeak ? 4.5 : 3.5}
+                    className="transition-all duration-150"
                     fill={hoveredIndex === i ? "var(--primary-hover)" : "var(--surface)"}
                     stroke="var(--primary)"
                     strokeWidth={hoveredIndex === i ? 3 : 2}
@@ -553,7 +673,7 @@ export function RevenueAnalyticsChart({
             </>
           )}
 
-          {/* Bar Mode: Modern Rounded Columns */}
+          {/* Bar Mode: Modern Rounded Pillars */}
           {chartStyle === "bar" && (
             <g>
               {points.map((p, i) => {
@@ -573,9 +693,9 @@ export function RevenueAnalyticsChart({
                       height={barHeight}
                       rx={barWidth > 8 ? 4 : 2}
                       ry={barWidth > 8 ? 4 : 2}
-                      fill={isHovered ? "url(#barColumnGradHover)" : "url(#barColumnGrad)"}
+                      fill={isHovered ? "url(#colBarHoverGradient)" : "url(#colBarGradient)"}
                       className="transition-all duration-150"
-                      filter={isHovered ? "url(#glowFilter)" : undefined}
+                      filter={isHovered ? "url(#svgGlow)" : undefined}
                     />
                   </g>
                 );
@@ -583,7 +703,7 @@ export function RevenueAnalyticsChart({
             </g>
           )}
 
-          {/* Interactive Guide Line on Hover */}
+          {/* Guide Line and Active Cursor Marker */}
           {currentHoverPoint && (
             <g>
               <line
@@ -603,12 +723,12 @@ export function RevenueAnalyticsChart({
                 fill="var(--primary)"
                 stroke="var(--surface)"
                 strokeWidth={3}
-                filter="url(#glowFilter)"
+                filter="url(#svgGlow)"
               />
             </g>
           )}
 
-          {/* Bottom X-axis Date Markers */}
+          {/* X-axis Date Markers (Dynamically spaced to prevent clutter) */}
           {points
             .filter((_, idx) => {
               if (timeRange === "7d") return true;
@@ -620,42 +740,39 @@ export function RevenueAnalyticsChart({
               <text
                 key={i}
                 x={p.x}
-                y={padding.top + graphHeight + 18}
+                y={padding.top + graphHeight + 20}
                 textAnchor="middle"
-                className="text-[10px] fill-text-muted font-bengali"
+                className="text-[12px] sm:text-[11px] fill-text-muted font-bengali font-medium"
               >
                 {p.data.label}
               </text>
             ))}
         </svg>
 
-        {/* Floating Glassmorphism Tooltip */}
+        {/* Edge-Safe Floating Glassmorphism Tooltip */}
         {currentHoverPoint && (
           <div
-            className="absolute pointer-events-none transition-all duration-75 transform -translate-x-1/2 z-30"
-            style={{
-              left: `${(currentHoverPoint.x / width) * 100}%`,
-              top: `${Math.max(10, (currentHoverPoint.y / height) * 100 - 32)}%`,
-            }}
+            className="absolute pointer-events-none transition-all duration-75 z-30"
+            style={tooltipStyle}
           >
-            <div className="bg-surface/95 backdrop-blur-md border border-border shadow-xl rounded-xl p-3 text-xs min-w-[170px] text-text">
-              <div className="text-[10px] text-text-muted font-bengali mb-1 border-b border-border/50 pb-1 flex items-center justify-between">
-                <span>{currentHoverPoint.data.fullDate}</span>
+            <div className="bg-surface/95 backdrop-blur-md border border-border shadow-xl rounded-xl p-2.5 sm:p-3 text-xs min-w-[160px] sm:min-w-[180px] text-text">
+              <div className="text-[10px] sm:text-[11px] text-text-muted font-bengali mb-1 border-b border-border/50 pb-1 flex items-center justify-between gap-1">
+                <span className="truncate">{currentHoverPoint.data.fullDate}</span>
                 {currentHoverPoint.data.isPeak && (
-                  <span className="text-[9px] bg-accent/15 text-accent px-1.5 py-0.2 rounded font-bold">
+                  <span className="text-[9px] bg-accent/15 text-accent px-1.5 py-0.2 rounded font-bold shrink-0">
                     শীর্ষ পিক
                   </span>
                 )}
               </div>
 
               <div className="space-y-1">
-                <div className="flex items-center justify-between font-bold text-sm">
-                  <span className="text-text-muted font-bengali text-xs">দৈনিক আয়:</span>
+                <div className="flex items-center justify-between font-bold text-xs sm:text-sm">
+                  <span className="text-text-muted font-bengali text-[11px]">দৈনিক আয়:</span>
                   <span className="text-primary font-sans">
                     {formatBDT(currentHoverPoint.data.revenue)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center justify-between text-[11px]">
                   <span className="text-text-muted font-bengali">ভর্তি শিক্ষার্থী:</span>
                   <span className="font-semibold text-secondary font-sans">
                     {toBengaliNumerals(currentHoverPoint.data.enrollments)} জন
@@ -664,28 +781,30 @@ export function RevenueAnalyticsChart({
               </div>
 
               <div className="mt-1.5 pt-1 border-t border-border/40 text-[9px] text-text-muted font-bengali flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                <span>সফল পেমেন্ট গেটওয়ে ভেরিফাইড</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block shrink-0" />
+                <span className="truncate">
+                  {hasRealData ? "ডাটাবেজ ভেরিফাইড অর্ডার" : "সিমুলেটেড ডেমো ভ্যালু"}
+                </span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Chart Footer Week Legend & Status */}
-      <div className="flex flex-wrap items-center justify-between text-xs text-text-muted mt-4 pt-3 border-t border-border/70 font-bengali">
-        <div className="flex items-center gap-4">
+      {/* Chart Footer Week Legend */}
+      <div className="flex flex-wrap items-center justify-between text-xs text-text-muted mt-4 pt-3 border-t border-border/70 font-bengali gap-2">
+        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
           <div className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm bg-primary" />
-            <span>কোর্স ফি পেমেন্ট ও এনরোলমেন্ট রাজস্ব</span>
+            <span className="text-[11px] sm:text-xs">কোর্স ফি পেমেন্ট ও এনরোলমেন্ট রাজস্ব</span>
           </div>
-          <div className="hidden sm:flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-success" />
-            <span>SSLCommerz ও bKash রিয়েল-টাইম ডাটাবেজ সিঙ্ক</span>
+            <span className="text-[11px] sm:text-xs">SSLCommerz ও bKash রিয়েল-টাইম সিঙ্ক</span>
           </div>
         </div>
 
-        <div className="text-[11px] text-text-muted flex items-center gap-1 mt-1 sm:mt-0">
+        <div className="text-[10px] sm:text-[11px] text-text-muted flex items-center gap-1">
           <span>টাইম জোন: BST (UTC+৬)</span>
         </div>
       </div>
