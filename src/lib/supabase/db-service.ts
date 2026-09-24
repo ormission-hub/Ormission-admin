@@ -991,21 +991,26 @@ export const dbService = {
   // ---- DASHBOARD KPIS & STATS ----
   async getDashboardKPIs() {
     try {
-      const [coursesRes, studentsRes, ordersRes] = await Promise.all([
-        supabase.from("courses").select("id, status, enrollment_count", { count: "exact" }),
+      const [coursesRes, studentsRes, allOrders] = await Promise.all([
+        supabase.from("courses").select("id, title, title_bn, status, enrollment_count, price", { count: "exact" }),
         supabase.from("profiles").select("id, is_active", { count: "exact" }),
-        supabase.from("orders").select("id, paid_amount, status, created_at, payment_method, order_number, user_id, course_id", { count: "exact" }).order("created_at", { ascending: false })
+        this.getOrders(),
       ]);
 
-      const totalCourses = coursesRes.count || 0;
-      const totalStudents = studentsRes.count || 0;
-      const totalOrders = ordersRes.count || 0;
+      const totalCourses = coursesRes.count ?? (coursesRes.data?.length || 0);
+      const totalStudents = studentsRes.count ?? (studentsRes.data?.length || 0);
+      const totalOrders = allOrders.length;
 
-      const completedOrders = (ordersRes.data || []).filter(o => o.status === "completed" || o.status === "success" as any);
-      const totalRevenue = completedOrders.reduce((sum, o) => sum + (Number(o.paid_amount) || 0), 0);
+      const completedOrders = allOrders.filter(
+        (o) => o.status === "completed" || o.status === "paid" || (o.status as any) === "success"
+      );
+      const totalRevenue = completedOrders.reduce(
+        (sum, o) => sum + (Number(o.paid_amount || o.total_amount) || 0),
+        0
+      );
 
-      // Recent 5 orders with joined student & course info
-      const recentOrders = (ordersRes.data || []).slice(0, 5);
+      // Recent 8 orders with joined student & course info
+      const recentOrders = allOrders.slice(0, 8);
 
       return {
         totalRevenue,
@@ -1013,6 +1018,8 @@ export const dbService = {
         totalCourses,
         totalOrders,
         recentOrders,
+        allOrders,
+        courses: coursesRes.data || [],
       };
     } catch (e) {
       console.error("Error calculating dashboard KPIs:", e);
@@ -1022,6 +1029,8 @@ export const dbService = {
         totalCourses: 0,
         totalOrders: 0,
         recentOrders: [],
+        allOrders: [],
+        courses: [],
       };
     }
   },
