@@ -15,6 +15,7 @@ import {
   Zap,
   CheckCircle2,
   Clock,
+  Inbox,
 } from "lucide-react";
 
 interface OrderItem {
@@ -77,7 +78,7 @@ export function RevenueAnalyticsChart({
   const graphWidth = width - padding.left - padding.right;
   const graphHeight = height - padding.top - padding.bottom;
 
-  // Filter valid completed/paid orders
+  // Filter ONLY valid completed/paid orders from real database
   const completedOrders = useMemo(() => {
     return orders.filter((o) => {
       const s = String(o.status || "").toLowerCase();
@@ -85,11 +86,9 @@ export function RevenueAnalyticsChart({
     });
   }, [orders]);
 
-  const hasRealData = completedOrders.length > 0;
-
-  // Generate reactive time-series data with real order aggregation
+  // Aggregate 100% REAL time-series data from database orders
   const chartData = useMemo<DataPoint[]>(() => {
-    const now = new Date(); // dynamic real date
+    const now = new Date();
 
     let daysCount = 30;
     if (timeRange === "7d") daysCount = 7;
@@ -109,11 +108,10 @@ export function RevenueAnalyticsChart({
     const points: DataPoint[] = [];
 
     if (timeRange === "1y") {
-      // 12 Months of current year
+      // 12 Months of current year (100% Real Database Orders)
       const currentYear = now.getFullYear();
 
       for (let i = 0; i < 12; i++) {
-        // Aggregate real completed orders for month i
         const monthOrders = completedOrders.filter((o) => {
           if (!o.created_at) return false;
           const d = new Date(o.created_at);
@@ -126,23 +124,16 @@ export function RevenueAnalyticsChart({
         );
         const realEnr = monthOrders.length;
 
-        // Realistic fallback trend if early database stage with 0 orders
-        const demoMonthlyRev = [28500, 34200, 41000, 39500, 52000, 68000, 74500, 89000, 94200, 82000, 88500, 96000];
-        const demoMonthlyEnr = [22, 28, 35, 31, 44, 58, 62, 75, 80, 68, 74, 82];
-
-        const rev = hasRealData ? realRev : demoMonthlyRev[i];
-        const enr = hasRealData ? realEnr : demoMonthlyEnr[i];
-
         points.push({
           dateKey: `${currentYear}-${i + 1}`,
           label: bnMonths[i],
           fullDate: `${bnFullMonths[i]} ${toBengaliNumerals(currentYear)}`,
-          revenue: rev,
-          enrollments: enr,
+          revenue: realRev,
+          enrollments: realEnr,
         });
       }
     } else {
-      // Days-based breakdown (7d, 30d, 90d)
+      // Days-based breakdown (7d, 30d, 90d) (100% Real Database Orders)
       for (let i = daysCount - 1; i >= 0; i--) {
         const d = new Date(now);
         d.setDate(d.getDate() - i);
@@ -150,9 +141,8 @@ export function RevenueAnalyticsChart({
         const dayOfMonth = d.getDate();
         const monthIdx = d.getMonth();
         const dayOfWeek = d.getDay();
-        const isWeekend = dayOfWeek === 5 || dayOfWeek === 6; // Friday/Saturday in Bangladesh
 
-        // Filter real orders for this specific calendar date
+        // Exact YYYY-MM-DD match
         const dateStr = d.toISOString().slice(0, 10);
         const dayOrders = completedOrders.filter((o) => {
           if (!o.created_at) return false;
@@ -164,14 +154,6 @@ export function RevenueAnalyticsChart({
           0
         );
         const realDayEnr = dayOrders.length;
-
-        // Realistic organic wave fallback when 0 orders exist
-        const seedMultiplier = 1 + Math.sin(i * 0.45) * 0.35 + (isWeekend ? 0.3 : 0);
-        const demoRev = Math.round((4200 + (i % 7) * 950 + (i % 5) * 1200) * seedMultiplier);
-        const demoEnr = Math.max(1, Math.round(demoRev / 1600 + (isWeekend ? 2 : 0)));
-
-        const finalRev = hasRealData ? realDayRev : demoRev;
-        const finalEnr = hasRealData ? realDayEnr : demoEnr;
 
         const label =
           timeRange === "7d"
@@ -186,15 +168,15 @@ export function RevenueAnalyticsChart({
           dateKey: dateStr,
           label,
           fullDate,
-          revenue: finalRev,
-          enrollments: finalEnr,
+          revenue: realDayRev,
+          enrollments: realDayEnr,
         });
       }
     }
 
-    // Mark peak data point
-    let maxVal = -1;
-    let maxIdx = 0;
+    // Identify real peak data point
+    let maxVal = 0;
+    let maxIdx = -1;
     points.forEach((p, idx) => {
       const v = metric === "revenue" ? p.revenue : p.enrollments;
       if (v > maxVal) {
@@ -202,14 +184,15 @@ export function RevenueAnalyticsChart({
         maxIdx = idx;
       }
     });
-    if (points[maxIdx] && maxVal > 0) {
+
+    if (maxIdx >= 0 && maxVal > 0) {
       points[maxIdx].isPeak = true;
     }
 
     return points;
-  }, [completedOrders, hasRealData, timeRange, metric]);
+  }, [completedOrders, timeRange, metric]);
 
-  // Aggregate metrics & compute genuine growth rate
+  // Summary Metrics computed from actual values
   const summary = useMemo(() => {
     const totalRev = chartData.reduce((acc, p) => acc + p.revenue, 0);
     const totalEnr = chartData.reduce((acc, p) => acc + p.enrollments, 0);
@@ -217,7 +200,7 @@ export function RevenueAnalyticsChart({
     const avgRev = Math.round(totalRev / count);
     const avgEnr = (totalEnr / count).toFixed(1);
 
-    const peakPoint = chartData.find((p) => p.isPeak) || chartData[0];
+    const peakPoint = chartData.find((p) => p.isPeak);
 
     // Compute genuine growth rate comparing first half vs second half
     const n = chartData.length;
@@ -239,21 +222,23 @@ export function RevenueAnalyticsChart({
     }
 
     const isPositive = growthPct >= 0;
-    const growthText = `${isPositive ? "+" : ""}${toBengaliNumerals(growthPct)}%`;
+    const growthText = `${isPositive && growthPct > 0 ? "+" : ""}${toBengaliNumerals(growthPct)}%`;
 
     return {
       total: metric === "revenue" ? totalRev : totalEnr,
       avg: metric === "revenue" ? avgRev : avgEnr,
-      peakDate: peakPoint?.label || "-",
-      peakValue: metric === "revenue" ? peakPoint?.revenue || 0 : peakPoint?.enrollments || 0,
+      peakDate: peakPoint ? peakPoint.label : "-",
+      peakValue: metric === "revenue" ? (peakPoint ? peakPoint.revenue : 0) : (peakPoint ? peakPoint.enrollments : 0),
       growth: growthText,
       isPositive,
+      hasSales: totalRev > 0 || totalEnr > 0,
     };
   }, [chartData, metric]);
 
   // Scaling calculations
   const values = chartData.map((d) => (metric === "revenue" ? d.revenue : d.enrollments));
-  const maxVal = Math.max(...values, 1) * 1.15;
+  const rawMax = Math.max(...values, 0);
+  const maxVal = rawMax > 0 ? rawMax * 1.2 : 1000;
   const minVal = 0;
 
   const points = useMemo(() => {
@@ -403,7 +388,7 @@ export function RevenueAnalyticsChart({
       <div className="absolute top-0 right-0 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-24 -mt-24" />
 
       {/* ========================================================
-          1. Header & Controls Toolbar (Mobile-Optimized Flex/Wrap)
+          1. Header & Controls Toolbar
           ======================================================== */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-5 border-b border-border/70 relative z-10">
         <div>
@@ -411,23 +396,17 @@ export function RevenueAnalyticsChart({
             <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
             <h2 className="text-base sm:text-lg font-bold text-text font-bengali tracking-tight flex items-center gap-2 flex-wrap">
               <span>মাসিক রাজস্ব ও বিক্রয় বিশ্লেষণ</span>
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                  hasRealData
-                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
-                }`}
-              >
-                {hasRealData ? "লাইভ ট্রানজ্যাকশন" : "ডেমো ট্রেন্ড প্রিভিউ"}
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-primary/10 text-primary border-primary/20">
+                লাইভ ডাটাবেজ
               </span>
             </h2>
           </div>
           <p className="text-xs text-text-muted font-bengali mt-0.5 leading-relaxed">
-            বিগত দিনের রিয়েল-টাইম আয়, কোর্স ভর্তি প্রবণতা এবং গ্রোথ ট্র্যাকার
+            ডাটাবেজে সংরক্ষিত প্রকৃত কোর্স ভর্তি ও লেনদেনের রিয়েল-টাইম গ্রাফ
           </p>
         </div>
 
-        {/* Toolbar Button Groups (Wrap smoothly on mobile) */}
+        {/* Toolbar Button Groups */}
         <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto">
           {/* Metric Selector (Revenue vs Enrollments) */}
           <div className="flex items-center p-0.5 rounded-lg bg-surface-secondary border border-border text-xs">
@@ -513,7 +492,7 @@ export function RevenueAnalyticsChart({
       </div>
 
       {/* ========================================================
-          2. KPI Highlight Summary Strip (Mobile-Safe Columns)
+          2. KPI Highlight Summary Strip (100% Real Database Values)
           ======================================================== */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 py-3 sm:py-3.5 my-1">
         {/* Selected Period Total */}
@@ -553,12 +532,18 @@ export function RevenueAnalyticsChart({
             <span>শীর্ষ পিক সেলস</span>
           </span>
           <div className="text-xs sm:text-base font-bold text-primary font-sans mt-0.5 truncate">
-            {metric === "revenue"
-              ? formatBDT(summary.peakValue)
-              : `${toBengaliNumerals(summary.peakValue)} জন`}
-            <span className="text-[10px] text-text-muted font-bengali font-normal ml-1 hidden xs:inline">
-              ({summary.peakDate})
-            </span>
+            {summary.peakValue > 0 ? (
+              <>
+                {metric === "revenue"
+                  ? formatBDT(summary.peakValue)
+                  : `${toBengaliNumerals(summary.peakValue)} জন`}
+                <span className="text-[10px] text-text-muted font-bengali font-normal ml-1 hidden xs:inline">
+                  ({summary.peakDate})
+                </span>
+              </>
+            ) : (
+              <span className="text-text-muted text-xs font-normal">কোনো বিক্রয় নেই</span>
+            )}
           </div>
         </div>
 
@@ -569,23 +554,41 @@ export function RevenueAnalyticsChart({
           </span>
           <div
             className={`flex items-center gap-1 font-bold text-xs sm:text-base mt-0.5 ${
-              summary.isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500"
+              summary.growth === "০%"
+                ? "text-text-muted"
+                : summary.isPositive
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-rose-500"
             }`}
           >
-            {summary.isPositive ? (
-              <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-            ) : (
-              <ArrowDownRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
-            )}
+            {summary.growth !== "০%" &&
+              (summary.isPositive ? (
+                <ArrowUpRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+              ) : (
+                <ArrowDownRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+              ))}
             <span>{summary.growth} চক্রে</span>
           </div>
         </div>
       </div>
 
       {/* ========================================================
-          3. SVG Interactive Chart Canvas (Touch + Mouse Support)
+          3. SVG Interactive Chart Canvas (Real Database Points)
           ======================================================== */}
-      <div className="relative mt-2 touch-pan-x select-none">
+      <div className="relative mt-2 touch-pan-x select-none min-h-[220px]">
+        {/* If no sales in this period, display an honest, clear empty state overlay */}
+        {!summary.hasSales && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface/60 backdrop-blur-[2px] z-20 rounded-xl border border-dashed border-border text-center p-4">
+            <Inbox className="w-8 h-8 text-text-muted/50 mb-1.5" />
+            <p className="text-xs font-bold text-text font-bengali">
+              নির্বাচিত সময়কালে এখনো কোনো সফল অর্ডার নেই
+            </p>
+            <p className="text-[11px] text-text-muted font-bengali mt-0.5 max-w-sm">
+              শিক্ষার্থী নতুন কোর্স ভর্তি বা পেমেন্ট সম্পন্ন করলে এখানে সরাসরি লাইভ গ্রাফ ও বিক্রয় প্রবণতা তৈরি হবে।
+            </p>
+          </div>
+        )}
+
         <svg
           viewBox={`0 0 ${width} ${height}`}
           className="w-full h-52 sm:h-64 select-none overflow-visible cursor-crosshair"
@@ -642,7 +645,7 @@ export function RevenueAnalyticsChart({
             </g>
           ))}
 
-          {/* Area Mode: Flowing Curve & Fill */}
+          {/* Area Mode: Real Curve & Fill */}
           {chartStyle === "area" && (
             <>
               <path d={areaPath} fill="url(#revAreaGradient)" />
@@ -656,7 +659,7 @@ export function RevenueAnalyticsChart({
                 filter="url(#svgGlow)"
               />
 
-              {/* Data points for 7d or short datasets */}
+              {/* Data points for 7d or peak points */}
               {(timeRange === "7d" || points.length <= 14) &&
                 points.map((p, i) => (
                   <circle
@@ -681,7 +684,7 @@ export function RevenueAnalyticsChart({
                   4,
                   Math.min(24, (graphWidth / points.length) * 0.72)
                 );
-                const barHeight = Math.max(4, padding.top + graphHeight - p.y);
+                const barHeight = Math.max(2, padding.top + graphHeight - p.y);
                 const isHovered = hoveredIndex === i;
 
                 return (
@@ -728,7 +731,7 @@ export function RevenueAnalyticsChart({
             </g>
           )}
 
-          {/* X-axis Date Markers (Dynamically spaced to prevent clutter) */}
+          {/* X-axis Date Markers */}
           {points
             .filter((_, idx) => {
               if (timeRange === "7d") return true;
@@ -781,9 +784,15 @@ export function RevenueAnalyticsChart({
               </div>
 
               <div className="mt-1.5 pt-1 border-t border-border/40 text-[9px] text-text-muted font-bengali flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-success inline-block shrink-0" />
+                <span
+                  className={`w-1.5 h-1.5 rounded-full inline-block shrink-0 ${
+                    currentHoverPoint.data.revenue > 0 ? "bg-success" : "bg-text-muted/40"
+                  }`}
+                />
                 <span className="truncate">
-                  {hasRealData ? "ডাটাবেজ ভেরিফাইড অর্ডার" : "সিমুলেটেড ডেমো ভ্যালু"}
+                  {currentHoverPoint.data.revenue > 0
+                    ? "সফল পেমেন্ট ভেরিফাইড"
+                    : "এই দিনে কোনো অর্ডার নেই"}
                 </span>
               </div>
             </div>
@@ -800,7 +809,7 @@ export function RevenueAnalyticsChart({
           </div>
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-success" />
-            <span className="text-[11px] sm:text-xs">SSLCommerz ও bKash রিয়েল-টাইম সিঙ্ক</span>
+            <span className="text-[11px] sm:text-xs">সুপাবেস ডাটাবেজ সরাসরি সিঙ্ক</span>
           </div>
         </div>
 

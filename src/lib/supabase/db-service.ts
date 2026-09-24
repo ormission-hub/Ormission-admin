@@ -992,8 +992,12 @@ export const dbService = {
   async getDashboardKPIs() {
     try {
       const [coursesRes, studentsRes, allOrders] = await Promise.all([
-        supabase.from("courses").select("id, title, title_bn, status, enrollment_count, price", { count: "exact" }),
-        supabase.from("profiles").select("id, is_active", { count: "exact" }),
+        supabase
+          .from("courses")
+          .select("id, title, title_bn, status, enrollment_count, price, category_id, categories:category_id(id, name, name_bn)", { count: "exact" }),
+        supabase
+          .from("profiles")
+          .select("id, is_active, created_at", { count: "exact" }),
         this.getOrders(),
       ]);
 
@@ -1002,7 +1006,7 @@ export const dbService = {
       const totalOrders = allOrders.length;
 
       const completedOrders = allOrders.filter(
-        (o) => o.status === "completed" || o.status === "paid" || (o.status as any) === "success"
+        (o) => o.status === "completed" || o.status === "paid"
       );
       const totalRevenue = completedOrders.reduce(
         (sum, o) => sum + (Number(o.paid_amount || o.total_amount) || 0),
@@ -1020,6 +1024,7 @@ export const dbService = {
         recentOrders,
         allOrders,
         courses: coursesRes.data || [],
+        profiles: studentsRes.data || [],
       };
     } catch (e) {
       console.error("Error calculating dashboard KPIs:", e);
@@ -1031,6 +1036,7 @@ export const dbService = {
         recentOrders: [],
         allOrders: [],
         courses: [],
+        profiles: [],
       };
     }
   },
