@@ -348,11 +348,11 @@ export function LessonMaterialsManager({
                   className={`px-2 py-0.5 rounded-full text-[10px] font-bold font-bengali border transition-all cursor-pointer shrink-0 ${
                     mat.isFree
                       ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
-                      : "bg-surface-secondary border-border text-text-muted hover:text-text hover:border-slate-500"
+                      : "bg-rose-500/15 border-rose-500/30 text-rose-400 hover:bg-rose-500/25"
                   }`}
                   title={mat.isFree ? "আনলক (ক্লিক করে লক করুন)" : "লক (ক্লিক করে আনলক করুন)"}
                 >
-                  {mat.isFree ? "✓ আনলক" : "লক"}
+                  {mat.isFree ? "✓ আনলক" : "🔒 লক"}
                 </button>
 
                 {/* Actions */}

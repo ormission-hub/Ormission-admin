@@ -802,18 +802,6 @@ export default function EditCourseStudioPage({
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
-            <a
-              href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${detailsForm.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn btn-outline h-9 px-3 text-xs flex items-center gap-1.5 rounded-xl cursor-pointer"
-              title="ওয়েবসাইটে প্রিভিউ দেখুন"
-            >
-              <Eye className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">লাইভ সাইট</span>
-              <ExternalLink className="w-3 h-3 opacity-60" />
-            </a>
-
             <button
               type="button"
               onClick={handleSaveAll}
@@ -869,11 +857,11 @@ export default function EditCourseStudioPage({
           <div className="text-xl font-black text-emerald-500 mt-1">{freeLessonsCount}টি</div>
         </div>
         <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
-          <span className="text-[11px] text-amber-500 font-bold flex items-center gap-1.5">
-            <Lock className="w-3.5 h-3.5" />
+          <span className="text-[11px] text-rose-500 font-bold flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-rose-500" />
             লক ক্লাস
           </span>
-          <div className="text-xl font-black text-amber-500 mt-1">{paidLessonsCount}টি</div>
+          <div className="text-xl font-black text-rose-500 mt-1">{paidLessonsCount}টি</div>
         </div>
       </div>
 
@@ -1046,19 +1034,19 @@ export default function EditCourseStudioPage({
                             }
                             className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer ${
                               lesson.isFreePreview
-                                ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20"
-                                : "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20"
+                                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/25"
+                                : "bg-rose-500/15 text-rose-400 border-rose-500/30 hover:bg-rose-500/25"
                             }`}
                             title="ক্লিক করে আনলক অথবা লক পরিবর্তন করুন"
                           >
                             {lesson.isFreePreview ? (
                               <>
-                                <Unlock className="w-3.5 h-3.5" />
+                                <Unlock className="w-3.5 h-3.5 text-emerald-400" />
                                 <span>আনলক</span>
                               </>
                             ) : (
                               <>
-                                <Lock className="w-3.5 h-3.5" />
+                                <Lock className="w-3.5 h-3.5 text-rose-400" />
                                 <span>লক</span>
                               </>
                             )}
