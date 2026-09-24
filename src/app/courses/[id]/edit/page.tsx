@@ -38,6 +38,7 @@ import {
   Star,
   GraduationCap,
   ListChecks,
+  Type,
 } from "lucide-react";
 import {
   dbService,
@@ -123,6 +124,7 @@ export default function EditCourseStudioPage({
     title: "",
     slug: "",
     short_description: "",
+    description: "",
     thumbnail_url: "",
     price: 0,
     original_price: 0,
@@ -191,6 +193,7 @@ export default function EditCourseStudioPage({
         title: courseData.title || "",
         slug: courseData.slug || "",
         short_description: courseData.short_description || "",
+        description: courseData.description || "",
         thumbnail_url: courseData.thumbnail_url || "",
         price: courseData.price || 0,
         original_price: courseData.original_price || 0,
@@ -631,6 +634,7 @@ export default function EditCourseStudioPage({
         title_bn: detailsForm.title_bn.trim(),
         title: detailsForm.title?.trim() || detailsForm.title_bn.trim(),
         short_description: detailsForm.short_description?.trim() || "",
+        description: detailsForm.description?.trim() || "",
         thumbnail_url: detailsForm.thumbnail_url?.trim() || "",
         price: Number(detailsForm.price) || 0,
         original_price: detailsForm.original_price ? Number(detailsForm.original_price) : null,
@@ -1455,17 +1459,78 @@ export default function EditCourseStudioPage({
                 )}
               </div>
 
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="text-xs font-bold text-text">সংক্ষিপ্ত সাবটাইটেল / বিবরণ</label>
+              {/* Field 1: Short Subtitle (Hero Headline) */}
+              <div className="space-y-2 md:col-span-2 p-4 rounded-2xl bg-surface-secondary/30 border border-border/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <label className="text-xs font-bold text-text flex items-center gap-1.5">
+                    <Type className="w-4 h-4 text-primary" />
+                    <span>১. সংক্ষিপ্ত সাবটাইটেল / হেডলাইন (Hero Headline)</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md self-start sm:self-auto font-sans">
+                    ওয়েবসাইটের হেডারে প্রদর্শিত হবে
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-muted">
+                  কোর্সের প্রধান নামের নিচে ১-২ বাক্যে সংক্ষেপে প্যারাগ্রাফ আকারে লিখুন। এটি শিক্ষার্থীদের প্রথম নজরে কোর্সের মূল উদ্দেশ্য বোঝাতে সাহায্য করে।
+                </p>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={detailsForm.short_description}
                   onChange={(e) =>
                     setDetailsForm({ ...detailsForm, short_description: e.target.value })
                   }
-                  className="input text-xs w-full py-2"
-                  placeholder="কোর্সটির মূল আকর্ষণ ও সুবিধা সংক্ষেপে লিখুন..."
+                  className="input text-xs w-full py-2.5 font-bengali leading-relaxed"
+                  placeholder="যেমন: SSC পরীক্ষায় বাংলায় এ+ নিশ্চিত করতে বিষয়ভিত্তিক লাইভ ক্লাস, সহজবোধ্য লেকচার নোট ও পূর্ণাঙ্গ মডেল টেস্ট।"
                 />
+              </div>
+
+              {/* Field 2: Detailed Course Description (with Points/Highlights) */}
+              <div className="space-y-2 md:col-span-2 p-4 rounded-2xl bg-surface-secondary/30 border border-border/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-text flex items-center gap-1.5">
+                    <ListChecks className="w-4 h-4 text-emerald-500" />
+                    <span>২. পূর্ণাঙ্গ কোর্স বিবরণী ও পয়েন্টভিত্তিক বিষয়সমূহ (Detailed Description & Points)</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const template = (detailsForm.description ? detailsForm.description.trim() + "\n\n" : "") +
+`কোর্সে যা থাকছে:
+• বাংলা ১ম ও ২য় পত্রের পূর্ণাঙ্গ প্রস্তুতি
+• গদ্য, পদ্য ও সহপাঠের গুরুত্বপূর্ণ বিষয় বিশ্লেষণ
+• ব্যাকরণের প্রয়োজনীয় অধ্যায় সহজ নিয়মে শেখানো
+• সৃজনশীল ও বহুনির্বাচনি প্রশ্নের মডেল টেস্ট ও অনুশীলন
+• দুর্বল শিক্ষার্থীদের জন্য সহজ ভাষায় বিশেষ রিভিশন ক্লাস
+
+লক্ষ্য: বাংলা বিষয়ে পূর্ণাঙ্গ ধারণা পরিষ্কার করা ও বোর্ড পরীক্ষায় সর্বোচ্চ ফলাফল নিশ্চিত করা।`;
+                        setDetailsForm({ ...detailsForm, description: template });
+                      }}
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      + পয়েন্ট টেমপ্লেট যোগ করুন
+                    </button>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md hidden sm:inline-block font-sans">
+                      কোর্স বিবরণী সেকশনে প্রদর্শিত হবে
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-text-muted">
+                  কোর্স পেজের প্রধান <strong>"কোর্স বিবরণী"</strong> সেকশনে প্রদর্শিত হবে। এখানে ভূমিকা লিখুন এবং <strong>•</strong> বা <strong>-</strong> দিয়ে পয়েন্ট আকারে লিখলে ওয়েবসাইটে স্বয়ংক্রিয়ভাবে আকর্ষণীয় চেকমার্ক পয়েন্ট কার্ড হিসেবে দেখাবে।
+                </p>
+                <textarea
+                  rows={8}
+                  value={detailsForm.description}
+                  onChange={(e) =>
+                    setDetailsForm({ ...detailsForm, description: e.target.value })
+                  }
+                  className="input text-xs w-full py-2.5 font-bengali leading-relaxed font-mono sm:font-sans"
+                  placeholder="কোর্সটির বিস্তারিত ভূমিকা এবং প্রতি লাইনে • বা - দিয়ে মূল পয়েন্টগুলো লিখুন..."
+                />
+                <div className="flex flex-wrap items-center justify-between text-[11px] text-text-muted pt-1">
+                  <span>💡 <strong>টিপস:</strong> লাইনের শুরুতে • বা - অথবা সংখ্যা (১, ২) দিলে তা ওয়েবসাইট ভিজিটরের কাছে সুন্দর পয়েন্ট কার্ডে রূপান্তরিত হবে।</span>
+                  <span className="font-mono text-[10px]">{detailsForm.description.length} অক্ষর</span>
+                </div>
               </div>
             </div>
           </div>

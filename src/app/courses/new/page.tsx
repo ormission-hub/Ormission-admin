@@ -33,6 +33,7 @@ import {
   Star,
   GraduationCap,
   ListChecks,
+  Type,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
@@ -91,6 +92,7 @@ export default function CreateCourseWizardPage() {
     titleBn: "",
     titleEn: "",
     subtitleBn: "",
+    description: "",
     categorySlug: "",
     instructorId: "",
     instructorIds: [] as string[],
@@ -358,6 +360,7 @@ export default function CreateCourseWizardPage() {
         title_bn: basicInfo.titleBn,
         slug: slug,
         short_description: basicInfo.subtitleBn,
+        description: basicInfo.description,
         category_id: Number(basicInfo.categorySlug) || null,
         instructor_id: primaryInstId,
         instructor_ids: selectedInstIds,
@@ -610,16 +613,68 @@ export default function CreateCourseWizardPage() {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-text font-bengali mb-1.5">
-                  কোর্স সাবটাইটেল বা সংক্ষিপ্ত বিবরণী (বাংলায়)
-                </label>
+              {/* Field 1: Short Subtitle (Hero Headline) */}
+              <div className="space-y-2 p-4 rounded-2xl bg-surface-secondary/30 border border-border/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                  <label className="text-xs font-bold text-text flex items-center gap-1.5">
+                    <Type className="w-4 h-4 text-primary" />
+                    <span>১. সংক্ষিপ্ত সাবটাইটেল / হেডলাইন (Hero Headline)</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md self-start sm:self-auto font-sans">
+                    ওয়েবসাইটের হেডারে প্রদর্শিত হবে
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-muted">
+                  কোর্সের প্রধান নামের নিচে ১-২ বাক্যে সংক্ষেপে প্যারাগ্রাফ আকারে লিখুন।
+                </p>
                 <textarea
-                  rows={3}
-                  placeholder="কোর্সের মূল উদ্দেশ্য ও শিক্ষার্থীদের প্রাপ্তি সংক্ষেপে লিখুন..."
+                  rows={2}
+                  placeholder="যেমন: SSC পরীক্ষায় বাংলায় এ+ নিশ্চিত করতে বিষয়ভিত্তিক লাইভ ক্লাস, লেকচার শিট ও পূর্ণাঙ্গ মডেল টেস্ট।"
                   value={basicInfo.subtitleBn}
                   onChange={(e) => setBasicInfo({ ...basicInfo, subtitleBn: e.target.value })}
-                  className="input text-sm font-bengali w-full py-2.5"
+                  className="input text-xs w-full py-2.5 font-bengali leading-relaxed"
+                />
+              </div>
+
+              {/* Field 2: Detailed Course Description (with Points/Highlights) */}
+              <div className="space-y-2 p-4 rounded-2xl bg-surface-secondary/30 border border-border/80">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-text flex items-center gap-1.5">
+                    <ListChecks className="w-4 h-4 text-emerald-500" />
+                    <span>২. পূর্ণাঙ্গ কোর্স বিবরণী ও পয়েন্টভিত্তিক বিষয়সমূহ (Detailed Description & Points)</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const template = (basicInfo.description ? basicInfo.description.trim() + "\n\n" : "") +
+`কোর্সে যা থাকছে:
+• সম্পূর্ণ সিলেবাসের পূর্ণাঙ্গ প্রস্তুতি
+• অধ্যায়ভিত্তিক কনসেপ্ট ও সমস্যা সমাধান
+• সৃজনশীল ও বহুনির্বাচনি প্রশ্নের মডেল টেস্ট
+• দুর্বল শিক্ষার্থীদের জন্য সহজ ভাষায় বিশেষ রিভিশন ক্লাস
+
+লক্ষ্য: পরীক্ষায় পূর্ণাঙ্গ প্রস্তুতি ও সর্বোচ্চ ফলাফল অর্জন।`;
+                        setBasicInfo({ ...basicInfo, description: template });
+                      }}
+                      className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                    >
+                      + পয়েন্ট টেমপ্লেট যোগ করুন
+                    </button>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-md hidden sm:inline-block font-sans">
+                      কোর্স বিবরণী সেকশনে প্রদর্শিত হবে
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-text-muted">
+                  কোর্স পেজের প্রধান <strong>"কোর্স বিবরণী"</strong> সেকশনে প্রদর্শিত হবে। এখানে ভূমিকা লিখুন এবং <strong>•</strong> বা <strong>-</strong> দিয়ে পয়েন্ট আকারে লিখলে ওয়েবসাইটে আকর্ষণীয় চেকমার্ক পয়েন্ট কার্ড হিসেবে দেখাবে।
+                </p>
+                <textarea
+                  rows={7}
+                  placeholder="কোর্সটির বিস্তারিত ভূমিকা এবং প্রতি লাইনে • বা - দিয়ে মূল পয়েন্টগুলো লিখুন..."
+                  value={basicInfo.description}
+                  onChange={(e) => setBasicInfo({ ...basicInfo, description: e.target.value })}
+                  className="input text-xs w-full py-2.5 font-bengali leading-relaxed font-mono sm:font-sans"
                 />
               </div>
 
