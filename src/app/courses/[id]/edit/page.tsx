@@ -742,7 +742,7 @@ export default function EditCourseStudioPage({
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="shrink-0 p-1 text-white/60 hover:text-white rounded-lg transition-colors"
+            className="shrink-0 p-1 text-white/60 hover:text-white rounded-lg transition-colors cursor-pointer"
             title="বন্ধ করুন"
           >
             <X className="w-4 h-4" />
@@ -752,149 +752,157 @@ export default function EditCourseStudioPage({
 
       {/* Top Inline Success Banner */}
       {saveSuccess && (
-        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3.5 flex items-center justify-between gap-3 text-emerald-400">
-          <div className="flex items-center gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-            <div className="text-xs">
+        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex items-center justify-between gap-3 text-emerald-400 animate-in fade-in shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="text-xs sm:text-sm">
               <span className="font-bold">সফলভাবে সংরক্ষিত:</span> কোর্সের সকল তথ্য, অধ্যায় ও ক্লাস Supabase ডাটাবেজে সফলভাবে আপডেট হয়েছে।
             </div>
           </div>
           <button
             type="button"
             onClick={() => setSaveSuccess(false)}
-            className="text-emerald-400/70 hover:text-emerald-300 p-1 rounded"
+            className="text-emerald-400/70 hover:text-emerald-300 p-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
 
-      {/* Top Breadcrumb & Actions Bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-border">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/courses"
-            className="p-2 rounded-xl bg-surface border border-border text-text-muted hover:text-primary transition-colors"
-            title="সকল কোর্সে ফিরে যান"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-text line-clamp-1">
-                {detailsForm.title_bn || "কোর্স সম্পাদনা"}
-              </h1>
-              <span
-                className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
-                  detailsForm.status === "published"
-                    ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                    : "bg-amber-500/10 text-amber-500 border-amber-500/20"
-                }`}
-              >
-                {detailsForm.status === "published" ? "লাইভ প্রকাশিত" : "ড্রাফট"}
-              </span>
+      {/* Sticky Top Studio Header & Actions Bar */}
+      <div className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-border/80 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 py-3 mb-5 shadow-xs transition-all">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <Link
+              href="/courses"
+              className="p-2 rounded-xl bg-surface-secondary border border-border text-text-muted hover:text-primary transition-colors shrink-0 cursor-pointer"
+              title="সকল কোর্সে ফিরে যান"
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Link>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-xl font-black text-text truncate">
+                  {detailsForm.title_bn || "কোর্স স্টুডিও"}
+                </h1>
+                <span
+                  className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 ${
+                    detailsForm.status === "published"
+                      ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                      : "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                  }`}
+                >
+                  {detailsForm.status === "published" ? "লাইভ প্রকাশিত" : "ড্রাফট"}
+                </span>
+              </div>
+              <p className="text-[11px] text-text-muted font-sans truncate mt-0.5">/{detailsForm.slug}</p>
             </div>
-            <p className="text-xs text-text-muted font-sans mt-0.5">/{detailsForm.slug}</p>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
-          <a
-            href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${detailsForm.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-outline btn-sm text-xs flex items-center gap-1.5"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>প্রিভিউ</span>
-            <ExternalLink className="w-3 h-3 opacity-60" />
-          </a>
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end">
+            <a
+              href={`${process.env.NEXT_PUBLIC_MAIN_SITE_URL || "http://localhost:3000"}/course/${detailsForm.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-outline h-9 px-3 text-xs flex items-center gap-1.5 rounded-xl cursor-pointer"
+              title="ওয়েবসাইটে প্রিভিউ দেখুন"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">লাইভ সাইট</span>
+              <ExternalLink className="w-3 h-3 opacity-60" />
+            </a>
 
-          <button
-            type="button"
-            onClick={handleSaveAll}
-            disabled={saving}
-            className={`btn btn-sm text-xs font-bold flex items-center gap-1.5 shadow-md flex-1 sm:flex-none justify-center transition-all ${
-              saveSuccess
-                ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20"
-                : "btn-primary"
-            }`}
-          >
-            {saving ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>সংরক্ষণ হচ্ছে...</span>
-              </>
-            ) : saveSuccess ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                <span>সফলভাবে সংরক্ষিত হয়েছে!</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-3.5 h-3.5" />
-                <span>পরিবর্তন সংরক্ষণ করুন</span>
-              </>
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              disabled={saving}
+              className={`btn h-9 px-4 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all cursor-pointer ${
+                saveSuccess
+                  ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20"
+                  : "btn-primary"
+              }`}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>সংরক্ষণ হচ্ছে...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                  <span>সংরক্ষিত হয়েছে!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>পরিবর্তন সংরক্ষণ করুন</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Course Stats Quick Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-surface p-3.5 rounded-xl border border-border">
-          <span className="text-[11px] text-text-muted">মোট অধ্যায় (Sections)</span>
-          <div className="text-lg font-black text-text mt-0.5">{sections.length}টি</div>
-        </div>
-        <div className="bg-surface p-3.5 rounded-xl border border-border">
-          <span className="text-[11px] text-text-muted">মোট ক্লাস (Classes)</span>
-          <div className="text-lg font-black text-text mt-0.5">{totalLessonsCount}টি</div>
-        </div>
-        <div className="bg-surface p-3.5 rounded-xl border border-border">
-          <span className="text-[11px] text-emerald-500 font-bold flex items-center gap-1">
-            <Unlock className="w-3 h-3" />
-            ফ্রি প্রিভিউ ক্লাস
+        <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
+          <span className="text-[11px] text-text-muted font-bold flex items-center gap-1.5">
+            <Layers className="w-3.5 h-3.5 text-text-muted" />
+            মোট অধ্যায়
           </span>
-          <div className="text-lg font-black text-emerald-500 mt-0.5">{freeLessonsCount}টি</div>
+          <div className="text-xl font-black text-text mt-1">{sections.length}টি</div>
         </div>
-        <div className="bg-surface p-3.5 rounded-xl border border-border">
-          <span className="text-[11px] text-amber-500 font-bold flex items-center gap-1">
-            <Lock className="w-3 h-3" />
-            পেইড / লকড ক্লাস
+        <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
+          <span className="text-[11px] text-primary font-bold flex items-center gap-1.5">
+            <Video className="w-3.5 h-3.5 text-primary" />
+            মোট ক্লাস
           </span>
-          <div className="text-lg font-black text-amber-500 mt-0.5">{paidLessonsCount}টি</div>
+          <div className="text-xl font-black text-primary mt-1">{totalLessonsCount}টি</div>
+        </div>
+        <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
+          <span className="text-[11px] text-emerald-500 font-bold flex items-center gap-1.5">
+            <Unlock className="w-3.5 h-3.5" />
+            ফ্রি প্রিভিউ
+          </span>
+          <div className="text-xl font-black text-emerald-500 mt-1">{freeLessonsCount}টি</div>
+        </div>
+        <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
+          <span className="text-[11px] text-amber-500 font-bold flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5" />
+            পেইড / লকড
+          </span>
+          <div className="text-xl font-black text-amber-500 mt-1">{paidLessonsCount}টি</div>
         </div>
       </div>
 
-      {/* Main Tab Selector */}
-      <div className="flex border-b border-border">
+      {/* Segmented Tab Controls */}
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-surface-secondary/70 border border-border w-fit max-w-full overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab("curriculum")}
-          className={`px-5 py-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === "curriculum"
-              ? "border-primary text-primary bg-primary/5"
-              : "border-transparent text-text-muted hover:text-text"
+              ? "bg-primary text-white shadow-sm"
+              : "text-text-muted hover:text-text hover:bg-surface"
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>কারিকুলাম ও ক্লাস পরিচালনা ({totalLessonsCount} ক্লাস)</span>
-          <span className="px-1.5 py-0.2 rounded-full bg-primary/10 text-primary text-[10px] font-mono">
-            v2.0
-          </span>
+          <span>কারিকুলাম ও ক্লাস পরিচালনা ({totalLessonsCount})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab("details")}
-          className={`px-5 py-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
+          className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 whitespace-nowrap cursor-pointer ${
             activeTab === "details"
-              ? "border-primary text-primary bg-primary/5"
-              : "border-transparent text-text-muted hover:text-text"
+              ? "bg-primary text-white shadow-sm"
+              : "text-text-muted hover:text-text hover:bg-surface"
           }`}
         >
           <Settings className="w-4 h-4" />
-          <span>কোর্সের প্রাথমিক তথ্য ও মূল্য</span>
+          <span>কোর্সের প্রাথমিক তথ্য ও সেটিংস</span>
         </button>
       </div>
 
@@ -908,14 +916,14 @@ export default function EditCourseStudioPage({
                 <span>ক্লাস ও কারিকুলাম এক্সেস কন্ট্রোল</span>
               </h3>
               <p className="text-xs text-text-muted">
-                প্রতিটি ক্লাসে <strong>ফ্রি প্রিভিউ</strong> অথবা <strong>পেইড / লকড ক্লাস</strong> নির্ধারণ করুন। পেইড ক্লাস কোনো AI বা ইন্সপেক্ট দিয়ে বাইপাস করা অসম্ভব।
+                প্রতিটি ক্লাসে <strong>ফ্রি প্রিভিউ</strong> অথবা <strong>পেইড / লকড ক্লাস</strong> নির্ধারণ করুন। পেইড ক্লাস যেকোনো পরিদর্শন বা বাইপাস থেকে সুরক্ষিত।
               </p>
             </div>
 
             <button
               type="button"
               onClick={addSection}
-              className="btn btn-primary btn-sm text-xs font-bold flex items-center gap-1.5 shadow-xs shrink-0"
+              className="btn btn-primary btn-sm text-xs font-bold flex items-center gap-1.5 shadow-xs shrink-0 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>নতুন অধ্যায় যোগ করুন</span>
@@ -927,12 +935,12 @@ export default function EditCourseStudioPage({
             {sections.map((section, sIdx) => (
               <div
                 key={section.id}
-                className="bg-surface rounded-2xl border border-border overflow-hidden shadow-xs"
+                className="bg-surface rounded-2xl border border-border/80 overflow-hidden shadow-xs hover:border-border-hover transition-all"
               >
                 {/* Section Header */}
-                <div className="p-4 bg-surface-secondary/60 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <span className="w-8 h-8 rounded-lg bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 font-mono">
+                <div className="p-3.5 sm:p-4 bg-surface-secondary/60 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                    <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 font-mono">
                       {sIdx + 1 < 10 ? `0${sIdx + 1}` : sIdx + 1}
                     </span>
                     <div className="flex-1 min-w-0">
@@ -941,18 +949,22 @@ export default function EditCourseStudioPage({
                         value={section.titleBn}
                         onChange={(e) => updateSectionTitle(section.id, e.target.value)}
                         placeholder="অধ্যায়ের নাম লিখুন..."
-                        className="input text-sm font-bold text-text bg-surface/80 w-full"
+                        className="input text-xs sm:text-sm font-bold text-text bg-surface/80 w-full h-9 rounded-xl font-bengali"
                       />
                     </div>
                   </div>
 
                   {/* Section Controls */}
                   <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                    <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-surface border border-border text-text-muted mr-1 font-sans">
+                      {section.lessons.length}টি ক্লাস
+                    </span>
+
                     <button
                       type="button"
                       onClick={() => moveSection(sIdx, "up")}
                       disabled={sIdx === 0}
-                      className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30"
+                      className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30 cursor-pointer transition-colors"
                       title="উপরে নিন"
                     >
                       <ChevronUp className="w-3.5 h-3.5" />
@@ -961,7 +973,7 @@ export default function EditCourseStudioPage({
                       type="button"
                       onClick={() => moveSection(sIdx, "down")}
                       disabled={sIdx === sections.length - 1}
-                      className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30"
+                      className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30 cursor-pointer transition-colors"
                       title="নিচে নিন"
                     >
                       <ChevronDown className="w-3.5 h-3.5" />
@@ -970,7 +982,7 @@ export default function EditCourseStudioPage({
                     <button
                       type="button"
                       onClick={() => addLesson(section.id)}
-                      className="btn btn-outline btn-sm text-xs font-bold flex items-center gap-1 ml-1"
+                      className="btn btn-outline btn-sm h-8 px-2.5 text-xs font-bold flex items-center gap-1 ml-1 rounded-lg cursor-pointer"
                       title="এই অধ্যায়ে নতুন ক্লাস যোগ করুন"
                     >
                       <Plus className="w-3.5 h-3.5 text-primary" />
@@ -980,7 +992,7 @@ export default function EditCourseStudioPage({
                     <button
                       type="button"
                       onClick={() => removeSection(section.id)}
-                      className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors ml-1"
+                      className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors ml-1 cursor-pointer"
                       title="অধ্যায়টি মুছুন"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -993,69 +1005,103 @@ export default function EditCourseStudioPage({
                   {section.lessons.map((lesson, lIdx) => (
                     <div
                       key={lesson.id}
-                      className={`p-3.5 rounded-xl border transition-all ${
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition-all shadow-2xs ${
                         lesson.isFreePreview
-                          ? "border-emerald-500/30 bg-emerald-500/5 hover:border-emerald-500/50"
+                          ? "border-emerald-500/35 bg-emerald-500/[0.03] hover:border-emerald-500/50"
                           : "border-border bg-surface-secondary/20 hover:border-primary/30"
                       }`}
                     >
-                      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                        {/* Left: Index, Title, and Free/Paid Toggle */}
-                        <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
-                          <span className="w-6 h-6 rounded-full bg-surface border border-border text-text-muted flex items-center justify-center text-[10px] font-mono shrink-0 mt-1 sm:mt-0">
-                            {lIdx + 1}
+                      {/* Tier 1: Main Lesson Row - Index, Title, Free/Paid Badge, Reorder & Delete */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        {/* Left: Index & Title Input */}
+                        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                          <span className="w-7 h-7 rounded-xl bg-surface border border-border text-text-muted flex items-center justify-center text-xs font-mono font-bold shrink-0">
+                            {lIdx + 1 < 10 ? `০${lIdx + 1}` : lIdx + 1}
                           </span>
-
-                          <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex-1 min-w-0">
                             <input
                               type="text"
                               value={lesson.titleBn}
                               onChange={(e) =>
                                 updateLessonField(section.id, lesson.id, "titleBn", e.target.value)
                               }
-                              placeholder="ক্লাসের শিরোনাম (যেমন: লেকচার ১ - সূচক ও লগারিদম)..."
-                              className="input text-xs sm:text-sm font-semibold text-text w-full py-1.5"
+                              placeholder="ক্লাসের শিরোনাম (যেমন: লেকচার ০১ - সূচক ও লগারিদম)..."
+                              className="input text-xs sm:text-sm font-semibold text-text w-full h-9 rounded-xl font-bengali"
                             />
-                          </div>
-
-                          {/* Free vs Paid Toggle Badge */}
-                          <div className="shrink-0">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateLessonField(
-                                  section.id,
-                                  lesson.id,
-                                  "isFreePreview",
-                                  !lesson.isFreePreview
-                                )
-                              }
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs ${
-                                lesson.isFreePreview
-                                  ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20"
-                                  : "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20"
-                              }`}
-                              title="ক্লিক করে ফ্রি অথবা পেইড পরিবর্তন করুন"
-                            >
-                              {lesson.isFreePreview ? (
-                                <>
-                                  <Unlock className="w-3.5 h-3.5" />
-                                  <span>ফ্রি প্রিভিউ (Free)</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Lock className="w-3.5 h-3.5" />
-                                  <span>পেইড / লকড (Paid)</span>
-                                </>
-                              )}
-                            </button>
                           </div>
                         </div>
 
-                        {/* Right: Duration, Video URL, Preview Button, Reorder & Delete */}
-                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+                        {/* Right: Free vs Paid Toggle + Actions Toolbar */}
+                        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+                          {/* Free vs Paid Toggle Badge */}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              updateLessonField(
+                                section.id,
+                                lesson.id,
+                                "isFreePreview",
+                                !lesson.isFreePreview
+                              )
+                            }
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-2xs cursor-pointer ${
+                              lesson.isFreePreview
+                                ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20"
+                                : "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20"
+                            }`}
+                            title="ক্লিক করে ফ্রি অথবা পেইড পরিবর্তন করুন"
+                          >
+                            {lesson.isFreePreview ? (
+                              <>
+                                <Unlock className="w-3.5 h-3.5" />
+                                <span>ফ্রি প্রিভিউ</span>
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-3.5 h-3.5" />
+                                <span>পেইড / লকড</span>
+                              </>
+                            )}
+                          </button>
+
+                          {/* Reorder & Delete Toolbar */}
+                          <div className="flex items-center gap-0.5 bg-surface p-0.5 rounded-xl border border-border">
+                            <button
+                              type="button"
+                              onClick={() => moveLesson(section.id, lIdx, "up")}
+                              disabled={lIdx === 0}
+                              className="p-1.5 rounded-lg text-text-muted hover:text-text disabled:opacity-30 transition-colors cursor-pointer"
+                              title="উপরে নিন"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveLesson(section.id, lIdx, "down")}
+                              disabled={lIdx === section.lessons.length - 1}
+                              className="p-1.5 rounded-lg text-text-muted hover:text-text disabled:opacity-30 transition-colors cursor-pointer"
+                              title="নিচে নিন"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                            <div className="w-[1px] h-4 bg-border my-auto mx-0.5" />
+                            <button
+                              type="button"
+                              onClick={() => removeLesson(section.id, lesson.id)}
+                              className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+                              title="ক্লাসটি মুছুন"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tier 2: Sub-controls Bar - Duration, Server Button, Video URL & Materials */}
+                      <div className="mt-3 pt-3 border-t border-border/60 flex flex-wrap items-center justify-between gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
                           {/* Duration input */}
-                          <div className="relative w-24">
+                          <div className="relative w-28 shrink-0">
                             <Clock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
                             <input
                               type="text"
@@ -1064,16 +1110,16 @@ export default function EditCourseStudioPage({
                                 updateLessonField(section.id, lesson.id, "duration", e.target.value)
                               }
                               placeholder="30:00"
-                              className="input text-xs pl-8 pr-2 py-1.5 font-mono text-center w-full"
-                              title="সময়কাল (যেমন: 25:00)"
+                              className="input text-xs pl-8 pr-2 h-8 font-mono text-center w-full rounded-lg"
+                              title="সময়কাল (যেমন: 25:00 বা 45:00)"
                             />
                           </div>
 
-                          {/* Streaming Servers Toggle */}
+                          {/* Streaming Servers Accordion Toggle */}
                           <button
                             type="button"
                             onClick={() => updateLessonField(section.id, lesson.id, "showServers", !lesson.showServers)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shrink-0 ${
+                            className={`h-8 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 border shrink-0 cursor-pointer ${
                               lesson.servers.length > 0
                                 ? "bg-primary/10 text-primary border-primary/30 hover:bg-primary/20 shadow-2xs"
                                 : "bg-surface border-border text-text-muted hover:text-text hover:border-primary/30"
@@ -1081,26 +1127,14 @@ export default function EditCourseStudioPage({
                             title={lesson.showServers ? "সার্ভার প্যানেল লুকান" : "স্ট্রিমিং সার্ভার দেখুন ও পরিচালনা করুন"}
                           >
                             <Server className="w-3.5 h-3.5 text-primary" />
-                            <span>{lesson.servers.length > 0 ? `${lesson.servers.length}টি সার্ভার` : "সার্ভার"}</span>
+                            <span>{lesson.servers.length > 0 ? `${lesson.servers.length}টি সার্ভার` : "ভিডিও সার্ভার"}</span>
                             <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${lesson.showServers ? "rotate-180 text-primary" : "text-text-muted"}`} />
                           </button>
 
-                          {/* Compact badge when servers exist but panel is collapsed */}
-                          {lesson.servers.length > 0 && !lesson.showServers && (
-                            <div
-                              onClick={() => updateLessonField(section.id, lesson.id, "showServers", true)}
-                              className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface border border-border text-[11px] text-text-muted font-mono truncate max-w-[240px] cursor-pointer hover:border-primary/40 hover:text-text transition-colors"
-                              title="ক্লিক করে সকল সার্ভার দেখুন"
-                            >
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                              <span className="truncate">{lesson.servers[0]?.serverName || "Server 1"}: {lesson.servers[0]?.videoUrl}</span>
-                            </div>
-                          )}
-
-                          {/* Legacy Video URL (hidden if servers exist) */}
+                          {/* Legacy Video URL (when no multi-servers added yet) */}
                           {lesson.servers.length === 0 && (
-                            <>
-                              <div className="relative flex-1 sm:w-64">
+                            <div className="flex items-center gap-1.5 flex-1 min-w-[200px]">
+                              <div className="relative flex-1">
                                 <Video className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
                                 <input
                                   type="text"
@@ -1108,9 +1142,9 @@ export default function EditCourseStudioPage({
                                   onChange={(e) =>
                                     updateLessonField(section.id, lesson.id, "videoUrl", e.target.value)
                                   }
-                                  placeholder="YouTube URL বা ID..."
-                                  className="input text-xs pl-8 pr-2 py-1.5 font-mono w-full"
-                                  title="YouTube Unlisted URL বা Embed লিংক"
+                                  placeholder="YouTube URL বা ভিডিও লিঙ্ক..."
+                                  className="input text-xs pl-8 pr-2 h-8 font-mono w-full rounded-lg"
+                                  title="YouTube Unlisted URL বা Embed লিঙ্ক"
                                 />
                               </div>
                               {lesson.videoUrl && (
@@ -1120,46 +1154,25 @@ export default function EditCourseStudioPage({
                                     setPreviewVideoUrl(lesson.videoUrl);
                                     setPreviewServerName(lesson.titleBn || "ভিডিও প্রিভিউ");
                                   }}
-                                  className="p-1.5 rounded-lg border border-border bg-surface text-primary hover:bg-primary/10 transition-colors shrink-0"
+                                  className="h-8 w-8 rounded-lg border border-border bg-surface text-primary hover:bg-primary/10 flex items-center justify-center transition-colors shrink-0 cursor-pointer"
                                   title="ভিডিও প্লেয়ার টেস্ট করুন"
                                 >
                                   <Play className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                            </>
+                            </div>
                           )}
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => moveLesson(section.id, lIdx, "up")}
-                              disabled={lIdx === 0}
-                              className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30"
-                              title="উপরে নিন"
-                            >
-                              <ChevronUp className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveLesson(section.id, lIdx, "down")}
-                              disabled={lIdx === section.lessons.length - 1}
-                              className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30"
-                              title="নিচে নিন"
-                            >
-                              <ChevronDown className="w-3 h-3" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => removeLesson(section.id, lesson.id)}
-                              className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors"
-                              title="ক্লাসটি মুছুন"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
                         </div>
+
+                        {/* Material count indicator if materials exist */}
+                        {lesson.materials && lesson.materials.length > 0 && (
+                          <span className="text-[11px] font-semibold text-text-muted bg-surface px-2.5 py-1 rounded-md border border-border shrink-0">
+                            📎 {lesson.materials.length}টি রিসোর্স
+                          </span>
+                        )}
                       </div>
 
-                      {/* Expandable Streaming Servers Panel */}
+                      {/* Tier 3: Expandable Streaming Servers Panel */}
                       {lesson.showServers && (
                         <div className="mt-3 pt-3 border-t border-border/50">
                           <div className="flex items-center justify-between mb-2.5">
@@ -1170,7 +1183,7 @@ export default function EditCourseStudioPage({
                             <button
                               type="button"
                               onClick={() => addServer(section.id, lesson.id)}
-                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1"
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
                             >
                               <Plus className="w-3 h-3" />
                               <span>সার্ভার যোগ করুন</span>
@@ -1178,7 +1191,7 @@ export default function EditCourseStudioPage({
                           </div>
 
                           {lesson.servers.length === 0 ? (
-                            <div className="text-center py-4 text-xs text-text-muted font-bengali">
+                            <div className="text-center py-4 text-xs text-text-muted font-bengali bg-surface/50 rounded-xl border border-dashed border-border">
                               কোনো সার্ভার যোগ করা হয়নি। &quot;সার্ভার যোগ করুন&quot; ক্লিক করুন।
                             </div>
                           ) : (
@@ -1186,43 +1199,43 @@ export default function EditCourseStudioPage({
                               {lesson.servers.map((srv, srvIdx) => (
                                 <div
                                   key={srv.id}
-                                  className={`flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 rounded-lg border transition-all ${
+                                  className={`flex flex-col md:flex-row md:items-center gap-2 p-2.5 rounded-xl border transition-all ${
                                     srv.isEnabled
                                       ? "border-primary/20 bg-primary/5"
                                       : "border-border bg-surface-secondary/30 opacity-60"
                                   }`}
                                 >
-                                  {/* Server Order Badge */}
-                                  <span className="w-5 h-5 rounded-md bg-surface border border-border text-text-muted flex items-center justify-center text-[9px] font-mono shrink-0">
-                                    {srvIdx + 1}
-                                  </span>
+                                  {/* Server Order Badge & Name */}
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-lg bg-surface border border-border text-text-muted flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
+                                      {srvIdx + 1}
+                                    </span>
 
-                                  {/* Server Name */}
-                                  <input
-                                    type="text"
-                                    value={srv.serverName}
-                                    onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverName", e.target.value)}
-                                    placeholder="সার্ভারের নাম (যেমন: Server 1)..."
-                                    className="input text-[11px] py-1 px-2.5 w-32 sm:w-36 font-semibold"
-                                  />
+                                    <input
+                                      type="text"
+                                      value={srv.serverName}
+                                      onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverName", e.target.value)}
+                                      placeholder="সার্ভারের নাম (যেমন: Server 1)..."
+                                      className="input text-xs h-8 px-2.5 w-32 sm:w-36 font-semibold rounded-lg"
+                                    />
 
-                                  {/* Server Type Dropdown */}
-                                  <select
-                                    value={srv.serverType}
-                                    onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverType", e.target.value)}
-                                    className="input text-[11px] py-1 px-2 w-32 bg-surface"
-                                  >
-                                    <option value="youtube">YouTube</option>
-                                    <option value="streamtape">Streamtape</option>
-                                    <option value="abyss">Abyss Player (AdBlocked)</option>
-                                    <option value="hls">HLS Stream (Encrypted .m3u8)</option>
-                                    <option value="embed">Embed (iframe)</option>
-                                    <option value="direct">Direct URL</option>
-                                  </select>
+                                    <select
+                                      value={srv.serverType}
+                                      onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverType", e.target.value)}
+                                      className="input text-xs h-8 px-2 w-32 bg-surface rounded-lg shrink-0"
+                                    >
+                                      <option value="youtube">YouTube</option>
+                                      <option value="streamtape">Streamtape</option>
+                                      <option value="abyss">Abyss Player (AdBlocked)</option>
+                                      <option value="hls">HLS Stream (Encrypted .m3u8)</option>
+                                      <option value="embed">Embed (iframe)</option>
+                                      <option value="direct">Direct URL</option>
+                                    </select>
+                                  </div>
 
                                   {/* Server Video URL */}
                                   <div className="relative flex-1 min-w-0">
-                                    <Globe className="w-3 h-3 absolute left-2 top-1/2 -translate-y-1/2 text-text-muted" />
+                                    <Globe className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
                                     <input
                                       type="text"
                                       value={srv.videoUrl}
@@ -1245,48 +1258,49 @@ export default function EditCourseStudioPage({
                                           ? "HLS Stream URL (যেমন: https://.../playlist.m3u8)..."
                                           : "Video URL..."
                                       }
-                                      className="input text-[11px] py-1 pl-7 pr-2 font-mono w-full"
+                                      className="input text-xs h-8 pl-8 pr-2 font-mono w-full rounded-lg"
                                     />
                                   </div>
 
-                                  {/* Preview Button */}
-                                  {srv.videoUrl && (
+                                  {/* Controls: Play, Enable/Disable, Delete */}
+                                  <div className="flex items-center justify-end gap-1 shrink-0">
+                                    {srv.videoUrl && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setPreviewVideoUrl(srv.videoUrl);
+                                          setPreviewServerName(srv.serverName || "ভিডিও প্রিভিউ");
+                                        }}
+                                        className="h-8 px-2.5 rounded-lg border border-border bg-surface text-primary hover:bg-primary/10 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer shrink-0"
+                                        title="প্রিভিউ টেস্ট"
+                                      >
+                                        <Play className="w-3 h-3" />
+                                        <span className="hidden sm:inline">টেস্ট</span>
+                                      </button>
+                                    )}
+
                                     <button
                                       type="button"
-                                      onClick={() => {
-                                        setPreviewVideoUrl(srv.videoUrl);
-                                        setPreviewServerName(srv.serverName || "ভিডিও প্রিভিউ");
-                                      }}
-                                      className="p-1 rounded-md border border-border bg-surface text-primary hover:bg-primary/10 transition-colors shrink-0"
-                                      title="প্রিভিউ"
+                                      onClick={() => updateServerField(section.id, lesson.id, srv.id, "isEnabled", !srv.isEnabled)}
+                                      className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 ${
+                                        srv.isEnabled
+                                          ? "text-emerald-500 hover:text-emerald-600"
+                                          : "text-text-muted hover:text-text"
+                                      }`}
+                                      title={srv.isEnabled ? "সচল — ক্লিক করে বন্ধ করুন" : "বন্ধ — ক্লিক করে সচল করুন"}
                                     >
-                                      <Play className="w-3 h-3" />
+                                      {srv.isEnabled ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
                                     </button>
-                                  )}
 
-                                  {/* Enable/Disable Toggle */}
-                                  <button
-                                    type="button"
-                                    onClick={() => updateServerField(section.id, lesson.id, srv.id, "isEnabled", !srv.isEnabled)}
-                                    className={`p-1 rounded-md transition-colors shrink-0 ${
-                                      srv.isEnabled
-                                        ? "text-emerald-500 hover:text-emerald-600"
-                                        : "text-text-muted hover:text-text"
-                                    }`}
-                                    title={srv.isEnabled ? "সচল — ক্লিক করে বন্ধ করুন" : "বন্ধ — ক্লিক করে সচল করুন"}
-                                  >
-                                    {srv.isEnabled ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
-                                  </button>
-
-                                  {/* Delete Server */}
-                                  <button
-                                    type="button"
-                                    onClick={() => removeServer(section.id, lesson.id, srv.id)}
-                                    className="p-1 rounded-md text-text-muted hover:text-error hover:bg-error/10 transition-colors shrink-0"
-                                    title="এই সার্ভার মুছুন"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => removeServer(section.id, lesson.id, srv.id)}
+                                      className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer shrink-0"
+                                      title="এই সার্ভার মুছুন"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -1294,7 +1308,7 @@ export default function EditCourseStudioPage({
                         </div>
                       )}
 
-                      {/* Class Study Materials (PDF, Notes, Drive links) */}
+                      {/* Tier 4: Class Study Materials (PDF, Notes, Drive links) */}
                       <LessonMaterialsManager
                         materials={lesson.materials || []}
                         onChange={(newMats) =>
@@ -1313,7 +1327,7 @@ export default function EditCourseStudioPage({
             <button
               type="button"
               onClick={addSection}
-              className="btn btn-outline btn-sm font-bengali text-xs flex items-center gap-2 border-dashed border-2 py-2 px-6"
+              className="btn btn-outline btn-sm font-bengali text-xs flex items-center gap-2 border-dashed border-2 py-2 px-6 rounded-xl hover:border-primary cursor-pointer transition-all"
             >
               <Plus className="w-4 h-4 text-primary" />
               <span>আরও একটি অধ্যায় (Section) তৈরি করুন</span>
@@ -1483,7 +1497,7 @@ export default function EditCourseStudioPage({
                   onChange={(e) =>
                     setDetailsForm({ ...detailsForm, price: Number(e.target.value) || 0 })
                   }
-                  className="input text-xs font-sans w-full"
+                  className="input text-xs font-sans w-full h-10 rounded-xl"
                   placeholder="1999"
                 />
                 <span className="text-[10px] text-text-muted">০ টাকা দিলে কোর্সটি সম্পূর্ণ ফ্রি হবে।</span>
@@ -1497,9 +1511,10 @@ export default function EditCourseStudioPage({
                   onChange={(e) =>
                     setDetailsForm({ ...detailsForm, original_price: Number(e.target.value) || 0 })
                   }
-                  className="input text-xs font-sans w-full"
+                  className="input text-xs font-sans w-full h-10 rounded-xl"
                   placeholder="3500"
                 />
+                <span className="text-[10px] text-text-muted">পূর্বের কাটার মূল্য (যদি থাকে)।</span>
               </div>
 
               <div className="space-y-1.5">
@@ -1509,13 +1524,23 @@ export default function EditCourseStudioPage({
                   onChange={(e) =>
                     setDetailsForm({ ...detailsForm, status: e.target.value as DbCourse["status"] })
                   }
-                  className="input text-xs w-full font-bold"
+                  className="input text-xs w-full h-10 rounded-xl font-bold cursor-pointer"
                 >
                   <option value="published">লাইভ পাবলিশড (Published)</option>
                   <option value="draft">ড্রাফট (Draft - গোপন)</option>
                   <option value="archived">আর্কাইভড (Archived)</option>
                 </select>
               </div>
+
+              {/* Discount live preview pill */}
+              {detailsForm.original_price > detailsForm.price && detailsForm.price > 0 && (
+                <div className="sm:col-span-3 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold flex items-center gap-2">
+                  <span className="text-emerald-400 text-sm">🎉</span>
+                  <span>
+                    লাইভ ডিসকাউন্ট: {Math.round(((detailsForm.original_price - detailsForm.price) / detailsForm.original_price) * 100)}% (শিক্ষার্থীরা ৳{(detailsForm.original_price - detailsForm.price).toLocaleString()} সাশ্রয় করবে!)
+                  </span>
+                </div>
+              )}
 
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-text">ভর্তি শিক্ষার্থীর সংখ্যা (ডিসপ্লে)</label>
@@ -1528,11 +1553,11 @@ export default function EditCourseStudioPage({
                       enrollment_count: Number(e.target.value) || 0,
                     })
                   }
-                  className="input text-xs font-sans w-full"
+                  className="input text-xs font-sans w-full h-10 rounded-xl font-bold text-pink-500"
                 />
               </div>
 
-              <div className="space-y-1.5 sm:col-span-2 flex items-center gap-3 pt-4">
+              <div className="space-y-1.5 sm:col-span-2 flex items-center gap-3 pt-3">
                 <input
                   type="checkbox"
                   id="is_featured"
@@ -1540,7 +1565,7 @@ export default function EditCourseStudioPage({
                   onChange={(e) =>
                     setDetailsForm({ ...detailsForm, is_featured: e.target.checked })
                   }
-                  className="w-4 h-4 rounded text-primary focus:ring-primary"
+                  className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
                 />
                 <label htmlFor="is_featured" className="text-xs font-bold text-text cursor-pointer">
                   হোমপেজের ফিচারড ও পপুলার সেকশনে প্রদর্শন করুন
@@ -1816,24 +1841,24 @@ export default function EditCourseStudioPage({
       )}
 
       {/* Floating Bottom Save Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface/90 backdrop-blur-md border-t border-border p-3.5 shadow-2xl">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-xs text-text-muted">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>
-              মোট {sections.length}টি অধ্যায়ে {totalLessonsCount}টি ক্লাস ({freeLessonsCount}টি ফ্রি, {paidLessonsCount}টি পেইড)
+      <div className="fixed bottom-0 left-0 right-0 z-30 bg-surface/95 backdrop-blur-md border-t border-border p-3 shadow-2xl">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-text-muted truncate">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="truncate">
+              {sections.length}টি অধ্যায়ে {totalLessonsCount}টি ক্লাস ({freeLessonsCount}টি ফ্রি, {paidLessonsCount}টি পেইড)
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <Link href="/courses" className="btn btn-outline btn-sm text-xs">
+          <div className="flex items-center gap-2 shrink-0">
+            <Link href="/courses" className="btn btn-outline h-9 px-3 text-xs font-semibold rounded-xl cursor-pointer">
               বাতিল
             </Link>
             <button
               type="button"
               onClick={handleSaveAll}
               disabled={saving}
-              className={`btn btn-sm text-xs font-bold flex items-center gap-2 shadow-md transition-all ${
+              className={`btn h-9 px-4 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md transition-all cursor-pointer ${
                 saveSuccess
                   ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500 shadow-emerald-500/20"
                   : "btn-primary"
@@ -1842,17 +1867,17 @@ export default function EditCourseStudioPage({
               {saving ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  <span>সংরক্ষণ হচ্ছে...</span>
+                  <span>সংরক্ষণ...</span>
                 </>
               ) : saveSuccess ? (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                  <span>সফলভাবে সংরক্ষিত হয়েছে!</span>
+                  <span>সংরক্ষিত!</span>
                 </>
               ) : (
                 <>
                   <Save className="w-3.5 h-3.5" />
-                  <span>পরিবর্তন সংরক্ষণ করুন</span>
+                  <span>সংরক্ষণ করুন</span>
                 </>
               )}
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   PlusCircle,
@@ -10,13 +10,8 @@ import {
   Users,
   CheckCircle2,
   RefreshCw,
-  Sparkles,
   Edit2,
-  Upload,
   X,
-  Save,
-  Image as ImageIcon,
-  Loader2,
   Pin,
   Layers,
   Check,
@@ -67,27 +62,6 @@ export default function AdminCoursesPage() {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3500);
   };
-
-  // Edit Modal State
-  const [editingCourse, setEditingCourse] = useState<DbCourse | null>(null);
-  const [editForm, setEditForm] = useState({
-    title_bn: "",
-    title: "",
-    thumbnail_url: "",
-    price: 0,
-    original_price: 0,
-    category_id: "",
-    instructor_id: "",
-    is_featured: false,
-    status: "published" as DbCourse["status"],
-    short_description: "",
-    enrollment_count: 0,
-    total_lessons: 0,
-    total_duration: 0,
-  });
-  const [isUploadingEditThumb, setIsUploadingEditThumb] = useState(false);
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const editFileInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     setLoading(true);
@@ -168,107 +142,6 @@ export default function AdminCoursesPage() {
     setCopiedId(id);
     showNotification("কোর্সের লিংক কপি করা হয়েছে!");
     setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleOpenEdit = (c: DbCourse) => {
-    setEditingCourse(c);
-    setEditForm({
-      title_bn: c.title_bn || "",
-      title: c.title || "",
-      thumbnail_url: c.thumbnail_url || "",
-      price: c.price || 0,
-      original_price: c.original_price || 0,
-      category_id: c.category_id ? String(c.category_id) : "",
-      instructor_id: c.instructor_id ? String(c.instructor_id) : "",
-      is_featured: !!c.is_featured,
-      status: c.status || "published",
-      short_description: c.short_description || "",
-      enrollment_count: c.enrollment_count || 0,
-      total_lessons: c.total_lessons || 0,
-      total_duration: c.total_duration || 0,
-    });
-  };
-
-  const handleEditFileUpload = async (file: File) => {
-    if (!file) return;
-    const validMimes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    if (!validMimes.includes(file.type)) {
-      alert("শুধুমাত্র JPG, PNG বা WEBP ফরম্যাটের ছবি আপলোড করুন।");
-      return;
-    }
-    if (file.size > 8 * 1024 * 1024) {
-      alert("ছবির সাইজ সর্বোচ্চ ৮ মেগাবাইট হতে পারবে।");
-      return;
-    }
-
-    setIsUploadingEditThumb(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success || !data.url) {
-        throw new Error(data.error || "আপলোড ব্যর্থ হয়েছে।");
-      }
-      setEditForm((prev) => ({ ...prev, thumbnail_url: data.url }));
-      showNotification("ছবি সফলভাবে আপলোড হয়েছে");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "ছবি আপলোড ব্যর্থ হয়েছে";
-      alert(msg);
-    } finally {
-      setIsUploadingEditThumb(false);
-    }
-  };
-
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingCourse) return;
-
-    setIsSavingEdit(true);
-    try {
-      const updates: Partial<DbCourse> = {
-        title_bn: editForm.title_bn,
-        title: editForm.title || editForm.title_bn,
-        price: Number(editForm.price) || 0,
-        is_featured: editForm.is_featured,
-        status: editForm.status,
-        short_description: editForm.short_description,
-        enrollment_count: Number(editForm.enrollment_count) || 0,
-        total_lessons: Number(editForm.total_lessons) || 0,
-        total_duration: Number(editForm.total_duration) || 0,
-      };
-
-      if (editForm.thumbnail_url) {
-        updates.thumbnail_url = editForm.thumbnail_url;
-      }
-      if (editForm.original_price) {
-        updates.original_price = Number(editForm.original_price);
-      }
-      if (editForm.category_id) {
-        updates.category_id = Number(editForm.category_id);
-      }
-      if (editForm.instructor_id) {
-        updates.instructor_id = Number(editForm.instructor_id);
-      }
-
-      const ok = await dbService.updateCourse(editingCourse.id, updates);
-      if (ok) {
-        await loadData();
-        setEditingCourse(null);
-        showNotification("কোর্স ও থাম্বনেইল সফলভাবে আপডেট করা হয়েছে!");
-      } else {
-        showNotification("আপডেট ব্যর্থ হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।", "error");
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "আপডেট ত্রুটি";
-      showNotification("ত্রুটি: " + msg, "error");
-    } finally {
-      setIsSavingEdit(false);
-    }
   };
 
   // Computations for KPI cards
@@ -751,32 +624,32 @@ export default function AdminCoursesPage() {
                     </div>
 
                     {/* Action Bar (Finger-friendly mobile touch targets) */}
-                    <div className="pt-2 border-t border-border/80 flex items-center gap-1.5">
+                    <div className="pt-2.5 border-t border-border/80 flex items-center gap-2">
                       {/* 1-Click Curriculum Edit */}
                       <Link
                         href={`/courses/${c.id}/edit?tab=curriculum`}
-                        className="flex-1 h-8 px-2 rounded-xl text-xs font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                        className="flex-1 h-9 px-3 rounded-xl text-xs font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
                         title="কারিকুলাম ও ক্লাস এডিট করুন"
                       >
                         <Layers className="w-3.5 h-3.5" />
                         <span>ক্লাস এডিট</span>
                       </Link>
 
-                      {/* Quick Edit Modal */}
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEdit(c)}
-                        className="h-8 w-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center transition-all cursor-pointer shrink-0"
-                        title="দ্রুত সম্পাদনা"
+                      {/* Full Course Studio Edit */}
+                      <Link
+                        href={`/courses/${c.id}/edit`}
+                        className="h-9 px-3 rounded-xl bg-surface-secondary border border-border text-text hover:text-primary hover:border-primary/40 flex items-center justify-center gap-1.5 text-xs font-bold transition-all cursor-pointer shrink-0"
+                        title="কোর্স স্টুডিও ও সেটিংস"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
-                      </button>
+                        <span>স্টুডিও</span>
+                      </Link>
 
                       {/* Delete */}
                       <button
                         type="button"
                         onClick={() => handleDelete(c.id, c.title_bn || c.title)}
-                        className="h-8 w-8 rounded-xl bg-surface-secondary border border-border text-text hover:text-error hover:border-error/40 flex items-center justify-center transition-all cursor-pointer shrink-0"
+                        className="h-9 w-9 rounded-xl bg-surface-secondary border border-border text-text hover:text-error hover:border-error/40 flex items-center justify-center transition-all cursor-pointer shrink-0"
                         title="কোর্স মুছে ফেলুন"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -793,18 +666,18 @@ export default function AdminCoursesPage() {
           {/* ------------------------------------------------------------------- */}
           <div className={`bg-surface rounded-2xl border border-border/80 overflow-hidden shadow-xs ${viewMode === "table" ? "hidden lg:block" : "hidden"}`}>
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[1100px]">
                 <thead className="bg-surface-secondary/60 border-b border-border text-text-muted uppercase tracking-wider text-[11px]">
                   <tr>
-                    <th className="py-3.5 px-4 font-bold">কোর্স ও থাম্বনেইল</th>
-                    <th className="py-3.5 px-4 font-bold">ক্যাটাগরি</th>
-                    <th className="py-3.5 px-4 font-bold">ইন্সট্রাক্টর</th>
-                    <th className="py-3.5 px-4 font-bold">মূল্য</th>
-                    <th className="py-3.5 px-4 font-bold">কারিকুলাম ও ক্লাস</th>
-                    <th className="py-3.5 px-4 font-bold">ভর্তি শিক্ষার্থী</th>
-                    <th className="py-3.5 px-4 font-bold text-center">হোমপেজে পিন</th>
-                    <th className="py-3.5 px-4 font-bold">স্ট্যাটাস</th>
-                    <th className="py-3.5 px-4 font-bold text-right">অ্যাকশন</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[280px]">কোর্স ও থাম্বনেইল</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[130px]">ক্যাটাগরি</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[150px]">ইন্সট্রাক্টর</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[110px]">মূল্য</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[210px] whitespace-nowrap">কারিকুলাম ও ক্লাস</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[130px] whitespace-nowrap">ভর্তি শিক্ষার্থী</th>
+                    <th className="py-3.5 px-4 font-bold text-center min-w-[90px] whitespace-nowrap">হোমপেজে পিন</th>
+                    <th className="py-3.5 px-4 font-bold min-w-[110px] whitespace-nowrap">স্ট্যাটাস</th>
+                    <th className="py-3.5 px-4 font-bold text-right min-w-[100px] whitespace-nowrap">অ্যাকশন</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/70 font-bengali">
@@ -818,7 +691,7 @@ export default function AdminCoursesPage() {
                         className="hover:bg-surface-secondary/40 transition-colors group/row"
                       >
                         {/* Course Column */}
-                        <td className="py-3 px-4">
+                        <td className="py-3.5 px-4">
                           <div className="flex items-center gap-3">
                             <div className="w-14 h-10 rounded-lg bg-surface-secondary border border-border overflow-hidden shrink-0 relative group/thumb">
                               {c.thumbnail_url ? (
@@ -833,7 +706,7 @@ export default function AdminCoursesPage() {
                                 </div>
                               )}
                             </div>
-                            <div className="min-w-0 max-w-[220px]">
+                            <div className="min-w-0 max-w-[260px]">
                               <Link
                                 href={`/courses/${c.id}/edit`}
                                 className="font-bold text-text text-sm hover:text-primary transition-colors truncate block"
@@ -841,12 +714,12 @@ export default function AdminCoursesPage() {
                               >
                                 {c.title_bn || c.title}
                               </Link>
-                              <div className="text-[11px] text-text-muted font-sans truncate flex items-center gap-1">
-                                <span>/{c.slug}</span>
+                              <div className="text-[11px] text-text-muted font-sans truncate flex items-center gap-1.5 mt-0.5">
+                                <span className="truncate">/{c.slug}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleCopyLink(c.slug, c.id)}
-                                  className="p-0.5 text-text-muted hover:text-primary cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity"
+                                  className="p-0.5 text-text-muted hover:text-primary cursor-pointer opacity-0 group-hover/row:opacity-100 transition-opacity shrink-0"
                                   title="লিংক কপি করুন"
                                 >
                                   {copiedId === c.id ? <Check className="w-2.5 h-2.5 text-emerald-500" /> : <Copy className="w-2.5 h-2.5" />}
@@ -857,26 +730,26 @@ export default function AdminCoursesPage() {
                         </td>
 
                         {/* Category */}
-                        <td className="py-3 px-4">
-                          <span className="px-2.5 py-1 rounded-lg text-[11px] bg-surface-secondary border border-border text-text font-semibold inline-block">
+                        <td className="py-3.5 px-4">
+                          <span className="px-2.5 py-1 rounded-lg text-[11px] bg-surface-secondary border border-border text-text font-semibold inline-block whitespace-nowrap">
                             {c.categories?.name_bn || c.categories?.name || "সাধারণ"}
                           </span>
                         </td>
 
                         {/* Instructor */}
-                        <td className="py-3 px-4">
-                          <div className="font-bold text-text text-xs">
+                        <td className="py-3.5 px-4">
+                          <div className="font-bold text-text text-xs whitespace-nowrap">
                             {c.instructors?.name_bn || c.instructors?.name || "অনলাইন শিক্ষক"}
                           </div>
                           {c.instructors?.institution && (
-                            <div className="text-[10px] text-text-muted truncate max-w-[130px]">
+                            <div className="text-[10px] text-text-muted truncate max-w-[140px]">
                               {c.instructors.institution}
                             </div>
                           )}
                         </td>
 
                         {/* Price */}
-                        <td className="py-3 px-4 font-sans">
+                        <td className="py-3.5 px-4 font-sans whitespace-nowrap">
                           <div className="font-bold text-text text-sm">
                             {c.price === 0 ? (
                               <span className="text-emerald-500 font-bengali">ফ্রি</span>
@@ -892,14 +765,14 @@ export default function AdminCoursesPage() {
                         </td>
 
                         {/* Curriculum & Classes */}
-                        <td className="py-3 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-1 rounded-lg text-[10px] bg-surface-secondary border border-border text-text font-semibold shrink-0">
+                            <span className="px-2.5 py-1 rounded-lg text-[11px] bg-surface-secondary border border-border text-text font-semibold shrink-0">
                               {c.course_sections?.length || 0} অধ্যায় • {c.total_lessons || 0} ক্লাস
                             </span>
                             <Link
                               href={`/courses/${c.id}/edit?tab=curriculum`}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition-all shadow-2xs cursor-pointer shrink-0"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/25 transition-all shadow-2xs cursor-pointer shrink-0"
                               title="কারিকুলাম ও ক্লাসসমূহ এডিট করুন"
                             >
                               <Layers className="w-3 h-3" />
@@ -909,15 +782,15 @@ export default function AdminCoursesPage() {
                         </td>
 
                         {/* Students */}
-                        <td className="py-3 px-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-pink-500/10 text-pink-500 border border-pink-500/20 font-sans">
-                            <Users className="w-3 h-3 text-pink-500" />
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-pink-500/10 text-pink-500 border border-pink-500/20 font-sans shadow-2xs">
+                            <Users className="w-3.5 h-3.5 text-pink-500 shrink-0" />
                             <span>{(c.enrollment_count || 0).toLocaleString()} জন</span>
                           </span>
                         </td>
 
                         {/* Pin Button */}
-                        <td className="py-3 px-4 text-center">
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => handleTogglePin(c.id)}
@@ -933,11 +806,11 @@ export default function AdminCoursesPage() {
                         </td>
 
                         {/* 1-Click Status Toggle */}
-                        <td className="py-3 px-4">
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <button
                             type="button"
                             onClick={() => handleToggleStatus(c.id, c.status)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border cursor-pointer ${
+                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all border cursor-pointer ${
                               isPublished
                                 ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/25 hover:bg-emerald-500/20"
                                 : "bg-amber-500/10 text-amber-400 border-amber-500/25 hover:bg-amber-500/20"
@@ -950,32 +823,22 @@ export default function AdminCoursesPage() {
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            {/* Edit Studio */}
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {/* Course Studio Edit */}
                             <Link
                               href={`/courses/${c.id}/edit`}
-                              className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-surface-secondary transition-colors"
-                              title="কোর্স স্টুডিও খুলুন"
+                              className="p-2 rounded-xl text-text-muted hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20 transition-all cursor-pointer"
+                              title="কোর্স স্টুডিও ও বিস্তারিত সেটিংস"
                             >
                               <Edit2 className="w-4 h-4" />
                             </Link>
-
-                            {/* Quick Edit Modal */}
-                            <button
-                              type="button"
-                              onClick={() => handleOpenEdit(c)}
-                              className="p-1.5 rounded-lg text-text-muted hover:text-text hover:bg-surface-secondary transition-colors cursor-pointer"
-                              title="কুইক সেটিংস"
-                            >
-                              <Sparkles className="w-4 h-4" />
-                            </button>
 
                             {/* Delete */}
                             <button
                               type="button"
                               onClick={() => handleDelete(c.id, c.title_bn || c.title)}
-                              className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors cursor-pointer"
+                              className="p-2 rounded-xl text-text-muted hover:text-error hover:bg-error/10 border border-transparent hover:border-error/20 transition-all cursor-pointer"
                               title="কোর্স মুছে ফেলুন"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -990,325 +853,6 @@ export default function AdminCoursesPage() {
             </div>
           </div>
         </>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 5. QUICK EDIT COURSE MODAL (100% Phone & Touch Responsive)                */}
-      {/* ========================================================================= */}
-      {editingCourse && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
-          <div className="bg-surface border border-border/80 rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border bg-surface shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Edit2 className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm sm:text-base text-text">কোর্স দ্রুত সম্পাদনা</h3>
-                  <p className="text-[11px] text-text-muted font-sans">/{editingCourse.slug}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingCourse(null)}
-                className="p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Form Scroll Area */}
-            <form onSubmit={handleSaveEdit} className="p-4 sm:p-6 overflow-y-auto space-y-4 flex-1">
-              {/* Thumbnail Section */}
-              <div className="bg-surface-secondary/50 p-3.5 sm:p-4 rounded-xl border border-border space-y-3">
-                <label className="block text-xs font-bold text-text">কোর্স থাম্বনেইল ও ব্যানার</label>
-                
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-start">
-                  <div className="w-full sm:w-44 aspect-video bg-slate-950 rounded-xl overflow-hidden border border-border shrink-0 flex items-center justify-center relative">
-                    {editForm.thumbnail_url ? (
-                      <img
-                        src={editForm.thumbnail_url}
-                        alt="Course Thumbnail"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-center p-3">
-                        <ImageIcon className="w-6 h-6 text-text-muted mx-auto mb-1 opacity-50" />
-                        <span className="text-[10px] text-text-muted">কোনো ছবি নেই</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 w-full space-y-2.5">
-                    <input
-                      type="file"
-                      ref={editFileInputRef}
-                      accept="image/png,image/jpeg,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleEditFileUpload(file);
-                      }}
-                    />
-
-                    <button
-                      type="button"
-                      disabled={isUploadingEditThumb}
-                      onClick={() => editFileInputRef.current?.click()}
-                      className="btn btn-outline h-9 text-xs font-bold w-full rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      {isUploadingEditThumb ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-                          <span>ছবি আপলোড হচ্ছে...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Upload className="w-3.5 h-3.5" />
-                          <span>ডিভাইস থেকে আপলোড করুন</span>
-                        </>
-                      )}
-                    </button>
-
-                    <div className="relative">
-                      <input
-                        type="url"
-                        placeholder="অথবা সরাসরি ছবির URL পেস্ট করুন..."
-                        value={editForm.thumbnail_url}
-                        onChange={(e) => setEditForm((prev) => ({ ...prev, thumbnail_url: e.target.value }))}
-                        className="input text-xs w-full font-sans h-9 rounded-xl"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Title Bangla & English */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-text mb-1">কোর্সের নাম (বাংলা) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={editForm.title_bn}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, title_bn: e.target.value }))}
-                    className="input text-xs w-full h-9 rounded-xl font-bengali"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-text mb-1">কোর্সের নাম (ইংরেজি)</label>
-                  <input
-                    type="text"
-                    value={editForm.title}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
-                    className="input text-xs w-full h-9 rounded-xl font-sans"
-                  />
-                </div>
-              </div>
-
-              {/* Short Description */}
-              <div>
-                <label className="block text-xs font-bold text-text mb-1">
-                  কোর্সের সংক্ষিপ্ত বিবরণ
-                </label>
-                <textarea
-                  rows={2}
-                  value={editForm.short_description}
-                  onChange={(e) => setEditForm((prev) => ({ ...prev, short_description: e.target.value }))}
-                  placeholder="কোর্সের মূল আকর্ষণ ও বৈশিষ্ট্য..."
-                  className="input text-xs w-full py-2 rounded-xl resize-none font-bengali"
-                />
-              </div>
-
-              {/* Enrollment Count & Live Stats */}
-              <div className="p-3.5 rounded-xl bg-pink-500/5 border border-pink-500/20 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-pink-500">
-                    <Users className="w-3.5 h-3.5" />
-                    <span>ভর্তি শিক্ষার্থী ও লাইভ কার্ড ব্যাজ</span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-pink-500 bg-pink-500/10 px-2 py-0.5 rounded-full">
-                    ওয়েবসাইটে দৃশ্যমান
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-text mb-1">
-                      মোট ভর্তি শিক্ষার্থী
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        value={editForm.enrollment_count}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            enrollment_count: Number(e.target.value),
-                          }))
-                        }
-                        className="input text-xs w-full h-9 rounded-xl font-sans font-bold text-pink-500 pr-12"
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-bold text-text-muted">
-                        জন
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-text mb-1">
-                      লাইভ ক্লাস ঘণ্টা
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        value={editForm.total_duration}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            total_duration: Number(e.target.value),
-                          }))
-                        }
-                        className="input text-xs w-full h-9 rounded-xl font-sans pr-12"
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-text-muted">
-                        ঘণ্টা
-                      </span>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-text mb-1">
-                      মোট লেসন সংখ্যা
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        min="0"
-                        value={editForm.total_lessons}
-                        onChange={(e) =>
-                          setEditForm((prev) => ({
-                            ...prev,
-                            total_lessons: Number(e.target.value),
-                          }))
-                        }
-                        className="input text-xs w-full h-9 rounded-xl font-sans pr-10"
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-text-muted">
-                        টি
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Pricing */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-text mb-1">বিক্রয় মূল্য (৳)</label>
-                  <input
-                    type="number"
-                    value={editForm.price}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, price: Number(e.target.value) }))}
-                    className="input text-xs w-full h-9 rounded-xl font-sans"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-text mb-1">পূর্বের মূল্য (৳)</label>
-                  <input
-                    type="number"
-                    value={editForm.original_price}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, original_price: Number(e.target.value) }))}
-                    className="input text-xs w-full h-9 rounded-xl font-sans"
-                  />
-                </div>
-              </div>
-
-              {/* Category & Instructor */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-text mb-1">ক্যাটাগরি</label>
-                  <select
-                    value={editForm.category_id}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, category_id: e.target.value }))}
-                    className="input text-xs w-full h-9 rounded-xl"
-                  >
-                    <option value="">ক্যাটাগরি নির্বাচন করুন</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name_bn || cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-text mb-1">ইন্সট্রাক্টর</label>
-                  <select
-                    value={editForm.instructor_id}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, instructor_id: e.target.value }))}
-                    className="input text-xs w-full h-9 rounded-xl"
-                  >
-                    <option value="">ইন্সট্রাক্টর নির্বাচন করুন</option>
-                    {instructors.map((inst) => (
-                      <option key={inst.id} value={inst.id}>
-                        {inst.name_bn || inst.name} ({inst.institution})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Live Publish Toggle */}
-              <div className="pt-2">
-                <label className="inline-flex items-center gap-2.5 cursor-pointer text-xs font-bold text-text">
-                  <input
-                    type="checkbox"
-                    checked={editForm.status === "published"}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({
-                        ...prev,
-                        status: e.target.checked ? "published" : "draft",
-                      }))
-                    }
-                    className="w-4 h-4 rounded text-primary border-border focus:ring-primary cursor-pointer"
-                  />
-                  <span>ওয়েবসাইটে লাইভ পাবলিশ রাখুন</span>
-                </label>
-              </div>
-
-              {/* Modal Sticky Footer Actions */}
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-border">
-                <button
-                  type="button"
-                  onClick={() => setEditingCourse(null)}
-                  className="btn btn-outline h-9 px-4 text-xs font-bold rounded-xl cursor-pointer"
-                >
-                  বাতিল
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingEdit || isUploadingEditThumb}
-                  className="btn btn-primary h-9 px-5 text-xs font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
-                >
-                  {isSavingEdit ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>সংরক্ষণ হচ্ছে...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-3.5 h-3.5" />
-                      <span>সংরক্ষণ করুন</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
     </div>
   );
