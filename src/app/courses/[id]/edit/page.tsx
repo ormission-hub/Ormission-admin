@@ -37,6 +37,7 @@ import {
   Globe,
   Star,
   GraduationCap,
+  ListChecks,
 } from "lucide-react";
 import {
   dbService,
@@ -134,7 +135,11 @@ export default function EditCourseStudioPage({
     rating: 5.0,
     reviews_count: 125,
     show_rating: true,
+    prerequisites: [] as string[],
   });
+
+  // Prerequisites input state
+  const [newPrerequisite, setNewPrerequisite] = useState("");
 
   // Curriculum State
   const [sections, setSections] = useState<SectionFormItem[]>([]);
@@ -174,6 +179,13 @@ export default function EditCourseStudioPage({
               : (courseData.instructor_id ? [String(courseData.instructor_id)] : []))
       );
 
+      // Load prerequisites from features JSONB
+      const loadedPrerequisites: string[] = (
+        courseData.features && typeof courseData.features === "object" && Array.isArray(courseData.features.prerequisites)
+          ? courseData.features.prerequisites.filter((p: any) => typeof p === "string" && p.trim().length > 0)
+          : []
+      );
+
       setDetailsForm({
         title_bn: courseData.title_bn || "",
         title: courseData.title || "",
@@ -197,6 +209,7 @@ export default function EditCourseStudioPage({
         show_rating: (courseData.features && typeof courseData.features === "object" && courseData.features.show_rating !== undefined)
           ? Boolean(courseData.features.show_rating)
           : (courseData.show_rating ?? true),
+        prerequisites: loadedPrerequisites,
       });
 
       // Parse course_sections
@@ -631,6 +644,7 @@ export default function EditCourseStudioPage({
         rating: Number(detailsForm.rating) || 5.0,
         reviews_count: Number(detailsForm.reviews_count) || 0,
         show_rating: detailsForm.show_rating,
+        prerequisites: detailsForm.prerequisites.filter((p) => p.trim().length > 0),
         curriculum: sections, // Passes all sections & lessons to sync
       };
 
@@ -1634,6 +1648,98 @@ export default function EditCourseStudioPage({
                     </span>
                   </div>
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* Prerequisites / পূর্বশর্ত Editor */}
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-border pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center">
+                  <ListChecks className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-text">কোর্সের পূর্বশর্ত (Prerequisites)</h3>
+                  <p className="text-xs text-text-muted">শিক্ষার্থীদের এই কোর্স শুরুর আগে কী কী জানা থাকা দরকার</p>
+                </div>
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                {detailsForm.prerequisites.length}টি
+              </span>
+            </div>
+
+            {/* Add New Prerequisite */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newPrerequisite}
+                onChange={(e) => setNewPrerequisite(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && newPrerequisite.trim()) {
+                    e.preventDefault();
+                    setDetailsForm((prev) => ({
+                      ...prev,
+                      prerequisites: [...prev.prerequisites, newPrerequisite.trim()],
+                    }));
+                    setNewPrerequisite("");
+                  }
+                }}
+                placeholder="যেমন: এসএসসি পর্যায়ের বেসিক গণিত ধারণা... (লিখে Enter চাপুন)"
+                className="input text-xs w-full"
+              />
+              <button
+                type="button"
+                disabled={!newPrerequisite.trim()}
+                onClick={() => {
+                  if (newPrerequisite.trim()) {
+                    setDetailsForm((prev) => ({
+                      ...prev,
+                      prerequisites: [...prev.prerequisites, newPrerequisite.trim()],
+                    }));
+                    setNewPrerequisite("");
+                  }
+                }}
+                className="btn btn-primary btn-sm text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-40"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>যোগ করুন</span>
+              </button>
+            </div>
+
+            {/* Prerequisites List */}
+            {detailsForm.prerequisites.length > 0 ? (
+              <div className="space-y-2">
+                {detailsForm.prerequisites.map((prereq, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-surface-secondary/50 border border-border group hover:border-sky-500/30 transition-all"
+                  >
+                    <span className="w-6 h-6 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center text-[10px] font-mono font-bold shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="text-xs text-text flex-1">{prereq}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailsForm((prev) => ({
+                          ...prev,
+                          prerequisites: prev.prerequisites.filter((_, i) => i !== idx),
+                        }));
+                      }}
+                      className="p-1 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors opacity-0 group-hover:opacity-100"
+                      title="মুছে ফেলুন"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-6 text-text-muted">
+                <ListChecks className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">এখনো কোনো পূর্বশর্ত যোগ করা হয়নি।</p>
+                <p className="text-[11px] mt-1 text-text-muted/70">উপরের ইনপুট ফিল্ডে লিখে Enter চাপুন বা "যোগ করুন" ক্লিক করুন।</p>
               </div>
             )}
           </div>

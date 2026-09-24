@@ -32,6 +32,7 @@ import {
   Loader2,
   Star,
   GraduationCap,
+  ListChecks,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
@@ -99,7 +100,11 @@ export default function CreateCourseWizardPage() {
     showRating: true,
     ratingScore: "5.0",
     reviewsCount: "125",
+    prerequisites: [] as string[],
   });
+
+  // Prerequisites input state
+  const [newPrerequisiteInput, setNewPrerequisiteInput] = useState("");
 
   // Step 2: Pricing
   const [pricing, setPricing] = useState({
@@ -370,6 +375,7 @@ export default function CreateCourseWizardPage() {
           reviews_count: Number(basicInfo.reviewsCount) || 125,
           show_rating: basicInfo.showRating,
           instructor_ids: selectedInstIds,
+          prerequisites: basicInfo.prerequisites.filter((p) => p.trim().length > 0),
         },
         curriculum: curriculum,
       } as any);
@@ -765,6 +771,94 @@ export default function CreateCourseWizardPage() {
                     className="input text-xs font-sans w-full"
                   />
                 </div>
+              </div>
+
+              {/* Prerequisites / পূর্বশর্ত Editor */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-surface-secondary/50 border border-border space-y-4">
+                <div className="flex items-center justify-between border-b border-border/80 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-500 flex items-center justify-center">
+                      <ListChecks className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-text font-bengali">কোর্সের পূর্বশর্ত (Prerequisites)</h4>
+                      <p className="text-[11px] text-text-muted font-bengali">শিক্ষার্থীদের এই কোর্স শুরুর আগে কী কী জানা থাকা দরকার</p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-bold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
+                    {basicInfo.prerequisites.length}টি
+                  </span>
+                </div>
+
+                {/* Add New Prerequisite */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newPrerequisiteInput}
+                    onChange={(e) => setNewPrerequisiteInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newPrerequisiteInput.trim()) {
+                        e.preventDefault();
+                        setBasicInfo((prev) => ({
+                          ...prev,
+                          prerequisites: [...prev.prerequisites, newPrerequisiteInput.trim()],
+                        }));
+                        setNewPrerequisiteInput("");
+                      }
+                    }}
+                    placeholder="যেমন: এসএসসি পর্যায়ের বেসিক গণিত ধারণা... (লিখে Enter চাপুন)"
+                    className="input text-xs w-full"
+                  />
+                  <button
+                    type="button"
+                    disabled={!newPrerequisiteInput.trim()}
+                    onClick={() => {
+                      if (newPrerequisiteInput.trim()) {
+                        setBasicInfo((prev) => ({
+                          ...prev,
+                          prerequisites: [...prev.prerequisites, newPrerequisiteInput.trim()],
+                        }));
+                        setNewPrerequisiteInput("");
+                      }
+                    }}
+                    className="btn btn-primary btn-sm text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-40"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>যোগ</span>
+                  </button>
+                </div>
+
+                {/* Prerequisites List */}
+                {basicInfo.prerequisites.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {basicInfo.prerequisites.map((prereq, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center gap-3 p-2.5 rounded-xl bg-surface/80 border border-border group hover:border-sky-500/30 transition-all"
+                      >
+                        <span className="w-5 h-5 rounded-full bg-sky-500/10 text-sky-500 flex items-center justify-center text-[9px] font-mono font-bold shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="text-xs text-text flex-1">{prereq}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBasicInfo((prev) => ({
+                              ...prev,
+                              prerequisites: prev.prerequisites.filter((_, i) => i !== idx),
+                            }));
+                          }}
+                          className="p-1 rounded-lg text-text-muted hover:text-error hover:bg-error/10 transition-colors opacity-0 group-hover:opacity-100"
+                          title="মুছে ফেলুন"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-text-muted text-center py-3">এখনো কোনো পূর্বশর্ত যোগ করা হয়নি। উপরে লিখে Enter চাপুন।</p>
+                )}
               </div>
 
               {/* Course Rating & Review Display Settings */}

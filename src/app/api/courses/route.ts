@@ -456,7 +456,7 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { id, categories, instructors, course_sections, curriculum, rating, reviews_count, show_rating, instructor_ids, ...updates } = body;
+    const { id, categories, instructors, course_sections, curriculum, rating, reviews_count, show_rating, instructor_ids, prerequisites, ...updates } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, error: "Course ID is required" }, { status: 400 });
@@ -468,8 +468,8 @@ export async function PUT(request: Request) {
       updates.instructor_id = rawInstIds[0] || null;
     }
 
-    // Merge rating and instructor metadata into features JSONB column cleanly
-    if (rating !== undefined || reviews_count !== undefined || show_rating !== undefined || updates.features !== undefined || rawInstIds !== undefined) {
+    // Merge rating, instructor metadata, and prerequisites into features JSONB column cleanly
+    if (rating !== undefined || reviews_count !== undefined || show_rating !== undefined || updates.features !== undefined || rawInstIds !== undefined || prerequisites !== undefined) {
       let mergedFeatures: Record<string, any> = {};
       if (updates.features && typeof updates.features === "object") {
         mergedFeatures = { ...updates.features };
@@ -488,6 +488,7 @@ export async function PUT(request: Request) {
       if (reviews_count !== undefined) mergedFeatures.reviews_count = Number(reviews_count);
       if (show_rating !== undefined) mergedFeatures.show_rating = Boolean(show_rating);
       if (rawInstIds !== undefined) mergedFeatures.instructor_ids = rawInstIds;
+      if (prerequisites !== undefined) mergedFeatures.prerequisites = Array.isArray(prerequisites) ? prerequisites.filter((p: any) => typeof p === "string" && p.trim().length > 0) : [];
       updates.features = mergedFeatures;
     }
 
