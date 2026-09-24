@@ -265,10 +265,10 @@ export function LessonMaterialsManager({
               />
               <div>
                 <span className="font-bold text-xs text-emerald-600 dark:text-emerald-400">
-                  ফ্রি প্রিভিউ ম্যাটেরিয়াল (সবার জন্য উন্মুক্ত)
+                  আনলক ম্যাটেরিয়াল (সবার জন্য উন্মুক্ত)
                 </span>
                 <span className="block text-[10.5px] text-text-muted">
-                  কোর্স বা ক্লাস পেইড হলেও শিক্ষার্থীরা কেনার আগে এই PDF/নোট ফ্রিতে প্রিভিউ দেখতে পারবে।
+                  কোর্স বা ক্লাস লক থাকলেও শিক্ষার্থীরা কেনার আগে এই PDF/নোট আনলক অবস্থায় দেখতে পারবে।
                 </span>
               </div>
             </label>
@@ -350,9 +350,9 @@ export function LessonMaterialsManager({
                       ? "bg-emerald-500/15 border-emerald-500/35 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25"
                       : "bg-surface-secondary border-border text-text-muted hover:text-text hover:border-slate-500"
                   }`}
-                  title={mat.isFree ? "ফ্রি প্রিভিউ (ক্লিক করে পেইড করুন)" : "পেইড অনলি (ক্লিক করে ফ্রি করুন)"}
+                  title={mat.isFree ? "আনলক (ক্লিক করে লক করুন)" : "লক (ক্লিক করে আনলক করুন)"}
                 >
-                  {mat.isFree ? "✓ ফ্রি" : "পেইড"}
+                  {mat.isFree ? "✓ আনলক" : "লক"}
                 </button>
 
                 {/* Actions */}

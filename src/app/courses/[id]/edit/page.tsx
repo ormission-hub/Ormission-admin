@@ -663,7 +663,7 @@ export default function EditCourseStudioPage({
       showToast(
         "success",
         "সফলভাবে সংরক্ষিত হয়েছে!",
-        `কোর্সের তথ্য, মোট ${sections.length}টি অধ্যায়ে ${totalLessonsCount}টি ক্লাস (${freeLessonsCount}টি ফ্রি, ${paidLessonsCount}টি পেইড) Supabase ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে।`
+        `কোর্সের তথ্য, মোট ${sections.length}টি অধ্যায়ে ${totalLessonsCount}টি ক্লাস (${freeLessonsCount}টি আনলক, ${paidLessonsCount}টি লক) Supabase ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে।`
       );
 
       setTimeout(() => setSaveSuccess(false), 5000);
@@ -864,14 +864,14 @@ export default function EditCourseStudioPage({
         <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
           <span className="text-[11px] text-emerald-500 font-bold flex items-center gap-1.5">
             <Unlock className="w-3.5 h-3.5" />
-            ফ্রি প্রিভিউ
+            আনলক ক্লাস
           </span>
           <div className="text-xl font-black text-emerald-500 mt-1">{freeLessonsCount}টি</div>
         </div>
         <div className="bg-surface p-3.5 rounded-2xl border border-border/80 shadow-2xs">
           <span className="text-[11px] text-amber-500 font-bold flex items-center gap-1.5">
             <Lock className="w-3.5 h-3.5" />
-            পেইড / লকড
+            লক ক্লাস
           </span>
           <div className="text-xl font-black text-amber-500 mt-1">{paidLessonsCount}টি</div>
         </div>
@@ -916,7 +916,7 @@ export default function EditCourseStudioPage({
                 <span>ক্লাস ও কারিকুলাম এক্সেস কন্ট্রোল</span>
               </h3>
               <p className="text-xs text-text-muted">
-                প্রতিটি ক্লাসে <strong>ফ্রি প্রিভিউ</strong> অথবা <strong>পেইড / লকড ক্লাস</strong> নির্ধারণ করুন। পেইড ক্লাস যেকোনো পরিদর্শন বা বাইপাস থেকে সুরক্ষিত।
+                প্রতিটি ক্লাসে <strong>আনলক</strong> অথবা <strong>লক ক্লাস</strong> নির্ধারণ করুন। লক করা ক্লাস যেকোনো পরিদর্শন বা বাইপাস থেকে সুরক্ষিত।
               </p>
             </div>
 
@@ -1049,17 +1049,17 @@ export default function EditCourseStudioPage({
                                 ? "bg-emerald-500 text-white border-emerald-600 shadow-emerald-500/20"
                                 : "bg-amber-500/10 text-amber-500 border-amber-500/30 hover:bg-amber-500/20"
                             }`}
-                            title="ক্লিক করে ফ্রি অথবা পেইড পরিবর্তন করুন"
+                            title="ক্লিক করে আনলক অথবা লক পরিবর্তন করুন"
                           >
                             {lesson.isFreePreview ? (
                               <>
                                 <Unlock className="w-3.5 h-3.5" />
-                                <span>ফ্রি প্রিভিউ</span>
+                                <span>আনলক</span>
                               </>
                             ) : (
                               <>
                                 <Lock className="w-3.5 h-3.5" />
-                                <span>পেইড / লকড</span>
+                                <span>লক</span>
                               </>
                             )}
                           </button>
@@ -1846,7 +1846,7 @@ export default function EditCourseStudioPage({
           <div className="flex items-center gap-2 text-xs text-text-muted truncate">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
             <span className="truncate">
-              {sections.length}টি অধ্যায়ে {totalLessonsCount}টি ক্লাস ({freeLessonsCount}টি ফ্রি, {paidLessonsCount}টি পেইড)
+              {sections.length}টি অধ্যায়ে {totalLessonsCount}টি ক্লাস ({freeLessonsCount}টি আনলক, {paidLessonsCount}টি লক)
             </span>
           </div>
 

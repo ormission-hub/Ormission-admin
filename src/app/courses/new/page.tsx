@@ -1444,7 +1444,7 @@ export default function CreateCourseWizardPage() {
                                 }}
                                 className="accent-secondary"
                               />
-                              <span>ফ্রি ডেমো</span>
+                              <span>আনলক</span>
                             </label>
 
                             {section.lessons.length > 1 && (
