@@ -40,13 +40,18 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
     // 2. Insert sections and lessons sequentially
     for (let sIdx = 0; sIdx < curriculum.length; sIdx++) {
       const sec = curriculum[sIdx];
+      const rawType = (sec.sectionType || "content").toLowerCase();
+      const rawTitle = sec.title || sec.titleBn || `Chapter ${sIdx + 1}`;
+      const cleanTitle = rawTitle.replace(/^\[(demo|outline|content|exam|other)\]\s*/i, "").trim();
+      const finalTitle = rawType !== "content" ? `[${rawType}] ${cleanTitle}` : cleanTitle;
+      const cleanTitleBn = (sec.titleBn || sec.title || `অধ্যায় ${sIdx + 1}`).replace(/^\[(demo|outline|content|exam|other)\]\s*/i, "").trim();
+
       const { data: newSec, error: secErr } = await supabaseAdmin
         .from("course_sections")
         .insert({
           course_id: Number(courseId),
-          title: sec.title || sec.titleBn || `Chapter ${sIdx + 1}`,
-          title_bn: sec.titleBn || sec.title || `অধ্যায় ${sIdx + 1}`,
-          section_type: sec.sectionType || sec.section_type || "content",
+          title: finalTitle,
+          title_bn: cleanTitleBn,
           sort_order: sIdx + 1,
         })
         .select()

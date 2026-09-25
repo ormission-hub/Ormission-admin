@@ -228,12 +228,23 @@ export default function EditCourseStudioPage({
 
       // Parse course_sections
       if (Array.isArray(courseData.course_sections) && courseData.course_sections.length > 0) {
-        const loadedSections: SectionFormItem[] = courseData.course_sections.map((s: any) => ({
-          id: s.id,
-          title: s.title || "",
-          titleBn: s.title_bn || s.title || "অধ্যায়",
-          sectionType: (s.section_type as SectionType) || "content",
-          lessons: Array.isArray(s.lessons)
+        const loadedSections: SectionFormItem[] = courseData.course_sections.map((s: any) => {
+          let secType: SectionType = (s.section_type as SectionType) || "content";
+          let cleanTitle = s.title || "";
+          let cleanTitleBn = s.title_bn || s.title || "অধ্যায়";
+          const match = (cleanTitle || "").match(/^\[(demo|outline|content|exam|other)\]\s*(.*)$/i) ||
+                        (cleanTitleBn || "").match(/^\[(demo|outline|content|exam|other)\]\s*(.*)$/i);
+          if (match) {
+            secType = match[1].toLowerCase() as SectionType;
+            cleanTitle = cleanTitle.replace(/^\[(demo|outline|content|exam|other)\]\s*/i, "").trim();
+            cleanTitleBn = cleanTitleBn.replace(/^\[(demo|outline|content|exam|other)\]\s*/i, "").trim();
+          }
+          return {
+            id: s.id,
+            title: cleanTitle,
+            titleBn: cleanTitleBn,
+            sectionType: secType,
+            lessons: Array.isArray(s.lessons)
             ? s.lessons.map((l: any) => {
                 const srvs: ServerFormItem[] = Array.isArray(l.lesson_servers) && l.lesson_servers.length > 0
                   ? [...l.lesson_servers]
@@ -281,7 +292,8 @@ export default function EditCourseStudioPage({
                 };
               })
             : [],
-        }));
+          };
+        });
         setSections(loadedSections);
       } else {
         // Default initial template if no sections exist yet
