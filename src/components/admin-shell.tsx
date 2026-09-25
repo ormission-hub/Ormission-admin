@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import brandLogoImg from "../../public/images/brand-logo-v2.png";
+import { supabase } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
   BookOpen,
@@ -35,6 +36,8 @@ import {
   Share2,
   Laptop,
   Check,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
@@ -92,6 +95,12 @@ const navGroups: NavGroup[] = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [adminUser, setAdminUser] = useState<{ id: string; email?: string; name?: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -100,11 +109,97 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const navScrollRef = useRef<HTMLDivElement>(null);
   const activeNavRef = useRef<HTMLAnchorElement>(null);
 
-  // Close theme menu on outside click
+  // Check Supabase authentication
+  useEffect(() => {
+    if (pathname === "/login") {
+      setAuthLoading(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    async function checkAuth() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) {
+          if (isMounted) {
+            setAuthLoading(false);
+            router.replace("/login");
+          }
+          return;
+        }
+
+        // Verify admin role in profiles
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role, full_name")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        const isAdmin = profile?.role === "admin" ||
+          session.user.email === "admin@ormission.com" ||
+          session.user.email === "ohidrashed0@gmail.com" ||
+          session.user.email === "anas226788@gmail.com" ||
+          session.user.email === "moirashed0@gmail.com";
+
+        if (!isAdmin) {
+          await supabase.auth.signOut();
+          if (isMounted) {
+            setAuthLoading(false);
+            router.replace("/login");
+          }
+          return;
+        }
+
+        if (isMounted) {
+          setAdminUser({
+            id: session.user.id,
+            email: session.user.email,
+            name: profile?.full_name || session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Admin",
+          });
+          setAuthLoading(false);
+        }
+      } catch (err) {
+        console.warn("Auth check error in AdminShell:", err);
+        if (isMounted) {
+          setAuthLoading(false);
+          router.replace("/login");
+        }
+      }
+    }
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      if (event === "SIGNED_OUT" || !session) {
+        setAdminUser(null);
+        if (pathname !== "/login") {
+          router.replace("/login");
+        }
+      } else if (session?.user) {
+        setAdminUser({
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Admin",
+        });
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [pathname, router]);
+
+  // Close menus on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
         setIsThemeMenuOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setIsUserMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -172,6 +267,23 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const currentNav = navGroups
     .flatMap((g) => g.items)
     .find((item) => item.href === pathname);
+
+  if (pathname === "/login") {
+    return <>{children}</>;
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <span className="text-xs text-text-muted font-bengali">অ্যাডমিন প্রমাণীকরণ যাচাই হচ্ছে...</span>
+      </div>
+    );
+  }
+
+  if (!adminUser) {
+    return null;
+  }
 
   return (
     <div className="admin-shell-root">
@@ -339,15 +451,68 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary" />
           </button>
 
-          {/* Admin Avatar Pill */}
-          <div className="flex items-center gap-2 pl-2 border-l border-border">
-            <div className="w-8 h-8 rounded-full bg-primary/15 text-primary flex items-center justify-center font-bold text-xs border border-primary/25">
-              AD
-            </div>
-            <div className="hidden xl:block text-left">
-              <div className="text-xs font-bold text-text leading-none">Super Admin</div>
-              <div className="text-[10px] text-text-muted mt-0.5">admin@ormission.com</div>
-            </div>
+          {/* Real Admin Profile & Logout Dropdown */}
+          <div className="relative pl-2 border-l border-border" ref={userMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+              className="flex items-center gap-2.5 p-1 sm:p-1.5 rounded-xl hover:bg-surface-secondary transition-colors cursor-pointer group text-left"
+              aria-label="অ্যাডমিন প্রোফাইল মেনু"
+            >
+              <div className="relative">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-primary to-blue-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  {adminUser?.name ? adminUser.name.slice(0, 2).toUpperCase() : "AD"}
+                </div>
+                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-surface" />
+              </div>
+              <div className="hidden xl:block">
+                <div className="text-xs font-bold text-text leading-none group-hover:text-primary transition-colors">
+                  {adminUser?.name || "Super Admin"}
+                </div>
+                <div className="text-[10px] text-text-muted mt-0.5 truncate max-w-[130px]">
+                  {adminUser?.email || "admin@ormission.com"}
+                </div>
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            <AnimatePresence>
+              {isUserMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-60 rounded-2xl bg-surface/98 dark:bg-slate-900/98 backdrop-blur-xl border border-border shadow-2xl p-2 z-50 space-y-1"
+                >
+                  <div className="px-3 py-2.5 border-b border-border">
+                    <div className="text-xs font-bold text-text truncate">
+                      {adminUser?.name || "Super Admin"}
+                    </div>
+                    <div className="text-[11px] text-text-muted truncate font-mono mt-0.5">
+                      {adminUser?.email || "admin@ormission.com"}
+                    </div>
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      অনুমোদিত অ্যাডমিন (Active)
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setIsUserMenuOpen(false);
+                      await supabase.auth.signOut();
+                      router.replace("/login");
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors text-left cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span className="font-bengali">লগআউট করুন (Sign Out)</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </header>
@@ -510,56 +675,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
             ))}
-          </div>
-
-          {/* Footer Controls in Sidebar */}
-          <div className="p-3 border-t border-border bg-surface-secondary/40 space-y-2 shrink-0">
-            {/* Dedicated Desktop Collapse / Expand Button */}
-            <button
-              type="button"
-              onClick={toggleCollapse}
-              className={`
-                hidden lg:flex items-center rounded-xl text-xs font-medium text-text-muted
-                hover:text-text hover:bg-surface-secondary transition-all w-full border border-border/50
-                ${isCollapsed ? "justify-center p-2.5" : "justify-between px-3 py-2"}
-              `}
-              title={isCollapsed ? "সাইডবার বড় করুন / Expand (Ctrl+B)" : "সাইডবার লুকান / Collapse (Ctrl+B)"}
-            >
-              <div className="flex items-center gap-2">
-                {isCollapsed ? (
-                  <ChevronRight className="w-4 h-4 text-primary" />
-                ) : (
-                  <>
-                    <ChevronLeft className="w-4 h-4" />
-                    <span>সাইডবার লুকান (Collapse)</span>
-                  </>
-                )}
-              </div>
-              {!isCollapsed && (
-                <kbd className="text-[10px] font-mono bg-surface px-1.5 py-0.5 rounded border border-border text-text-muted/70">
-                  Ctrl+B
-                </kbd>
-              )}
-            </button>
-
-            {/* Version Information */}
-            {!isCollapsed ? (
-              <div className="pt-1">
-                <div className="flex items-center justify-between text-[11px] text-text-muted">
-                  <span>সিস্টেম সংস্করণ</span>
-                  <span className="font-mono font-bold text-text bg-surface px-1.5 py-0.5 rounded border border-border text-[10px]">
-                    v2.0-live
-                  </span>
-                </div>
-                <div className="text-[10px] text-text-muted mt-0.5 font-bengali">
-                  Ormission EdTech Engine
-                </div>
-              </div>
-            ) : (
-              <div className="hidden lg:flex justify-center py-1" title="Ormission v2.0-live">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-            )}
           </div>
         </aside>
 
