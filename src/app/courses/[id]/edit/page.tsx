@@ -1628,7 +1628,9 @@ export default function EditCourseStudioPage({
                               <div className="flex flex-col md:flex-row md:items-center gap-2">
                                 {/* Primary Video URL Input - Always directly visible */}
                                 <div className="relative flex-1 min-w-[200px]">
-                                  <Video className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-primary" />
+                                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-primary">
+                                    <Video className="w-4 h-4" />
+                                  </div>
                                   <input
                                     type="text"
                                     value={lesson.videoUrl || (lesson.servers?.[0]?.videoUrl || "")}
@@ -1636,7 +1638,8 @@ export default function EditCourseStudioPage({
                                       updateLessonField(section.id, lesson.id, "videoUrl", e.target.value)
                                     }
                                     placeholder="YouTube URL বা সরাসরি ভিডিও লিঙ্ক পেস্ট করুন..."
-                                    className="input text-xs pl-8 pr-2 h-9 font-mono w-full rounded-xl"
+                                    style={{ paddingLeft: "2.5rem" }}
+                                    className="input text-xs pl-10 pr-3 h-9 font-mono w-full rounded-xl"
                                     title="ভিডিও লিংক (YouTube Unlisted, Embed, ইত্যাদি)"
                                   />
                                 </div>
@@ -1644,7 +1647,9 @@ export default function EditCourseStudioPage({
                                 <div className="flex items-center gap-1.5 shrink-0">
                                   {/* Duration Input */}
                                   <div className="relative w-28 shrink-0">
-                                    <Clock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                                    <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-text-muted">
+                                      <Clock className="w-3.5 h-3.5" />
+                                    </div>
                                     <input
                                       type="text"
                                       value={lesson.duration}
@@ -1652,6 +1657,7 @@ export default function EditCourseStudioPage({
                                         updateLessonField(section.id, lesson.id, "duration", e.target.value)
                                       }
                                       placeholder="30:00"
+                                      style={{ paddingLeft: "2rem" }}
                                       className="input text-xs pl-8 pr-2 h-9 font-mono text-center w-full rounded-xl"
                                       title="সময়কাল (যেমন: 25:00 বা 45:00)"
                                     />
@@ -1705,44 +1711,56 @@ export default function EditCourseStudioPage({
                           {itemType === "exam" && (
                             <div className="mt-3 pt-3 border-t border-border/60 flex flex-wrap items-center gap-2.5">
                               <div className="relative flex-1 min-w-[220px]">
-                                <ClipboardList className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-500" />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-emerald-500">
+                                  <ClipboardList className="w-4 h-4" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.examUrl || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "examUrl", e.target.value)}
                                   placeholder="পরীক্ষা লিংক (যেমন: Google Forms, Typeform বা কুইজ URL)..."
-                                  className="input text-xs pl-8 pr-2 h-8 font-mono w-full rounded-lg font-sans"
+                                  style={{ paddingLeft: "2.5rem" }}
+                                  className="input text-xs pl-10 pr-2 h-8 font-mono w-full rounded-lg font-sans"
                                 />
                               </div>
                               <div className="relative w-28 shrink-0">
-                                <Clock className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-text-muted">
+                                  <Clock className="w-3.5 h-3.5" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.duration}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "duration", e.target.value)}
                                   placeholder="২৫:০০"
+                                  style={{ paddingLeft: "2rem" }}
                                   className="input text-xs pl-8 pr-2 h-8 font-mono text-center w-full rounded-lg"
                                   title="পরীক্ষার সময়কাল"
                                 />
                               </div>
                               <div className="relative w-28 shrink-0">
-                                <Award className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-500" />
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-amber-500">
+                                  <Award className="w-3.5 h-3.5" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.marks || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "marks", e.target.value)}
                                   placeholder="৫০ নম্বর"
+                                  style={{ paddingLeft: "2rem" }}
                                   className="input text-xs pl-8 pr-2 h-8 text-center w-full rounded-lg font-bengali"
                                   title="পূর্ণমান"
                                 />
                               </div>
                               <div className="relative w-28 shrink-0">
-                                <HelpCircle className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-primary" />
+                                <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-primary">
+                                  <HelpCircle className="w-3.5 h-3.5" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.questionsCount || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "questionsCount", e.target.value)}
                                   placeholder="২৫টি প্রশ্ন"
+                                  style={{ paddingLeft: "2rem" }}
                                   className="input text-xs pl-8 pr-2 h-8 text-center w-full rounded-lg font-bengali"
                                   title="প্রশ্ন সংখ্যা"
                                 />
@@ -1765,13 +1783,16 @@ export default function EditCourseStudioPage({
                           {itemType === "material" && (
                             <div className="mt-3 pt-3 border-t border-border/60 flex flex-wrap items-center gap-2.5">
                               <div className="relative flex-1 min-w-[240px]">
-                                <FileText className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-amber-500" />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-amber-500">
+                                  <FileText className="w-4 h-4" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.fileUrl || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "fileUrl", e.target.value)}
                                   placeholder="পিডিএফ / শিট লিংক (Google Drive বা ডিরেক্ট PDF URL)..."
-                                  className="input text-xs pl-8 pr-2 h-8 font-mono w-full rounded-lg font-sans"
+                                  style={{ paddingLeft: "2.5rem" }}
+                                  className="input text-xs pl-10 pr-2 h-8 font-mono w-full rounded-lg font-sans"
                                 />
                               </div>
                               <div className="relative w-28 shrink-0">
@@ -1812,23 +1833,29 @@ export default function EditCourseStudioPage({
                                 <option value="other">অন্যান্য লাইভ</option>
                               </select>
                               <div className="relative flex-1 min-w-[220px]">
-                                <Radio className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-rose-500" />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-rose-500">
+                                  <Radio className="w-4 h-4" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.liveUrl || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "liveUrl", e.target.value)}
                                   placeholder="লাইভ মিটিং লিংক (Zoom / Meet লিংক)..."
-                                  className="input text-xs pl-8 pr-2 h-8 font-mono w-full rounded-lg font-sans"
+                                  style={{ paddingLeft: "2.5rem" }}
+                                  className="input text-xs pl-10 pr-2 h-8 font-mono w-full rounded-lg font-sans"
                                 />
                               </div>
                               <div className="relative w-48 shrink-0">
-                                <Calendar className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                                  <Calendar className="w-3.5 h-3.5" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.liveTime || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "liveTime", e.target.value)}
                                   placeholder="তারিখ ও সময় (যেমন: ২৮ সেপ্টেম্বর, রাত ৮:০০)"
-                                  className="input text-xs pl-8 pr-2 h-8 w-full rounded-lg font-bengali"
+                                  style={{ paddingLeft: "2.25rem" }}
+                                  className="input text-xs pl-9 pr-2 h-8 w-full rounded-lg font-bengali"
                                   title="লাইভ ক্লাসের সময়সূচী"
                                 />
                               </div>
@@ -1850,13 +1877,16 @@ export default function EditCourseStudioPage({
                           {itemType === "resource" && (
                             <div className="mt-3 pt-3 border-t border-border/60 flex flex-wrap items-center gap-2.5">
                               <div className="relative flex-1 min-w-[240px]">
-                                <LinkIcon className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-purple-500" />
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-purple-500">
+                                  <LinkIcon className="w-4 h-4" />
+                                </div>
                                 <input
                                   type="text"
                                   value={lesson.externalUrl || ""}
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "externalUrl", e.target.value)}
                                   placeholder="রিসোর্স লিংক (যেমন: ফেসবুক গ্রুপ, নোশন ট্র্যাকার, ড্রাইভ লিংক)..."
-                                  className="input text-xs pl-8 pr-2 h-8 font-mono w-full rounded-lg font-sans"
+                                  style={{ paddingLeft: "2.5rem" }}
+                                  className="input text-xs pl-10 pr-2 h-8 font-mono w-full rounded-lg font-sans"
                                 />
                               </div>
                               {lesson.externalUrl && (
@@ -1936,7 +1966,9 @@ export default function EditCourseStudioPage({
 
                                   {/* Server Video URL */}
                                   <div className="relative flex-1 min-w-0">
-                                    <Globe className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                                      <Globe className="w-3.5 h-3.5" />
+                                    </div>
                                     <input
                                       type="text"
                                       value={srv.videoUrl}
@@ -1959,7 +1991,8 @@ export default function EditCourseStudioPage({
                                           ? "HLS Stream URL (যেমন: https://.../playlist.m3u8)..."
                                           : "Video URL..."
                                       }
-                                      className="input text-xs h-8 pl-8 pr-2 font-mono w-full rounded-lg"
+                                      style={{ paddingLeft: "2.5rem" }}
+                                      className="input text-xs h-8 pl-10 pr-2 font-mono w-full rounded-lg"
                                     />
                                   </div>
 

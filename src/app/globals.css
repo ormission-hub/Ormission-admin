@@ -218,6 +218,23 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, input, select, textarea {
   transition: border-color 150ms ease, background-color 150ms ease;
 }
 
+/* Ensure padding utility classes on .input elements correctly override the default padding */
+.input.pl-6, [class*="input"].pl-6 { padding-left: 1.5rem !important; }
+.input.pl-7, [class*="input"].pl-7 { padding-left: 1.75rem !important; }
+.input.pl-8, [class*="input"].pl-8 { padding-left: 2rem !important; }
+.input.pl-9, [class*="input"].pl-9 { padding-left: 2.25rem !important; }
+.input.pl-10, [class*="input"].pl-10 { padding-left: 2.5rem !important; }
+.input.pl-11, [class*="input"].pl-11 { padding-left: 2.75rem !important; }
+.input.pl-12, [class*="input"].pl-12 { padding-left: 3rem !important; }
+
+.input.pr-6, [class*="input"].pr-6 { padding-right: 1.5rem !important; }
+.input.pr-7, [class*="input"].pr-7 { padding-right: 1.75rem !important; }
+.input.pr-8, [class*="input"].pr-8 { padding-right: 2rem !important; }
+.input.pr-9, [class*="input"].pr-9 { padding-right: 2.25rem !important; }
+.input.pr-10, [class*="input"].pr-10 { padding-right: 2.5rem !important; }
+.input.pr-11, [class*="input"].pr-11 { padding-right: 2.75rem !important; }
+.input.pr-12, [class*="input"].pr-12 { padding-right: 3rem !important; }
+
 .input:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);

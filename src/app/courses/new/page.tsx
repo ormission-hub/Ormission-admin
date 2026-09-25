@@ -1366,13 +1366,16 @@ export default function CreateCourseWizardPage() {
                   ফ্রি প্রিভিউ / ডেমো ভিডিও Embed URL (YouTube / Bunny / Vimeo)
                 </label>
                 <div className="relative">
-                  <Video className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                    <Video className="w-4 h-4" />
+                  </div>
                   <input
                     type="url"
                     placeholder="https://www.youtube.com/embed/..."
                     value={media.previewVideoUrl}
                     onChange={(e) => setMedia({ ...media, previewVideoUrl: e.target.value })}
-                    className="input pl-9 text-xs font-sans w-full"
+                    style={{ paddingLeft: "2.5rem" }}
+                    className="input pl-10 text-xs font-sans w-full"
                   />
                 </div>
               </div>
@@ -1673,7 +1676,9 @@ export default function CreateCourseWizardPage() {
 
                           <div className="text-xs">
                             <div className="relative">
-                              <Video className="w-3.5 h-3.5 text-text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+                              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
+                                <Video className="w-3.5 h-3.5" />
+                              </div>
                               <input
                                 type="url"
                                 placeholder="ভিডিও Embed URL (যেমন: https://www.youtube.com/embed/...)"
@@ -1693,7 +1698,8 @@ export default function CreateCourseWizardPage() {
                                     )
                                   );
                                 }}
-                                className="input pl-8 text-xs font-sans w-full"
+                                style={{ paddingLeft: "2.5rem" }}
+                                className="input pl-10 text-xs font-sans w-full"
                               />
                             </div>
                           </div>
