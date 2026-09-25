@@ -1684,16 +1684,20 @@ export default function AdminBooksPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-text mb-1">
-                        কাস্টম অর্ডার / চেকআউট লিংক (ঐচ্ছিক)
+                      <label className="block text-xs font-bold text-text mb-1 flex items-center justify-between">
+                        <span>বই অর্ডার / ক্রয়ের লিংক (যেমন: রকমারি লিংক)</span>
+                        <span className="text-[10px] text-primary font-normal">রকমারি, ওয়াফিলাইফ ইত্যাদি</span>
                       </label>
                       <input
                         type="url"
                         value={form.order_url}
                         onChange={(e) => setForm({ ...form, order_url: e.target.value })}
                         className="input text-xs w-full font-sans"
-                        placeholder="https://... (ফাঁকা রাখলে ডিফল্ট চেকআউট)"
+                        placeholder="https://www.rokomari.com/book/... বা যেকোনো অর্ডার লিংক"
                       />
+                      <p className="text-[10.5px] text-text-muted mt-1 font-bengali">
+                        শিক্ষার্থী বইয়ের পেজে &apos;সংগ্রহ করুন&apos; বাটনে ক্লিক করলে সরাসরি এই লিংকে গিয়ে অর্ডার করতে পারবে।
+                      </p>
                     </div>
                   </div>
 
