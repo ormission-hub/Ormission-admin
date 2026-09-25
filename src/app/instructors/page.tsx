@@ -16,6 +16,12 @@ import {
   Star,
   Eye,
   EyeOff,
+  TrendingUp,
+  Save,
+  BookOpen,
+  Award,
+  Users,
+  Quote,
 } from "lucide-react";
 import { dbService, type DbInstructor } from "@/lib/supabase/db-service";
 
@@ -24,6 +30,8 @@ interface FormState {
   name: string;
   institution: string;
   designation: string;
+  credentials: string; // Headline / Motto
+  seo_title: string;   // Tag / Badge
   bio: string;
   photo_url: string;
   display_order: number;
@@ -36,11 +44,38 @@ const DEFAULT_FORM: FormState = {
   name: "",
   institution: "Ormission Education",
   designation: "প্রভাষক / মেন্টর",
+  credentials: "",
+  seo_title: "",
   bio: "",
   photo_url: "",
   display_order: 1,
   is_featured: true,
   is_published: true,
+};
+
+interface AboutSettings {
+  stat1_value: string;
+  stat1_label: string;
+  stat2_value: string;
+  stat2_label: string;
+  stat3_value: string;
+  stat3_label: string;
+  default_badge?: string;
+  default_headline?: string;
+  default_description?: string;
+}
+
+const DEFAULT_ABOUT_SETTINGS: AboutSettings = {
+  stat1_value: "10+",
+  stat1_label: "Courses",
+  stat2_value: "10K+",
+  stat2_label: "Exams",
+  stat3_value: "100K+",
+  stat3_label: "Students",
+  default_badge: "🎯 স্বপ্ন ছোঁয়ার প্রস্তুতি",
+  default_headline: 'স্বপ্ন ছোঁয়ার আশা থাকলে সেই স্বপ্নের ভিত তৈরিতে সাথে আছে "ওরমিশন"',
+  default_description:
+    'অনলাইন বিশ্ববিদ্যালয় ভর্তি ও বোর্ড পরীক্ষার প্রস্তুতির জন্য দেশের সেরা প্ল্যাটফর্মগুলোর অন্যতম একটি হলো "ওরমিশন"। ভর্তি প্রস্তুতি নেওয়া শিক্ষার্থীদের সঠিক দিকনির্দেশনা, নিয়মিত পরীক্ষা, মানসম্মত ক্লাস এবং ধারাবাহিক প্রস্তুতির মাধ্যমে নিজেদের লক্ষ্যে পৌঁছাতে আমরা কাজ করে যাচ্ছি।',
 };
 
 export default function AdminInstructorsPage() {
@@ -52,6 +87,10 @@ export default function AdminInstructorsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
+
+  // About Us section settings (3 stats + default text)
+  const [aboutSettings, setAboutSettings] = useState<AboutSettings>(DEFAULT_ABOUT_SETTINGS);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -67,8 +106,45 @@ export default function AdminInstructorsPage() {
     setLoading(false);
   };
 
+  const loadAboutSettings = async () => {
+    try {
+      const res = await fetch("/api/settings?key=about_settings");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.value && typeof data.value === "object") {
+          setAboutSettings((prev) => ({ ...prev, ...data.value }));
+        }
+      }
+    } catch (err) {
+      console.error("Error loading about settings:", err);
+    }
+  };
+
+  const handleSaveAboutSettings = async () => {
+    setSavingSettings(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "about_settings", value: aboutSettings }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showNotification("আমাদের সম্পর্কে পরিসংখ্যান সফলভাবে সংরক্ষিত হয়েছে!");
+      } else {
+        alert(data.error || "সংরক্ষণ করা যায়নি।");
+      }
+    } catch (err) {
+      console.error("Save error:", err);
+      alert("সংরক্ষণ ব্যর্থ হয়েছে।");
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   useEffect(() => {
     loadInstructors();
+    loadAboutSettings();
   }, []);
 
   const openAddModal = () => {
@@ -87,6 +163,8 @@ export default function AdminInstructorsPage() {
       name: inst.name || "",
       institution: inst.institution || "",
       designation: inst.designation || "",
+      credentials: inst.credentials || "",
+      seo_title: inst.seo_title || "",
       bio: inst.bio || "",
       photo_url: inst.photo_url || "",
       display_order: inst.display_order ?? 1,
@@ -153,7 +231,9 @@ export default function AdminInstructorsPage() {
           slug: editingInstructor.slug || slug,
           institution: form.institution.trim() || "Ormission Education",
           designation: form.designation.trim() || "শিক্ষক ও মেন্টর",
-          bio: form.bio.trim(),
+          credentials: form.credentials.trim() || null,
+          seo_title: form.seo_title.trim() || null,
+          bio: form.bio.trim() || null,
           photo_url: form.photo_url.trim(),
           display_order: Number(form.display_order) || 1,
           is_featured: form.is_featured,
@@ -179,7 +259,9 @@ export default function AdminInstructorsPage() {
           slug,
           institution: form.institution.trim() || "Ormission Education",
           designation: form.designation.trim() || "শিক্ষক ও মেন্টর",
-          bio: form.bio.trim(),
+          credentials: form.credentials.trim() || null,
+          seo_title: form.seo_title.trim() || null,
+          bio: form.bio.trim() || null,
           photo_url: form.photo_url.trim(),
           display_order: Number(form.display_order) || instructors.length + 1,
           is_featured: form.is_featured,
@@ -308,6 +390,165 @@ export default function AdminInstructorsPage() {
         </div>
       </div>
 
+      {/* ─── About Us Stats & Global Settings Card ─── */}
+      <div className="bg-surface rounded-2xl border border-border p-5 sm:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-border/70 mb-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-text font-bengali">
+                &ldquo;আমাদের সম্পর্কে&rdquo; ৩টি পরিসংখ্যান ও মূল বাণী
+              </h2>
+              <p className="text-xs text-text-muted font-bengali">
+                ওয়েবসাইটের আমাদের সম্পর্কে সেকশনের নিচের ৩টি পরিসংখ্যান (কাউন্টার) এবং ডিফল্ট বাণী
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={savingSettings}
+            onClick={() => handleSaveAboutSettings()}
+            className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 self-end sm:self-auto shadow-xs"
+          >
+            {savingSettings ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>সংরক্ষণ হচ্ছে...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3.5 h-3.5" />
+                <span>পরিসংখ্যান সংরক্ষণ করুন</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* 3 Stats inputs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+          {/* Stat 1 */}
+          <div className="p-3.5 rounded-xl bg-surface-secondary/40 border border-border/70 space-y-2">
+            <div className="text-[11px] font-bold text-text-muted font-bengali uppercase tracking-wider flex items-center justify-between">
+              <span>পরিসংখ্যান ১ (Courses)</span>
+              <BookOpen className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-medium text-text-muted mb-0.5">মান (Value)</label>
+                <input
+                  type="text"
+                  placeholder="10+"
+                  value={aboutSettings.stat1_value}
+                  onChange={(e) => setAboutSettings({ ...aboutSettings, stat1_value: e.target.value })}
+                  className="input text-xs w-full font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-text-muted mb-0.5">লেবেল (Label)</label>
+                <input
+                  type="text"
+                  placeholder="Courses"
+                  value={aboutSettings.stat1_label}
+                  onChange={(e) => setAboutSettings({ ...aboutSettings, stat1_label: e.target.value })}
+                  className="input text-xs w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stat 2 */}
+          <div className="p-3.5 rounded-xl bg-surface-secondary/40 border border-border/70 space-y-2">
+            <div className="text-[11px] font-bold text-text-muted font-bengali uppercase tracking-wider flex items-center justify-between">
+              <span>পরিসংখ্যান ২ (Exams)</span>
+              <Award className="w-3.5 h-3.5 text-rose-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-medium text-text-muted mb-0.5">মান (Value)</label>
+                <input
+                  type="text"
+                  placeholder="10K+"
+                  value={aboutSettings.stat2_value}
+                  onChange={(e) => setAboutSettings({ ...aboutSettings, stat2_value: e.target.value })}
+                  className="input text-xs w-full font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-text-muted mb-0.5">লেবেল (Label)</label>
+                <input
+                  type="text"
+                  placeholder="Exams"
+                  value={aboutSettings.stat2_label}
+                  onChange={(e) => setAboutSettings({ ...aboutSettings, stat2_label: e.target.value })}
+                  className="input text-xs w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Stat 3 */}
+          <div className="p-3.5 rounded-xl bg-surface-secondary/40 border border-border/70 space-y-2">
+            <div className="text-[11px] font-bold text-text-muted font-bengali uppercase tracking-wider flex items-center justify-between">
+              <span>পরিসংখ্যান ৩ (Students)</span>
+              <Users className="w-3.5 h-3.5 text-indigo-500" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[10px] font-medium text-text-muted mb-0.5">মান (Value)</label>
+                <input
+                  type="text"
+                  placeholder="100K+"
+                  value={aboutSettings.stat3_value}
+                  onChange={(e) => setAboutSettings({ ...aboutSettings, stat3_value: e.target.value })}
+                  className="input text-xs w-full font-bold"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-medium text-text-muted mb-0.5">লেবেল (Label)</label>
+                <input
+                  type="text"
+                  placeholder="Students"
+                  value={aboutSettings.stat3_label}
+                  onChange={(e) => setAboutSettings({ ...aboutSettings, stat3_label: e.target.value })}
+                  className="input text-xs w-full"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Global default fallback headline & tag */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-border/60">
+          <div>
+            <label className="block text-xs font-semibold text-text font-bengali mb-1">
+              ডিফল্ট বাণীর হেডলাইন (যদি শিক্ষকের কাস্টম না থাকে)
+            </label>
+            <input
+              type="text"
+              value={aboutSettings.default_headline || ""}
+              onChange={(e) => setAboutSettings({ ...aboutSettings, default_headline: e.target.value })}
+              className="input text-xs font-bengali w-full"
+              placeholder='উদা: স্বপ্ন ছোঁয়ার আশা থাকলে সেই স্বপ্নের ভিত তৈরিতে সাথে আছে "ওরমিশন"'
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-text font-bengali mb-1">
+              ডিফল্ট ট্যাগ / ব্যাজ (Tag Badge)
+            </label>
+            <input
+              type="text"
+              value={aboutSettings.default_badge || ""}
+              onChange={(e) => setAboutSettings({ ...aboutSettings, default_badge: e.target.value })}
+              className="input text-xs font-bengali w-full"
+              placeholder="উদা: 🎯 স্বপ্ন ছোঁয়ার প্রস্তুতি"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Grid */}
       {loading ? (
         <div className="bg-surface rounded-2xl border border-border p-12 text-center text-xs text-text-muted font-bengali shadow-xs">
@@ -404,6 +645,22 @@ export default function AdminInstructorsPage() {
                     </button>
                   </div>
                 </div>
+
+                {/* Custom Headline or Tag if set */}
+                {(inst.seo_title || inst.credentials) && (
+                  <div className="mb-2.5 p-2 rounded-lg bg-surface-secondary/70 border border-border/60 space-y-1">
+                    {inst.seo_title && (
+                      <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-bengali">
+                        {inst.seo_title}
+                      </span>
+                    )}
+                    {inst.credentials && (
+                      <p className="text-xs font-bold text-text font-bengali line-clamp-2">
+                        &ldquo;{inst.credentials}&rdquo;
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Bio text */}
                 <p className="text-xs text-text-muted font-bengali line-clamp-3 mb-4 leading-relaxed bg-surface-secondary/40 p-2.5 rounded-xl border border-border/60">
@@ -612,8 +869,65 @@ export default function AdminInstructorsPage() {
                 </div>
               </div>
 
+              {/* Custom Headline / Quote & Badge */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-xl bg-surface-secondary/40 border border-border/70">
+                <div>
+                  <label className="block text-xs font-semibold text-text font-bengali mb-1">
+                    বাণীর মূল হেডলাইন (Headline / Quote)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder='উদা: স্বপ্ন ছোঁয়ার আশা থাকলে সাথে আছে "ওরমিশন"'
+                    value={form.credentials}
+                    onChange={(e) => setForm({ ...form, credentials: e.target.value })}
+                    className="input text-xs font-bengali w-full"
+                  />
+                  <p className="text-[10px] text-text-muted mt-0.5 font-bengali">
+                    খালি রাখলে ডিফল্ট হেডলাইন প্রদর্শিত হবে
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-text font-bengali mb-1">
+                    বাণীর ট্যাগ / ব্যাজ (Tag Badge)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="উদা: 🎯 স্বপ্ন ছোঁয়ার প্রস্তুতি"
+                    value={form.seo_title}
+                    onChange={(e) => setForm({ ...form, seo_title: e.target.value })}
+                    className="input text-xs font-bengali w-full"
+                  />
+                  <p className="text-[10px] text-text-muted mt-0.5 font-bengali">
+                    খালি রাখলে ডিফল্ট ব্যাজ প্রদর্শিত হবে
+                  </p>
+                </div>
+              </div>
+
+              {/* Bio / Detailed Narrative */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-semibold text-text font-bengali">
+                    বিস্তারিত বক্তব্য, পরিচিতি ও দিকনির্দেশনা (Bio / Detailed Message)
+                  </label>
+                  <span className="text-[10px] text-primary font-bold font-bengali">
+                    &ldquo;আমাদের সম্পর্কে&rdquo; সেকশনে প্রদর্শিত হবে
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  placeholder="শিক্ষকের বিস্তারিত বক্তব্য, ছাত্রদের প্রতি দিকনির্দেশনা, দর্শন বা পরিচিতি লিখুন..."
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  className="input text-xs font-bengali w-full py-2 leading-relaxed"
+                />
+                <p className="text-[10px] text-text-muted mt-0.5 font-bengali">
+                  খালি রাখলে প্ল্যাটফর্মের সাধারণ পরিচিতি প্রদর্শিত হবে।
+                </p>
+              </div>
+
               {/* Display Order & Toggles */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center pt-1">
                 <div>
                   <label className="block text-xs font-semibold text-text font-bengali mb-1">
                     প্রদর্শনের ক্রম (Order)
@@ -625,7 +939,7 @@ export default function AdminInstructorsPage() {
                     onChange={(e) =>
                       setForm({ ...form, display_order: parseInt(e.target.value) || 1 })
                     }
-                    className="input text-xs w-full"
+                    className="input text-xs w-full font-bold"
                   />
                 </div>
 
@@ -650,24 +964,10 @@ export default function AdminInstructorsPage() {
                       className="rounded border-border text-primary focus:ring-primary w-4 h-4"
                     />
                     <span className="text-xs font-semibold text-text font-bengali">
-                      আমাদের সম্পর্কে
+                      আমাদের সম্পর্কে সেকশনে অন্তর্ভুক্ত
                     </span>
                   </label>
                 </div>
-              </div>
-
-              {/* Bio */}
-              <div>
-                <label className="block text-xs font-semibold text-text font-bengali mb-1">
-                  সংক্ষিপ্ত পরিচিতি ও অভিজ্ঞতা (Bio)
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="শিক্ষকের শিক্ষাগত যোগ্যতা ও সফলতার বিবরণ..."
-                  value={form.bio}
-                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                  className="input text-xs font-bengali w-full py-2 leading-relaxed"
-                />
               </div>
 
               {/* Modal Actions */}

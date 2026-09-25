@@ -104,11 +104,13 @@ export interface DbInstructor {
   name: string;
   name_bn: string;
   slug: string;
-  designation?: string;
-  institution?: string;
-  bio?: string;
-  photo_url?: string;
-  credentials?: string;
+  designation?: string | null;
+  institution?: string | null;
+  bio?: string | null;
+  photo_url?: string | null;
+  credentials?: string | null;
+  seo_title?: string | null;
+  seo_description?: string | null;
   display_order?: number;
   is_featured: boolean;
   is_published: boolean;
