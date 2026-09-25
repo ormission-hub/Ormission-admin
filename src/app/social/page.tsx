@@ -496,40 +496,6 @@ export default function SocialLinksAdminPage() {
         </div>
       </div>
 
-      {/* Sync Status Banner */}
-      <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 border border-blue-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center shrink-0 shadow-md shadow-primary/25">
-            <Globe className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-text font-bengali">
-                ফুটার ও ড্যাশবোর্ড লাইভ সিঙ্ক অ্যাক্টিভ
-              </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-500 border border-emerald-500/25">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Live Sync
-              </span>
-            </div>
-            <p className="text-[11px] text-text-muted font-bengali mt-0.5">
-              যে চ্যানেলগুলো আপনি <span className="text-emerald-600 dark:text-emerald-400 font-bold">ON</span> করে রাখবেন শুধুমাত্র সেগুলোই স্টুডেন্টদের সামনে দৃশ্যমান হবে।
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 self-stretch sm:self-auto justify-end">
-          <Link
-            href="/"
-            target="_blank"
-            className="btn btn-outline btn-xs font-bengali text-[11px] flex items-center gap-1"
-          >
-            <ExternalLink className="w-3 h-3" />
-            <span>লাইভ ফুটার দেখুন</span>
-          </Link>
-        </div>
-      </div>
-
       {/* Community Banner Copy Settings */}
       <div className="bg-surface rounded-2xl border border-border p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-border">
