@@ -451,13 +451,16 @@ export default function AdminSettingsPage() {
                 নতুন অ্যাডমিন ইমেইল (Admin Email)
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+                  <Mail className="w-4 h-4" />
+                </div>
                 <input
                   type="email"
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                   placeholder="admin@ormission.com"
-                  className="input pl-9 text-xs font-mono w-full"
+                  style={{ paddingLeft: "2.75rem", paddingRight: "0.75rem" }}
+                  className="w-full py-2 bg-surface border border-border rounded-xl text-xs font-mono text-text placeholder:text-text-muted/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
               <p className="text-[10px] text-text-muted font-bengali mt-1">
@@ -471,18 +474,21 @@ export default function AdminSettingsPage() {
                 নতুন পাসওয়ার্ড (New Password)
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+                  <Lock className="w-4 h-4" />
+                </div>
                 <input
                   type={showNewPassword ? "text" : "password"}
                   value={newAdminPassword}
                   onChange={(e) => setNewAdminPassword(e.target.value)}
                   placeholder="কমপক্ষে ৬ অক্ষর..."
-                  className="input pl-9 pr-9 text-xs font-mono w-full"
+                  style={{ paddingLeft: "2.75rem", paddingRight: "2.75rem" }}
+                  className="w-full py-2 bg-surface border border-border rounded-xl text-xs font-mono text-text placeholder:text-text-muted/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword(!showNewPassword)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text p-1 cursor-pointer"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-text-muted hover:text-text cursor-pointer transition-colors"
                   title={showNewPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
                 >
                   {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -499,13 +505,16 @@ export default function AdminSettingsPage() {
                 কনফার্ম পাসওয়ার্ড (Confirm)
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-muted">
+                  <Lock className="w-4 h-4" />
+                </div>
                 <input
                   type={showNewPassword ? "text" : "password"}
                   value={confirmAdminPassword}
                   onChange={(e) => setConfirmAdminPassword(e.target.value)}
                   placeholder="পুনরায় পাসওয়ার্ড লিখুন..."
-                  className="input pl-9 text-xs font-mono w-full"
+                  style={{ paddingLeft: "2.75rem", paddingRight: "0.75rem" }}
+                  className="w-full py-2 bg-surface border border-border rounded-xl text-xs font-mono text-text placeholder:text-text-muted/60 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
                 />
               </div>
               {newAdminPassword && confirmAdminPassword && (
