@@ -17,6 +17,8 @@ import {
   Users,
   Check,
   Sliders,
+  PhoneCall,
+  Phone,
 } from "lucide-react";
 import { dbService } from "@/lib/supabase/db-service";
 import {
@@ -24,6 +26,7 @@ import {
   YouTubeIcon,
   TelegramIcon,
   WhatsAppIcon,
+  MessengerIcon,
   InstagramIcon,
   LinkedInIcon,
   TwitterXIcon,
@@ -192,6 +195,8 @@ export default function SocialLinksAdminPage() {
   const [saved, setSaved] = useState(false);
   const [social, setSocial] = useState<SocialLinksSettings>(defaultSocialSettings);
   const [previewTab, setPreviewTab] = useState<"footer" | "dashboard">("footer");
+  const [directPhone, setDirectPhone] = useState("01741347039");
+  const [directMessenger, setDirectMessenger] = useState("https://m.me/ormission");
 
   useEffect(() => {
     loadSettings();
@@ -220,6 +225,13 @@ export default function SocialLinksAdminPage() {
           tiktok: { ...defaultSocialSettings.tiktok, ...(parsed.tiktok || {}) },
         });
       }
+
+      if (allSettings?.contact_phone) {
+        setDirectPhone(allSettings.contact_phone);
+      }
+      if (allSettings?.contact_messenger) {
+        setDirectMessenger(allSettings.contact_messenger);
+      }
     } catch (e) {
       console.error("Failed to load social settings:", e);
     } finally {
@@ -231,13 +243,30 @@ export default function SocialLinksAdminPage() {
     if (e) e.preventDefault();
     setSaving(true);
     try {
-      const ok = await dbService.updateSiteSetting("social_links", social);
-      if (ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 4000);
-      } else {
-        alert("লিংক সংরক্ষণ ব্যর্থ হয়েছে। দয়া করে আবার চেষ্টা করুন।");
-      }
+      const rawWa = social.whatsapp.handle || social.whatsapp.url || "";
+      let waDigits = rawWa.replace(/[^0-9]/g, "");
+      if (waDigits.startsWith("0")) waDigits = "880" + waDigits.slice(1);
+      else if (waDigits.length === 10 && waDigits.startsWith("1")) waDigits = "880" + waDigits;
+      const formattedWaUrl = rawWa.startsWith("http") ? rawWa : (waDigits ? `https://wa.me/${waDigits}` : social.whatsapp.url);
+
+      const updatedSocial = {
+        ...social,
+        whatsapp: {
+          ...social.whatsapp,
+          url: formattedWaUrl,
+          handle: rawWa,
+        },
+      };
+
+      await Promise.all([
+        dbService.updateSiteSetting("social_links", updatedSocial),
+        dbService.updateSiteSetting("contact_phone", directPhone),
+        dbService.updateSiteSetting("contact_whatsapp", rawWa || directPhone),
+        dbService.updateSiteSetting("contact_messenger", directMessenger),
+      ]);
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 4000);
     } catch (err) {
       console.error("Save error:", err);
       alert("Error saving settings");
@@ -346,6 +375,126 @@ export default function SocialLinksAdminPage() {
           </div>
         </div>
       )}
+
+      {/* Floating Call & Contact Widget Settings Card */}
+      <div className="p-5 rounded-2xl bg-surface border-2 border-emerald-500/25 dark:border-emerald-500/35 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 text-white flex items-center justify-center shadow-xs shrink-0">
+              <PhoneCall className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-sm sm:text-base text-text font-bengali">
+                  সরাসরি যোগাযোগ ও কল বাটন সেটিংস (Direct Call, WhatsApp, Messenger)
+                </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                  ওয়েবসাইট লাইভ উইজেট
+                </span>
+              </div>
+              <p className="text-xs text-text-muted font-bengali mt-0.5">
+                মূল ওয়েবসাইটের নিচের ফ্লোটিং কল বাটনে ক্লিক করলে যে ৩টি অপশন (WhatsApp, Messenger, Direct Call) আসে, সেগুলোর নম্বর ও লিংক এখান থেকে সরাসরি এডিট করুন।
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Direct Call */}
+          <div className="p-3.5 rounded-xl bg-surface-secondary/60 border border-teal-500/20 dark:border-teal-500/30 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                  <Phone className="w-3.5 h-3.5" />
+                </div>
+                <label className="text-xs font-bold text-text font-bengali">
+                  ১. Direct Call নম্বর *
+                </label>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 font-semibold font-bengali">
+                ফোন কল
+              </span>
+            </div>
+            <input
+              type="text"
+              value={directPhone}
+              onChange={(e) => setDirectPhone(e.target.value)}
+              placeholder="01741347039"
+              className="input text-xs font-mono font-bold w-full bg-surface"
+            />
+            <p className="text-[11px] text-text-muted font-bengali">
+              ওয়েবসাইটের <strong className="text-teal-600 dark:text-teal-400">Direct Call</strong> অপশনে ক্লিক করলে সরাসরি এই নম্বরে কল যাবে।
+            </p>
+          </div>
+
+          {/* WhatsApp */}
+          <div className="p-3.5 rounded-xl bg-surface-secondary/60 border border-emerald-500/20 dark:border-emerald-500/30 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[#25D366]/15 text-[#25D366] flex items-center justify-center">
+                  <WhatsAppIcon size={15} />
+                </div>
+                <label className="text-xs font-bold text-text font-bengali">
+                  ২. WhatsApp নম্বর / লিঙ্ক *
+                </label>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold font-bengali">
+                চ্যাট
+              </span>
+            </div>
+            <input
+              type="text"
+              value={social.whatsapp.handle || social.whatsapp.url}
+              onChange={(e) => updatePlatformHandle("whatsapp", e.target.value)}
+              placeholder="01741347039"
+              className="input text-xs font-mono font-bold w-full bg-surface"
+            />
+            <p className="text-[11px] text-text-muted font-bengali">
+              ওয়েবসাইটের <strong className="text-emerald-600 dark:text-emerald-400">WhatsApp</strong> অপশনে ক্লিক করলে সরাসরি চ্যাট ওপেন হবে।
+            </p>
+          </div>
+
+          {/* Messenger */}
+          <div className="p-3.5 rounded-xl bg-surface-secondary/60 border border-blue-500/20 dark:border-blue-500/30 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-lg bg-[#0084FF]/15 text-[#0084FF] flex items-center justify-center">
+                  <MessengerIcon size={14} />
+                </div>
+                <label className="text-xs font-bold text-text font-bengali">
+                  ৩. Messenger লিঙ্ক বা পেজ *
+                </label>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold font-bengali">
+                মেসেঞ্জার
+              </span>
+            </div>
+            <input
+              type="text"
+              value={directMessenger}
+              onChange={(e) => setDirectMessenger(e.target.value)}
+              placeholder="https://m.me/ormission অথবা ormission"
+              className="input text-xs font-mono font-bold w-full bg-surface"
+            />
+            <p className="text-[11px] text-text-muted font-bengali">
+              ওয়েবসাইটের <strong className="text-blue-600 dark:text-blue-400">Messenger</strong> অপশনে ক্লিক করলে ফেসবুক চ্যাট খুলবে।
+            </p>
+          </div>
+        </div>
+
+        {/* Live Preview footer note */}
+        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-bengali">
+          <div className="flex items-center gap-2 text-text">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>
+              সরাসরি কল: <strong className="font-mono text-teal-600 dark:text-teal-400">{directPhone || "০১৭৪১-৩৪৭০৩৯"}</strong> | হোয়াটসঅ্যাপ: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{social.whatsapp.handle || social.whatsapp.url || "০১৭৪১-৩৪৭০৩৯"}</strong> | মেসেঞ্জার: <strong className="font-mono text-blue-600 dark:text-blue-400">{directMessenger || "https://m.me/ormission"}</strong>
+            </span>
+          </div>
+          <span className="text-[11px] text-text-muted shrink-0">
+            পরিবর্তন করে উপরে &quot;পরিবর্তন সংরক্ষণ করুন&quot; বাটনে চাপুন
+          </span>
+        </div>
+      </div>
 
       {/* Sync Status Banner */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-600/10 via-indigo-600/10 to-purple-600/10 border border-blue-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">

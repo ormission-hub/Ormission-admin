@@ -15,6 +15,9 @@ import {
   Share2,
   ExternalLink,
   Globe,
+  PhoneCall,
+  Phone,
+  MessageCircle,
 } from "lucide-react";
 import { dbService } from "@/lib/supabase/db-service";
 import {
@@ -22,6 +25,7 @@ import {
   YouTubeIcon,
   TelegramIcon,
   WhatsAppIcon,
+  MessengerIcon,
   InstagramIcon,
   LinkedInIcon,
   TwitterXIcon,
@@ -109,10 +113,11 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState({
     brandName: "Ormission",
     tagline: "Learn · Build · Grow",
-    hotline: "+880 1728-477095",
-    whatsapp: "+880 1728-477095",
+    hotline: "01741347039",
+    whatsapp: "01741347039",
+    messenger: "https://m.me/ormission",
     email: "info@ormission.com",
-    address: "লেভেল ৪, রূপায়ন টাওয়ার, ধানমন্ডি ২৭, ঢাকা-১২০৯",
+    address: "বাংলাদেশ",
     sslStoreId: "ormission_live",
     sslSecret: "••••••••••••••••",
     isSandbox: true,
@@ -145,13 +150,18 @@ export default function AdminSettingsPage() {
       setSocial(parsedSocial);
     }
 
+    const defaultMessengerLink = parsedSocial?.facebook?.url
+      ? (parsedSocial.facebook.url.includes("m.me") ? parsedSocial.facebook.url : `https://m.me/${parsedSocial.facebook.url.replace(/\/+$/, "").split("/").pop()}`)
+      : "https://m.me/ormission";
+
     setSettings((prev) => ({
       ...prev,
       brandName: data.site_name || prev.brandName,
       tagline: data.site_tagline || prev.tagline,
       email: data.contact_email || prev.email,
-      hotline: data.contact_phone || prev.hotline,
-      whatsapp: data.contact_whatsapp || parsedSocial?.whatsapp?.handle || parsedSocial?.whatsapp?.url || prev.whatsapp,
+      hotline: data.contact_phone || "01741347039",
+      whatsapp: data.contact_whatsapp || parsedSocial?.whatsapp?.handle || parsedSocial?.whatsapp?.url || "01741347039",
+      messenger: data.contact_messenger || defaultMessengerLink,
       address: data.contact_address || prev.address,
       sslStoreId: data.ssl_store_id || prev.sslStoreId,
       isSandbox: data.ssl_is_sandbox !== undefined ? data.ssl_is_sandbox : prev.isSandbox,
@@ -192,6 +202,7 @@ export default function AdminSettingsPage() {
       dbService.updateSiteSetting("contact_email", settings.email),
       dbService.updateSiteSetting("contact_phone", settings.hotline),
       dbService.updateSiteSetting("contact_whatsapp", settings.whatsapp),
+      dbService.updateSiteSetting("contact_messenger", settings.messenger),
       dbService.updateSiteSetting("contact_address", settings.address),
       dbService.updateSiteSetting("ssl_store_id", settings.sslStoreId),
       dbService.updateSiteSetting("ssl_is_sandbox", settings.isSandbox),
@@ -344,31 +355,7 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-text font-bengali mb-1">
-                  হটলাইন ফোন
-                </label>
-                <input
-                  type="text"
-                  value={settings.hotline}
-                  onChange={(e) => setSettings({ ...settings, hotline: e.target.value })}
-                  className="input text-xs font-mono w-full"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-text font-bengali mb-1">
-                  হোয়াটসঅ্যাপ (WhatsApp)
-                </label>
-                <input
-                  type="text"
-                  value={settings.whatsapp}
-                  onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
-                  className="input text-xs font-mono w-full"
-                />
-              </div>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-text font-bengali mb-1">
                   সাপোর্ট ইমেইল *
@@ -381,18 +368,141 @@ export default function AdminSettingsPage() {
                   className="input text-xs font-mono w-full"
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-text font-bengali mb-1">
+                  অফিস ঠিকানা
+                </label>
+                <input
+                  type="text"
+                  value={settings.address}
+                  onChange={(e) => setSettings({ ...settings, address: e.target.value })}
+                  className="input text-xs font-bengali w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Contact & Floating Call Widget Card (Direct Call, WhatsApp, Messenger) */}
+          <div className="bg-surface rounded-xl border-2 border-emerald-500/25 dark:border-emerald-500/35 p-6 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-emerald-500 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <PhoneCall className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm sm:text-base text-text font-bengali">
+                      সরাসরি যোগাযোগ ও ফ্লোটিং কল বাটন সেটিংস (Direct Call, WhatsApp, Messenger)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      Live Widget
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-muted font-bengali mt-0.5">
+                    মূল ওয়েবসাইটের নিচের ফ্লোটিং কল বাটনে ক্লিক করলে যে ৩টি অপশন (WhatsApp, Messenger, Direct Call) আসে, সেগুলোর নম্বর ও লিংক এখান থেকে সরাসরি পরিবর্তন করুন।
+                  </p>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-text font-bengali mb-1">
-                অফিস ঠিকানা
-              </label>
-              <input
-                type="text"
-                value={settings.address}
-                onChange={(e) => setSettings({ ...settings, address: e.target.value })}
-                className="input text-xs font-bengali w-full"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {/* 1. Direct Call Phone Number */}
+              <div className="p-4 rounded-xl bg-surface-secondary/60 border border-teal-500/20 dark:border-teal-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-teal-500/15 text-teal-600 dark:text-teal-400 flex items-center justify-center">
+                      <Phone className="w-3.5 h-3.5" />
+                    </div>
+                    <label className="text-xs font-bold text-text font-bengali">
+                      Direct Call নম্বর *
+                    </label>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/10 text-teal-600 dark:text-teal-400 font-semibold font-bengali">
+                    সরাসরি কল
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={settings.hotline}
+                  onChange={(e) => setSettings({ ...settings, hotline: e.target.value })}
+                  placeholder="01741347039"
+                  className="input text-xs font-mono font-bold w-full bg-surface"
+                />
+                <p className="text-[11px] text-text-muted font-bengali leading-relaxed">
+                  ওয়েবসাইটের <strong className="text-teal-600 dark:text-teal-400">Direct Call</strong> অপশনে ক্লিক করলে সরাসরি এই নম্বরে ফোন কল যাবে।
+                </p>
+              </div>
+
+              {/* 2. WhatsApp Number */}
+              <div className="p-4 rounded-xl bg-surface-secondary/60 border border-emerald-500/20 dark:border-emerald-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#25D366]/15 text-[#25D366] flex items-center justify-center">
+                      <WhatsAppIcon size={16} />
+                    </div>
+                    <label className="text-xs font-bold text-text font-bengali">
+                      WhatsApp নম্বর / চ্যাট *
+                    </label>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold font-bengali">
+                    চ্যাট
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={settings.whatsapp}
+                  onChange={(e) => setSettings({ ...settings, whatsapp: e.target.value })}
+                  placeholder="01741347039"
+                  className="input text-xs font-mono font-bold w-full bg-surface"
+                />
+                <p className="text-[11px] text-text-muted font-bengali leading-relaxed">
+                  ওয়েবসাইটের <strong className="text-emerald-600 dark:text-emerald-400">WhatsApp</strong> অপশনে ক্লিক করলে এই নম্বরে সরাসরি চ্যাট শুরু হবে।
+                </p>
+              </div>
+
+              {/* 3. Messenger Link */}
+              <div className="p-4 rounded-xl bg-surface-secondary/60 border border-blue-500/20 dark:border-blue-500/30 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#0084FF]/15 text-[#0084FF] flex items-center justify-center">
+                      <MessengerIcon size={15} />
+                    </div>
+                    <label className="text-xs font-bold text-text font-bengali">
+                      Messenger লিঙ্ক / ইউজারনেম *
+                    </label>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold font-bengali">
+                    ফেসবুক
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={settings.messenger}
+                  onChange={(e) => setSettings({ ...settings, messenger: e.target.value })}
+                  placeholder="https://m.me/ormission অথবা ormission"
+                  className="input text-xs font-mono font-bold w-full bg-surface"
+                />
+                <p className="text-[11px] text-text-muted font-bengali leading-relaxed">
+                  ওয়েবসাইটের <strong className="text-blue-600 dark:text-blue-400">Messenger</strong> অপশনে ক্লিক করলে সরাসরি ফেসবুক চ্যাট ওপেন হবে।
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Live Preview Bar */}
+            <div className="p-3.5 rounded-xl bg-emerald-500/5 border border-emerald-500/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-bengali">
+              <div className="flex items-center gap-2 text-text">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                <span>
+                  সরাসরি কল: <strong className="font-mono text-teal-600 dark:text-teal-400">{settings.hotline || "০১৭৪১-৩৪৭০৩৯"}</strong> | হোয়াটসঅ্যাপ: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{settings.whatsapp || "০১৭৪১-৩৪৭০৩৯"}</strong> | মেসেঞ্জার: <strong className="font-mono text-blue-600 dark:text-blue-400">{settings.messenger || "https://m.me/ormission"}</strong>
+                </span>
+              </div>
+              <span className="text-[11px] text-text-muted shrink-0">
+                পরিবর্তন করে নিচে &quot;সেটিংস সংরক্ষণ করুন&quot; বাটনে চাপুন
+              </span>
             </div>
           </div>
 

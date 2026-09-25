@@ -59,6 +59,19 @@ export const WhatsAppIcon: React.FC<SocialIconProps> = ({ className, size = 18 }
   </svg>
 );
 
+export const MessengerIcon: React.FC<SocialIconProps> = ({ className, size = 18 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.077.299 2.222.463 3.443.463 6.627 0 12-4.975 12-11.11C24 4.974 18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26 6.559-6.963 3.13 3.26 5.889-3.26-6.56 6.963z" />
+  </svg>
+);
+
 export const InstagramIcon: React.FC<SocialIconProps> = ({ className, size = 18 }) => (
   <svg
     width={size}
