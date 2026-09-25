@@ -1,10 +1,10 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-type Theme = "light" | "dark" | "system";
+export type Theme = "light" | "dark" | "system";
 
-interface ThemeContextType {
+export interface ThemeContextType {
   theme: Theme;
   resolvedTheme: "light" | "dark";
   setTheme: (theme: Theme) => void;
@@ -14,49 +14,78 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  const [theme, setThemeState] = useState<Theme>("system");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
+  // Read persisted theme or default to "system" (auto device preference)
   useEffect(() => {
-    // Read persisted theme
-    const saved = localStorage.getItem("ormission_admin_theme") as Theme | null;
-    const initialTheme = saved || "light";
-    setThemeState(initialTheme);
+    try {
+      const saved = localStorage.getItem("ormission_admin_theme") as Theme | null;
+      if (saved && (saved === "light" || saved === "dark" || saved === "system")) {
+        setThemeState(saved);
+      } else {
+        setThemeState("system");
+      }
+    } catch {
+      setThemeState("system");
+    }
     setMounted(true);
   }, []);
 
+  // Listen to OS color scheme and apply theme class
   useEffect(() => {
     if (!mounted) return;
 
     const root = document.documentElement;
-    let actualTheme: "light" | "dark" = "light";
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
-    if (theme === "system") {
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      actualTheme = prefersDark ? "dark" : "light";
-    } else {
-      actualTheme = theme;
-    }
+    const applyTheme = () => {
+      let actual: "light" | "dark" = "light";
 
-    setResolvedTheme(actualTheme);
+      if (theme === "system") {
+        actual = mediaQuery.matches ? "dark" : "light";
+      } else {
+        actual = theme;
+      }
 
-    if (actualTheme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+      setResolvedTheme(actual);
 
-    localStorage.setItem("ormission_admin_theme", theme);
+      if (actual === "dark") {
+        root.classList.add("dark");
+      } else {
+        root.classList.remove("dark");
+      }
+    };
+
+    applyTheme();
+
+    try {
+      localStorage.setItem("ormission_admin_theme", theme);
+    } catch {}
+
+    const handleMediaChange = () => {
+      if (theme === "system") {
+        applyTheme();
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleMediaChange);
+    return () => mediaQuery.removeEventListener("change", handleMediaChange);
   }, [theme, mounted]);
 
-  const setTheme = (newTheme: Theme) => {
+  const setTheme = useCallback((newTheme: Theme) => {
     setThemeState(newTheme);
-  };
+  }, []);
 
-  const toggleTheme = () => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
-  };
+  // Cycle through Auto (System) -> Light -> Dark -> Auto
+  const toggleTheme = useCallback(() => {
+    setThemeState((prev) => {
+      if (prev === "system") return "light";
+      if (prev === "light") return "dark";
+      return "system";
+    });
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme, toggleTheme }}>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -32,6 +33,8 @@ import {
   PanelLeftOpen,
   Headphones,
   Share2,
+  Laptop,
+  Check,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
@@ -91,9 +94,22 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const { resolvedTheme, toggleTheme } = useTheme();
+  const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement>(null);
+  const { theme, resolvedTheme, setTheme, toggleTheme } = useTheme();
   const navScrollRef = useRef<HTMLDivElement>(null);
   const activeNavRef = useRef<HTMLAnchorElement>(null);
+
+  // Close theme menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
+        setIsThemeMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Load saved sidebar state from localStorage safely after mount
   useEffect(() => {
@@ -220,20 +236,98 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
         {/* Right Actions */}
         <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-          {/* Dark Mode Toggle Button */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-colors border border-transparent hover:border-border"
-            title={resolvedTheme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
-            aria-label="Toggle theme"
-          >
-            {resolvedTheme === "dark" ? (
-              <Sun className="w-4 h-4 text-accent animate-spin-once" />
-            ) : (
-              <Moon className="w-4 h-4 text-primary" />
-            )}
-          </button>
+          {/* Theme Selector (Auto / Light / Dark) */}
+          <div className="relative" ref={themeMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
+              className="flex items-center gap-1.5 p-2 rounded-xl text-text-muted hover:text-text hover:bg-surface-secondary transition-colors border border-transparent hover:border-border cursor-pointer"
+              title={`বর্তমান থিম: ${theme === "system" ? "অটো (ডিভাইস অনুযায়ী)" : theme === "dark" ? "ডার্ক মোড" : "লাইট মোড"}`}
+              aria-label="Toggle theme"
+            >
+              {theme === "system" ? (
+                <Laptop className="w-4 h-4 text-primary" />
+              ) : resolvedTheme === "dark" ? (
+                <Moon className="w-4 h-4 text-sky-400" />
+              ) : (
+                <Sun className="w-4 h-4 text-amber-500" />
+              )}
+              {theme === "system" && (
+                <span className="hidden sm:inline text-[10px] font-bold text-text-muted/80 bg-surface-secondary px-1.5 py-0.5 rounded-md border border-border/60">
+                  অটো
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {isThemeMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-48 rounded-2xl bg-surface/95 dark:bg-slate-900/95 backdrop-blur-xl border border-border shadow-xl p-1.5 z-50 space-y-0.5"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTheme("system");
+                      setIsThemeMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                      theme === "system"
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "text-text hover:bg-surface-secondary font-medium"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Laptop className="w-4 h-4 text-primary" />
+                      <span>অটো (ডিভাইস অনুযায়ী)</span>
+                    </div>
+                    {theme === "system" && <Check className="w-3.5 h-3.5 text-primary" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTheme("light");
+                      setIsThemeMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                      theme === "light"
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "text-text hover:bg-surface-secondary font-medium"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Sun className="w-4 h-4 text-amber-500" />
+                      <span>লাইট মোড</span>
+                    </div>
+                    {theme === "light" && <Check className="w-3.5 h-3.5 text-primary" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTheme("dark");
+                      setIsThemeMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors cursor-pointer text-left ${
+                      theme === "dark"
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "text-text hover:bg-surface-secondary font-medium"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Moon className="w-4 h-4 text-sky-400" />
+                      <span>ডার্ক মোড</span>
+                    </div>
+                    {theme === "dark" && <Check className="w-3.5 h-3.5 text-primary" />}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Notification Bell */}
           <button

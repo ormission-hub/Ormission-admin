@@ -45,6 +45,23 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var saved = localStorage.getItem('ormission_admin_theme');
+                  var supportDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  if (saved === 'dark' || ((!saved || saved === 'system') && supportDark)) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
         <link rel="icon" href="/images/brand-logo-v2.png?v=2026" type="image/png" sizes="512x512" />
         <link rel="shortcut icon" href="/favicon.ico?v=2026" />
         <link rel="apple-touch-icon" href="/apple-icon.png?v=2026" />

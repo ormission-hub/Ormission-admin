@@ -34,9 +34,14 @@ import {
   GraduationCap,
   ListChecks,
   Type,
+  BookOpen,
+  Edit3,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
+import { SubjectPickerModal } from "@/components/subject-picker-modal";
 import {
   type SectionType,
   type LessonItemType,
@@ -160,6 +165,9 @@ export default function CreateCourseWizardPage() {
     },
   ]);
 
+  // Subject Picker Modal State
+  const [activeSubjectModalSectionId, setActiveSubjectModalSectionId] = useState<string | null>(null);
+
   // Step 5: SEO & Publishing
   const [seo, setSeo] = useState({
     metaTitle: "",
@@ -281,6 +289,18 @@ export default function CreateCourseWizardPage() {
     }
     setCurriculum((prev) => prev.filter((s) => s.id !== secId));
     showToast("info", "অধ্যায় সরানো হয়েছে", "অধ্যায়টি কারিকুলাম থেকে অপসারিত হয়েছে।");
+  };
+
+  const moveSection = (index: number, direction: "up" | "down") => {
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === curriculum.length - 1)
+    ) return;
+    const newIndex = direction === "up" ? index - 1 : index + 1;
+    const reordered = [...curriculum];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+    setCurriculum(reordered);
   };
 
   const addLesson = (secId: string) => {
@@ -1408,109 +1428,159 @@ export default function CreateCourseWizardPage() {
                     key={section.id}
                     className="bg-surface-secondary/40 rounded-2xl border border-border p-4 space-y-3"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 flex-1 flex-wrap">
-                        <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center font-mono shrink-0">
-                          {secIdx + 1}
-                        </span>
-                        <select
-                          value={section.sectionType === "content" ? "academic" : section.sectionType || "academic"}
-                          onChange={(e) => {
-                            const val = e.target.value as SectionType;
-                            setCurriculum((prev) =>
-                              prev.map((s) =>
-                                s.id === section.id
-                                  ? { ...s, sectionType: val, tabLabel: val === "custom" ? s.tabLabel || "" : "" }
-                                  : s
-                              )
-                            );
-                          }}
-                          className="h-8 max-w-[170px] px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-text focus:outline-hidden focus:border-primary shrink-0 cursor-pointer font-bengali"
-                          title="অধ্যায়ের ধরন — ওয়েবসাইটে আলাদা ট্যাব"
-                        >
-                          {SECTION_TYPE_GROUPS.map((group) => (
-                            <optgroup key={group.group} label={group.group}>
-                              {group.options.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-
-                        {/* Subject Selector (EdgeCourse BD Style) */}
-                        <select
-                          value={section.subject || ""}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setCurriculum((prev) =>
-                              prev.map((s) => (s.id === section.id ? { ...s, subject: val } : s))
-                            );
-                          }}
-                          className={`h-8 max-w-[180px] px-2 rounded-lg border text-xs font-semibold focus:outline-hidden shrink-0 cursor-pointer font-bengali ${
-                            section.subject
-                              ? "border-primary/40 bg-primary/5 text-primary"
-                              : "border-border bg-surface text-text-muted"
-                          }`}
-                          title="বিষয় নির্বাচন করুন — EdgeCourse এর মতো বিষয়ভিত্তিক গ্রুপ করবে"
-                        >
-                          <option value="">-- সাধারণ / বিষয়হীন --</option>
-                          <optgroup label="এইচএসসি ও এডমিশন মূল বিষয়সমূহ">
-                            {STANDARD_SUBJECTS.map((sub) => (
-                              <option key={sub} value={sub}>
-                                {sub}
-                              </option>
-                            ))}
-                          </optgroup>
-                        </select>
-                        <input
-                          type="text"
-                          value={section.titleBn}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setCurriculum((prev) =>
-                              prev.map((s) => (s.id === section.id ? { ...s, titleBn: val } : s))
-                            );
-                          }}
-                          className="input text-xs font-bengali font-bold flex-1 bg-surface h-8"
-                          placeholder="অধ্যায় / বিষয়ের নাম"
-                        />
-                        {section.sectionType === "custom" && (
+                    {/* Chapter Header */}
+                    <div className="space-y-3 pb-3 border-b border-border/60">
+                      {/* Row 1: Section Index Badge + Title Input + Action Buttons */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <span className="w-7 h-7 rounded-xl bg-primary/10 text-primary font-bold text-xs flex items-center justify-center font-mono shrink-0 shadow-2xs">
+                            {secIdx + 1 < 10 ? `০${secIdx + 1}` : secIdx + 1}
+                          </span>
                           <input
                             type="text"
-                            value={section.tabLabel || ""}
+                            value={section.titleBn}
                             onChange={(e) => {
                               const val = e.target.value;
                               setCurriculum((prev) =>
-                                prev.map((s) => (s.id === section.id ? { ...s, tabLabel: val } : s))
+                                prev.map((s) => (s.id === section.id ? { ...s, titleBn: val } : s))
                               );
                             }}
-                            className="input text-xs font-bengali w-full sm:w-56 h-8"
-                            placeholder="কাস্টম ট্যাবের নাম"
+                            className="input text-xs sm:text-sm font-bengali font-bold flex-1 bg-surface h-9 rounded-xl"
+                            placeholder="অধ্যায়ের নাম (যেমন: অধ্যায় ০১ - ম্যাট্রিক্স ও নির্ণায়ক)..."
                           />
-                        )}
-                    </div>
+                        </div>
 
-                      <div className="flex items-center gap-2">
+                        {/* Move Up/Down + Delete Buttons */}
+                        <div className="flex items-center gap-1 self-end sm:self-center shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => moveSection(secIdx, "up")}
+                            disabled={secIdx === 0}
+                            className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30 cursor-pointer transition-colors"
+                            title="অধ্যায় উপরে নিন"
+                          >
+                            <ChevronUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => moveSection(secIdx, "down")}
+                            disabled={secIdx === curriculum.length - 1}
+                            className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-text disabled:opacity-30 cursor-pointer transition-colors"
+                            title="অধ্যায় নিচে নিন"
+                          >
+                            <ChevronDown className="w-3.5 h-3.5" />
+                          </button>
+                          {curriculum.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeSection(section.id)}
+                              className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              title="অধ্যায়টি মুছুন"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Row 2: Subject Badge & Tab Selector */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-border/50">
+                        <div className="flex flex-wrap items-center gap-3">
+                          {/* Subject Badge / Selector Button */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-text-muted font-bengali">বিষয়:</span>
+                            {section.subject ? (
+                              <div className="flex items-center gap-1.5 bg-primary/10 border border-primary/30 text-primary px-3 py-1 rounded-xl text-xs font-bold font-bengali shadow-2xs">
+                                <BookOpen className="w-3.5 h-3.5 text-primary" />
+                                <span>{section.subject}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setActiveSubjectModalSectionId(section.id)}
+                                  className="ml-1 p-0.5 hover:bg-primary/20 rounded text-primary/80 hover:text-primary transition-colors cursor-pointer"
+                                  title="বিষয় পরিবর্তন করুন"
+                                >
+                                  <Edit3 className="w-3 h-3" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setCurriculum((prev) =>
+                                      prev.map((s) => (s.id === section.id ? { ...s, subject: "" } : s))
+                                    )
+                                  }
+                                  className="p-0.5 hover:bg-rose-500/20 rounded text-rose-500 transition-colors cursor-pointer"
+                                  title="বিষয় মুছে সাধারণ করুন"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setActiveSubjectModalSectionId(section.id)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-dashed border-primary/40 bg-primary/5 hover:bg-primary/15 text-primary text-xs font-bold font-bengali transition-colors cursor-pointer"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>+ বিষয় নির্বাচন বা নতুন বিষয় যোগ করুন</span>
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Tab Selector */}
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-text-muted font-bengali">ট্যাবের ধরন:</span>
+                            <select
+                              value={section.sectionType === "content" ? "academic" : section.sectionType || "academic"}
+                              onChange={(e) => {
+                                const val = e.target.value as SectionType;
+                                setCurriculum((prev) =>
+                                  prev.map((s) =>
+                                    s.id === section.id
+                                      ? { ...s, sectionType: val, tabLabel: val === "custom" ? s.tabLabel || "" : "" }
+                                      : s
+                                  )
+                                );
+                              }}
+                              className="h-8 px-2.5 rounded-xl border border-border bg-surface text-xs font-semibold text-text focus:outline-hidden focus:border-primary shrink-0 cursor-pointer font-bengali"
+                              title="ওয়েবসাইটে আলাদা ট্যাব হিসেবে দেখাবে"
+                            >
+                              {SECTION_TYPE_GROUPS.map((group) => (
+                                <optgroup key={group.group} label={group.group}>
+                                  {group.options.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                      {opt.label}
+                                    </option>
+                                  ))}
+                                </optgroup>
+                              ))}
+                            </select>
+
+                            {section.sectionType === "custom" && (
+                              <input
+                                type="text"
+                                value={section.tabLabel || ""}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setCurriculum((prev) =>
+                                    prev.map((s) => (s.id === section.id ? { ...s, tabLabel: val } : s))
+                                  );
+                                }}
+                                className="input text-xs font-bengali max-w-[180px] h-8 rounded-xl"
+                                placeholder="কাস্টম ট্যাবের নাম"
+                              />
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Add Lesson Button */}
                         <button
                           type="button"
                           onClick={() => addLesson(section.id)}
-                          className="btn btn-outline btn-xs font-bengali flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 flex items-center gap-1.5 transition-colors cursor-pointer font-bengali shadow-2xs"
                         >
-                          <Plus className="w-3 h-3" />
-                          <span>লেসন যোগ</span>
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>+ নতুন ক্লাস যোগ করুন</span>
                         </button>
-                        {curriculum.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeSection(section.id)}
-                            className="p-1.5 rounded-lg text-text-muted hover:text-error hover:bg-error/10"
-                            title="অধ্যায় মুছুন"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
                       </div>
                     </div>
 
@@ -1815,6 +1885,34 @@ export default function CreateCourseWizardPage() {
           )}
         </div>
       </div>
+
+      {/* Subject Picker Modal */}
+      <SubjectPickerModal
+        isOpen={activeSubjectModalSectionId !== null}
+        onClose={() => setActiveSubjectModalSectionId(null)}
+        currentSubject={
+          curriculum.find((s) => s.id === activeSubjectModalSectionId)?.subject || ""
+        }
+        existingSubjects={Array.from(
+          new Set(curriculum.map((s) => s.subject).filter(Boolean) as string[])
+        )}
+        onSelect={(selectedSubject: string) => {
+          if (activeSubjectModalSectionId) {
+            setCurriculum((prev) =>
+              prev.map((s) =>
+                s.id === activeSubjectModalSectionId ? { ...s, subject: selectedSubject } : s
+              )
+            );
+            showToast(
+              "success",
+              "বিষয় নির্ধারণ করা হয়েছে",
+              selectedSubject
+                ? `বিষয়: '${selectedSubject}' এই অধ্যায়ে যুক্ত হয়েছে।`
+                : "বিষয় মুছে সাধারণ করা হয়েছে।"
+            );
+          }
+        }}
+      />
     </div>
   );
 }
