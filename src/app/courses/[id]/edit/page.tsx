@@ -70,10 +70,21 @@ interface LessonFormItem {
   materials?: LessonMaterialItem[];
 }
 
+type SectionType = "demo" | "outline" | "content" | "exam" | "other";
+
+const SECTION_TYPE_OPTIONS: { value: SectionType; label: string }[] = [
+  { value: "demo", label: "ডেমো ক্লাস" },
+  { value: "outline", label: "কোর্স আউটলাইন" },
+  { value: "content", label: "কোর্স কন্টেন্ট" },
+  { value: "exam", label: "পরীক্ষা" },
+  { value: "other", label: "অন্যান্য" },
+];
+
 interface SectionFormItem {
   id: string | number;
   title: string;
   titleBn: string;
+  sectionType: SectionType;
   lessons: LessonFormItem[];
 }
 
@@ -217,10 +228,11 @@ export default function EditCourseStudioPage({
 
       // Parse course_sections
       if (Array.isArray(courseData.course_sections) && courseData.course_sections.length > 0) {
-        const loadedSections: SectionFormItem[] = courseData.course_sections.map((s) => ({
+        const loadedSections: SectionFormItem[] = courseData.course_sections.map((s: any) => ({
           id: s.id,
           title: s.title || "",
           titleBn: s.title_bn || s.title || "অধ্যায়",
+          sectionType: (s.section_type as SectionType) || "content",
           lessons: Array.isArray(s.lessons)
             ? s.lessons.map((l: any) => {
                 const srvs: ServerFormItem[] = Array.isArray(l.lesson_servers) && l.lesson_servers.length > 0
@@ -278,6 +290,7 @@ export default function EditCourseStudioPage({
             id: `sec-new-1`,
             title: "Chapter 1: Orientation & Fundamentals",
             titleBn: "অধ্যায় ১: মৌলিক ধারণা ও ওরিয়েন্টেশন",
+            sectionType: "content" as SectionType,
             lessons: [
               {
                 id: `les-new-1`,
@@ -347,6 +360,7 @@ export default function EditCourseStudioPage({
       id: `sec-${Date.now()}`,
       title: `Chapter ${newSecNum}: New Chapter`,
       titleBn: `অধ্যায় ${newSecNum}: নতুন অধ্যায়`,
+      sectionType: "content",
       lessons: [
         {
           id: `les-${Date.now()}`,
@@ -390,6 +404,12 @@ export default function EditCourseStudioPage({
   const updateSectionTitle = (secId: string | number, titleBn: string) => {
     setSections(
       sections.map((s) => (s.id === secId ? { ...s, titleBn, title: titleBn } : s))
+    );
+  };
+
+  const updateSectionType = (secId: string | number, sectionType: SectionType) => {
+    setSections(
+      sections.map((s) => (s.id === secId ? { ...s, sectionType } : s))
     );
   };
 
@@ -935,7 +955,19 @@ export default function EditCourseStudioPage({
                     <span className="w-8 h-8 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-bold text-xs shrink-0 font-mono">
                       {sIdx + 1 < 10 ? `0${sIdx + 1}` : sIdx + 1}
                     </span>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 flex items-center gap-2">
+                      <select
+                        value={section.sectionType || "content"}
+                        onChange={(e) => updateSectionType(section.id, e.target.value as SectionType)}
+                        className="h-9 px-2.5 rounded-xl border border-border bg-surface text-xs font-semibold text-text focus:outline-hidden focus:border-primary shrink-0 cursor-pointer font-bengali"
+                        title="অধ্যায়ের ধরন (ফিল্টার বা ট্যাব ক্যাটাগরি)"
+                      >
+                        {SECTION_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         type="text"
                         value={section.titleBn}

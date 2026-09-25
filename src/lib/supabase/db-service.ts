@@ -279,6 +279,7 @@ export const dbService = {
             course_id,
             title,
             title_bn,
+            section_type,
             sort_order,
             lessons (
               id,

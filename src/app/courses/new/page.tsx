@@ -47,9 +47,20 @@ interface NewLesson {
   materials?: LessonMaterialItem[];
 }
 
+type SectionType = "demo" | "outline" | "content" | "exam" | "other";
+
+const SECTION_TYPE_OPTIONS: { value: SectionType; label: string }[] = [
+  { value: "demo", label: "ডেমো ক্লাস" },
+  { value: "outline", label: "কোর্স আউটলাইন" },
+  { value: "content", label: "কোর্স কন্টেন্ট" },
+  { value: "exam", label: "পরীক্ষা" },
+  { value: "other", label: "অন্যান্য" },
+];
+
 interface NewSection {
   id: string;
   titleBn: string;
+  sectionType?: SectionType;
   lessons: NewLesson[];
 }
 
@@ -127,6 +138,7 @@ export default function CreateCourseWizardPage() {
     {
       id: "sec-1",
       titleBn: "অধ্যায় ১: মৌলিক ধারণা ও ভিত্তি তৈরি",
+      sectionType: "content",
       lessons: [
         {
           id: "les-1",
@@ -239,6 +251,7 @@ export default function CreateCourseWizardPage() {
       {
         id: newId,
         titleBn: `অধ্যায় ${prev.length + 1}: নতুন অধ্যায়`,
+        sectionType: "content",
         lessons: [
           {
             id: `les-${Date.now()}`,
@@ -1388,9 +1401,26 @@ export default function CreateCourseWizardPage() {
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2 flex-1">
-                        <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center font-mono">
+                        <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center font-mono shrink-0">
                           {secIdx + 1}
                         </span>
+                        <select
+                          value={section.sectionType || "content"}
+                          onChange={(e) => {
+                            const val = e.target.value as SectionType;
+                            setCurriculum((prev) =>
+                              prev.map((s) => (s.id === section.id ? { ...s, sectionType: val } : s))
+                            );
+                          }}
+                          className="h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-text focus:outline-hidden focus:border-primary shrink-0 cursor-pointer font-bengali"
+                          title="অধ্যায়ের ধরন"
+                        >
+                          {SECTION_TYPE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
                         <input
                           type="text"
                           value={section.titleBn}
@@ -1400,7 +1430,7 @@ export default function CreateCourseWizardPage() {
                               prev.map((s) => (s.id === section.id ? { ...s, titleBn: val } : s))
                             );
                           }}
-                          className="input text-xs font-bengali font-bold flex-1 bg-surface"
+                          className="input text-xs font-bengali font-bold flex-1 bg-surface h-8"
                         />
                       </div>
 

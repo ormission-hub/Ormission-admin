@@ -46,6 +46,7 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
           course_id: Number(courseId),
           title: sec.title || sec.titleBn || `Chapter ${sIdx + 1}`,
           title_bn: sec.titleBn || sec.title || `অধ্যায় ${sIdx + 1}`,
+          section_type: sec.sectionType || sec.section_type || "content",
           sort_order: sIdx + 1,
         })
         .select()
