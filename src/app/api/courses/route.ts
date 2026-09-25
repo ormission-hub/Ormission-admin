@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { cleanAndNormalizeVideoUrl } from "@/lib/video-helpers";
+import { encodeSectionTitle, stripSectionTypeTag } from "@/lib/section-types";
 
 export const runtime = "nodejs";
 
@@ -40,11 +41,9 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
     // 2. Insert sections and lessons sequentially
     for (let sIdx = 0; sIdx < curriculum.length; sIdx++) {
       const sec = curriculum[sIdx];
-      const rawType = (sec.sectionType || "content").toLowerCase();
       const rawTitle = sec.title || sec.titleBn || `Chapter ${sIdx + 1}`;
-      const cleanTitle = rawTitle.replace(/^\[(demo|outline|content|exam|other)\]\s*/i, "").trim();
-      const finalTitle = rawType !== "content" ? `[${rawType}] ${cleanTitle}` : cleanTitle;
-      const cleanTitleBn = (sec.titleBn || sec.title || `অধ্যায় ${sIdx + 1}`).replace(/^\[(demo|outline|content|exam|other)\]\s*/i, "").trim();
+      const finalTitle = encodeSectionTitle(sec.sectionType, sec.tabLabel, rawTitle, sec.subject);
+      const cleanTitleBn = stripSectionTypeTag(sec.titleBn || sec.title || `অধ্যায় ${sIdx + 1}`);
 
       const { data: newSec, error: secErr } = await supabaseAdmin
         .from("course_sections")
@@ -83,17 +82,39 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
           const primaryServerUrl = Array.isArray(les.servers) && les.servers.length > 0
             ? (les.servers[0].videoUrl || les.servers[0].video_url || "")
             : "";
-          const rawPrimary = les.videoUrl || les.video_url || primaryServerUrl;
+          const itemType = les.itemType || les.type || "video";
+          const rawPrimary =
+            les.videoUrl ||
+            les.video_url ||
+            les.examUrl ||
+            les.fileUrl ||
+            les.liveUrl ||
+            les.externalUrl ||
+            primaryServerUrl;
           const primaryVideoUrl = cleanAndNormalizeVideoUrl(rawPrimary);
+
+          const metaObj = {
+            itemType,
+            marks: les.marks || undefined,
+            questionsCount: les.questionsCount || undefined,
+            examUrl: les.examUrl || undefined,
+            liveUrl: les.liveUrl || undefined,
+            liveTime: les.liveTime || undefined,
+            livePlatform: les.livePlatform || undefined,
+            fileUrl: les.fileUrl || undefined,
+            fileSize: les.fileSize || undefined,
+            externalUrl: les.externalUrl || undefined,
+          };
 
           return {
             course_id: Number(courseId),
             section_id: newSec.id,
             title: les.title || les.titleBn || `Lesson ${lIdx + 1}`,
             title_bn: les.titleBn || les.title || `ক্লাস ${lIdx + 1}`,
-            type: "video",
+            type: itemType,
             video_url: primaryVideoUrl,
             video_duration: durationMinutes,
+            content: JSON.stringify(metaObj),
             is_preview: les.isFreePreview === true || les.is_preview === true,
             is_published: les.is_published ?? true,
             sort_order: lIdx + 1,

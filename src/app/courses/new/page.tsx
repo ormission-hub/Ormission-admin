@@ -37,6 +37,12 @@ import {
 } from "lucide-react";
 import { dbService, type DbCategory, type DbInstructor } from "@/lib/supabase/db-service";
 import { LessonMaterialsManager, type LessonMaterialItem } from "@/components/lesson-materials-manager";
+import {
+  type SectionType,
+  type LessonItemType,
+  SECTION_TYPE_GROUPS,
+  STANDARD_SUBJECTS,
+} from "@/lib/section-types";
 
 interface NewLesson {
   id: string;
@@ -44,23 +50,25 @@ interface NewLesson {
   duration: string;
   videoUrl: string;
   isFreePreview: boolean;
+  itemType?: LessonItemType;
+  examUrl?: string;
+  marks?: string;
+  questionsCount?: string;
+  liveUrl?: string;
+  liveTime?: string;
+  livePlatform?: string;
+  fileUrl?: string;
+  fileSize?: string;
+  externalUrl?: string;
   materials?: LessonMaterialItem[];
 }
-
-type SectionType = "demo" | "outline" | "content" | "exam" | "other";
-
-const SECTION_TYPE_OPTIONS: { value: SectionType; label: string }[] = [
-  { value: "demo", label: "ডেমো ক্লাস" },
-  { value: "outline", label: "কোর্স আউটলাইন" },
-  { value: "content", label: "কোর্স কন্টেন্ট" },
-  { value: "exam", label: "পরীক্ষা" },
-  { value: "other", label: "অন্যান্য" },
-];
 
 interface NewSection {
   id: string;
   titleBn: string;
   sectionType?: SectionType;
+  tabLabel?: string;
+  subject?: string;
   lessons: NewLesson[];
 }
 
@@ -138,7 +146,7 @@ export default function CreateCourseWizardPage() {
     {
       id: "sec-1",
       titleBn: "অধ্যায় ১: মৌলিক ধারণা ও ভিত্তি তৈরি",
-      sectionType: "content",
+      sectionType: "academic",
       lessons: [
         {
           id: "les-1",
@@ -251,7 +259,8 @@ export default function CreateCourseWizardPage() {
       {
         id: newId,
         titleBn: `অধ্যায় ${prev.length + 1}: নতুন অধ্যায়`,
-        sectionType: "content",
+        sectionType: "academic",
+        tabLabel: "",
         lessons: [
           {
             id: `les-${Date.now()}`,
@@ -1379,7 +1388,7 @@ export default function CreateCourseWizardPage() {
                     ধাপ ৪: কারিকুলাম ও লেসন বিন্যাস
                   </h3>
                   <p className="text-xs text-text-muted font-bengali mt-0.5">
-                    অধ্যায় যোগ করুন এবং প্রতিটি অধ্যায়ে ক্লাস ও ভিডিও লিংক যুক্ত করুন
+                    অধ্যায় যোগ করুন, ধরন বেছে নিন (একাডেমিক / এক্সাম / প্রি অ্যাডমিশন / কাস্টম ট্যাব) এবং প্রতিটি অধ্যায়ে ক্লাস যুক্ত করুন
                   </p>
                 </div>
                 <button
@@ -1400,26 +1409,60 @@ export default function CreateCourseWizardPage() {
                     className="bg-surface-secondary/40 rounded-2xl border border-border p-4 space-y-3"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2 flex-1 flex-wrap">
                         <span className="w-6 h-6 rounded-lg bg-primary/10 text-primary font-bold text-xs flex items-center justify-center font-mono shrink-0">
                           {secIdx + 1}
                         </span>
                         <select
-                          value={section.sectionType || "content"}
+                          value={section.sectionType === "content" ? "academic" : section.sectionType || "academic"}
                           onChange={(e) => {
                             const val = e.target.value as SectionType;
                             setCurriculum((prev) =>
-                              prev.map((s) => (s.id === section.id ? { ...s, sectionType: val } : s))
+                              prev.map((s) =>
+                                s.id === section.id
+                                  ? { ...s, sectionType: val, tabLabel: val === "custom" ? s.tabLabel || "" : "" }
+                                  : s
+                              )
                             );
                           }}
-                          className="h-8 px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-text focus:outline-hidden focus:border-primary shrink-0 cursor-pointer font-bengali"
-                          title="অধ্যায়ের ধরন"
+                          className="h-8 max-w-[170px] px-2 rounded-lg border border-border bg-surface text-xs font-semibold text-text focus:outline-hidden focus:border-primary shrink-0 cursor-pointer font-bengali"
+                          title="অধ্যায়ের ধরন — ওয়েবসাইটে আলাদা ট্যাব"
                         >
-                          {SECTION_TYPE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
+                          {SECTION_TYPE_GROUPS.map((group) => (
+                            <optgroup key={group.group} label={group.group}>
+                              {group.options.map((opt) => (
+                                <option key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
+                        </select>
+
+                        {/* Subject Selector (EdgeCourse BD Style) */}
+                        <select
+                          value={section.subject || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCurriculum((prev) =>
+                              prev.map((s) => (s.id === section.id ? { ...s, subject: val } : s))
+                            );
+                          }}
+                          className={`h-8 max-w-[180px] px-2 rounded-lg border text-xs font-semibold focus:outline-hidden shrink-0 cursor-pointer font-bengali ${
+                            section.subject
+                              ? "border-primary/40 bg-primary/5 text-primary"
+                              : "border-border bg-surface text-text-muted"
+                          }`}
+                          title="বিষয় নির্বাচন করুন — EdgeCourse এর মতো বিষয়ভিত্তিক গ্রুপ করবে"
+                        >
+                          <option value="">-- সাধারণ / বিষয়হীন --</option>
+                          <optgroup label="এইচএসসি ও এডমিশন মূল বিষয়সমূহ">
+                            {STANDARD_SUBJECTS.map((sub) => (
+                              <option key={sub} value={sub}>
+                                {sub}
+                              </option>
+                            ))}
+                          </optgroup>
                         </select>
                         <input
                           type="text"
@@ -1431,8 +1474,23 @@ export default function CreateCourseWizardPage() {
                             );
                           }}
                           className="input text-xs font-bengali font-bold flex-1 bg-surface h-8"
+                          placeholder="অধ্যায় / বিষয়ের নাম"
                         />
-                      </div>
+                        {section.sectionType === "custom" && (
+                          <input
+                            type="text"
+                            value={section.tabLabel || ""}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCurriculum((prev) =>
+                                prev.map((s) => (s.id === section.id ? { ...s, tabLabel: val } : s))
+                              );
+                            }}
+                            className="input text-xs font-bengali w-full sm:w-56 h-8"
+                            placeholder="কাস্টম ট্যাবের নাম"
+                          />
+                        )}
+                    </div>
 
                       <div className="flex items-center gap-2">
                         <button

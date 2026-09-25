@@ -1,20 +1,37 @@
 import { INSTRUCTORS, type Instructor } from "./instructors";
 import { CATEGORIES } from "./categories";
 
+import { type SectionType, type LessonItemType, SECTION_TYPE_LABELS as SHARED_SECTION_TYPE_LABELS } from "../section-types";
+
+export type { SectionType, LessonItemType };
+
 export interface Lesson {
   id: string;
   title: string;
   titleBn: string;
+  itemType?: LessonItemType;
   duration: string; // e.g. "24:15"
   isFreePreview: boolean;
   videoUrl?: string;
   resourcesCount?: number;
+  examUrl?: string;
+  marks?: number | string;
+  questionsCount?: number | string;
+  liveUrl?: string;
+  liveTime?: string;
+  livePlatform?: string;
+  fileUrl?: string;
+  fileSize?: string;
+  externalUrl?: string;
 }
 
 export interface CurriculumSection {
   id: string;
   title: string;
   titleBn: string;
+  sectionType?: SectionType;
+  tabLabel?: string;
+  subject?: string;
   lessons: Lesson[];
 }
 
