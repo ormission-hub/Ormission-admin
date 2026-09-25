@@ -219,36 +219,39 @@ export default function AdminCoursesPage() {
             </div>
           </div>
 
-          {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0 self-stretch sm:self-auto">
-            <button
-              type="button"
-              onClick={loadData}
-              disabled={loading}
-              className="btn btn-outline flex-1 sm:flex-initial h-10 px-3.5 text-xs font-bold rounded-xl border-border hover:bg-surface-secondary flex items-center justify-center gap-2 transition-all cursor-pointer"
-              title="ডাটাবেজ রিফ্রেশ করুন"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-primary" : "text-text-muted"}`} />
-              <span>রিফ্রেশ</span>
-            </button>
-
-            <Link
-              href="/courses/enrollments"
-              className="btn btn-outline border-primary/30 text-primary hover:bg-primary/10 flex-1 sm:flex-initial h-10 px-3.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-              title="কোর্সভিত্তিক ভর্তি পরিসংখ্যান ও অফিশিয়াল PDF ডাউনলোড"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>ভর্তি রিপোর্ট (PDF)</span>
-            </Link>
-
+          {/* Right Action Buttons (Responsive Layout) */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 shrink-0 w-full md:w-auto self-stretch md:self-auto">
+            {/* Primary Action: Always prominent and unclipped, full width on mobile */}
             <Link
               href="/courses/new"
-              className="btn btn-primary flex-1 sm:flex-initial h-10 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white shadow-md shadow-primary/20 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className="btn btn-primary h-10 sm:h-10 px-4 text-xs sm:text-sm font-bold rounded-xl bg-gradient-to-r from-primary to-blue-600 hover:from-primary-hover hover:to-blue-700 text-white shadow-md shadow-primary/20 flex items-center justify-center gap-2 transition-all cursor-pointer w-full sm:w-auto order-1 sm:order-2"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">নতুন কোর্স তৈরি</span>
-              <span className="sm:hidden">কোর্স তৈরি</span>
+              <PlusCircle className="w-4 h-4 shrink-0" />
+              <span>নতুন কোর্স তৈরি</span>
             </Link>
+
+            {/* Secondary Actions: 2-column grid on mobile, inline on desktop */}
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto order-2 sm:order-1">
+              <button
+                type="button"
+                onClick={loadData}
+                disabled={loading}
+                className="btn btn-outline h-10 px-3 sm:px-3.5 text-xs font-bold rounded-xl border-border hover:bg-surface-secondary flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="ডাটাবেজ রিফ্রেশ করুন"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 shrink-0 ${loading ? "animate-spin text-primary" : "text-text-muted"}`} />
+                <span>রিফ্রেশ</span>
+              </button>
+
+              <Link
+                href="/courses/enrollments"
+                className="btn btn-outline border-primary/30 text-primary hover:bg-primary/10 h-10 px-2.5 sm:px-3.5 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                title="কোর্সভিত্তিক ভর্তি পরিসংখ্যান ও অফিশিয়াল PDF ডাউনলোড"
+              >
+                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">ভর্তি রিপোর্ট (PDF)</span>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
