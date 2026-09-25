@@ -15,6 +15,7 @@ import {
   Share2,
   ExternalLink,
   Globe,
+  Award,
 } from "lucide-react";
 import { dbService } from "@/lib/supabase/db-service";
 import {
@@ -299,6 +300,36 @@ export default function AdminSettingsPage() {
           className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 whitespace-nowrap shadow-xs shrink-0"
         >
           <span>পেমেন্ট সেটিংস কনফিগার করুন</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+
+      {/* About Us Stats & Instructors Banner Card */}
+      <div className="bg-gradient-to-r from-amber-500/10 via-rose-500/5 to-surface rounded-xl border border-amber-500/20 p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs shrink-0">
+            <Award className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-sm text-text font-bengali">
+                &ldquo;আমাদের সম্পর্কে&rdquo; ৩টি পরিসংখ্যান ও শিক্ষক প্যানেল
+              </h3>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white font-bengali">
+                পরিসংখ্যান
+              </span>
+            </div>
+            <p className="text-xs text-text-muted font-bengali mt-0.5">
+              ওয়েবসাইটের &ldquo;আমাদের সম্পর্কে&rdquo; সেকশনের ৩টি পরিসংখ্যান (Courses, Exams, Students), মূল বাণী ও শিক্ষক পরিচিতি সম্পাদনা করুন।
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href="/instructors"
+          className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 whitespace-nowrap shadow-xs shrink-0"
+        >
+          <span>পরিসংখ্যান ও শিক্ষক এডিট করুন</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>

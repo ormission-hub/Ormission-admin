@@ -35,6 +35,7 @@ import {
   Share2,
   Laptop,
   Check,
+  Award,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
@@ -81,6 +82,7 @@ const navGroups: NavGroup[] = [
     titleBn: "কন্টেন্ট ও মার্কেটিং CMS",
     items: [
       { label: "Hero Banner & CMS", labelBn: "হিরো ফটো ও ব্যানার", href: "/hero", icon: Layers, badge: "Live" },
+      { label: "About Us & Stats", labelBn: "আমাদের সম্পর্কে ও পরিসংখ্যান", href: "/instructors", icon: Award, badge: "Stats" },
       { label: "Social Media Links", labelBn: "সোশ্যাল ও কমিউনিটি লিংক", href: "/social", icon: Share2, badge: "Live" },
       { label: "Free Resources", labelBn: "ফ্রি রিসোর্স CMS", href: "/resources", icon: FileDown },
       { label: "Testimonials", labelBn: "টেস্টিমোনিয়াল", href: "/testimonials", icon: MessageSquare },
