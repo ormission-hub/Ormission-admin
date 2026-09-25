@@ -38,6 +38,7 @@ import {
   Check,
   LogOut,
   Loader2,
+  KeyRound,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 
@@ -497,6 +498,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                       অনুমোদিত অ্যাডমিন (Active)
                     </div>
                   </div>
+
+                  <Link
+                    href="/settings#security"
+                    onClick={() => setIsUserMenuOpen(false)}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-text hover:bg-surface-secondary transition-colors text-left"
+                  >
+                    <KeyRound className="w-4 h-4 text-primary shrink-0" />
+                    <span className="font-bengali">ইমেইল ও পাসওয়ার্ড পরিবর্তন</span>
+                  </Link>
+
+                  <div className="h-px bg-border my-1" />
 
                   <button
                     type="button"

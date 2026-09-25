@@ -18,8 +18,16 @@ import {
   PhoneCall,
   Phone,
   MessageCircle,
+  Key,
+  Lock,
+  Mail,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { dbService } from "@/lib/supabase/db-service";
+import { supabase } from "@/lib/supabase/client";
 import {
   FacebookIcon,
   YouTubeIcon,
@@ -125,6 +133,17 @@ export default function AdminSettingsPage() {
 
   const [social, setSocial] = useState<SocialLinksSettings>(defaultSocialSettings);
 
+  // Admin credentials state
+  const [currentAdminEmail, setCurrentAdminEmail] = useState("");
+  const [currentAdminId, setCurrentAdminId] = useState("");
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [updatingCreds, setUpdatingCreds] = useState(false);
+  const [credSuccessMsg, setCredSuccessMsg] = useState("");
+  const [credErrorMsg, setCredErrorMsg] = useState("");
+
   const loadSettings = async () => {
     setLoading(true);
     const data = await dbService.getSiteSettings();
@@ -172,7 +191,71 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     loadSettings();
+
+    async function loadCurrentAdmin() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setCurrentAdminId(session.user.id);
+          setCurrentAdminEmail(session.user.email || "");
+          setNewAdminEmail(session.user.email || "");
+        }
+      } catch (e) {
+        console.warn("Could not load current admin session:", e);
+      }
+    }
+    loadCurrentAdmin();
   }, []);
+
+  const handleUpdateCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCredErrorMsg("");
+    setCredSuccessMsg("");
+
+    if (!newAdminEmail.trim() && !newAdminPassword.trim()) {
+      setCredErrorMsg("পরিবর্তন করার জন্য নতুন ইমেইল অথবা পাসওয়ার্ড দিন।");
+      return;
+    }
+
+    if (newAdminPassword && newAdminPassword.length < 6) {
+      setCredErrorMsg("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
+      return;
+    }
+
+    if (newAdminPassword && newAdminPassword !== confirmAdminPassword) {
+      setCredErrorMsg("নতুন পাসওয়ার্ড ও কনফার্ম পাসওয়ার্ড মিলছে না!");
+      return;
+    }
+
+    setUpdatingCreds(true);
+    try {
+      const res = await fetch("/api/admin/update-credentials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: currentAdminId,
+          newEmail: newAdminEmail.trim() !== currentAdminEmail ? newAdminEmail.trim() : undefined,
+          newPassword: newAdminPassword.trim() || undefined,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setCredErrorMsg(data.error || "আপডেট ব্যর্থ হয়েছে।");
+      } else {
+        setCredSuccessMsg("অ্যাডমিন ইমেইল ও পাসওয়ার্ড সফলভাবে আপডেট হয়েছে! পরবর্তী লগইনে এই তথ্য ব্যবহার করুন।");
+        if (newAdminEmail.trim()) {
+          setCurrentAdminEmail(newAdminEmail.trim());
+        }
+        setNewAdminPassword("");
+        setConfirmAdminPassword("");
+      }
+    } catch {
+      setCredErrorMsg("সার্ভারের সাথে যোগাযোগ করতে সমস্যা হয়েছে।");
+    } finally {
+      setUpdatingCreds(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -312,6 +395,152 @@ export default function AdminSettingsPage() {
           <span>পেমেন্ট সেটিংস কনফিগার করুন</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
+      </div>
+
+      {/* Admin Login Credentials & Security Card (Email & Password change) */}
+      <div id="security" className="bg-surface rounded-2xl border-2 border-primary/30 shadow-md p-6 sm:p-7 relative overflow-hidden transition-all scroll-mt-20">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-primary/10 via-secondary/5 to-transparent rounded-full blur-2xl pointer-events-none -mr-20 -mt-20" />
+        
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-border">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-primary to-blue-600 text-white flex items-center justify-center shadow-sm shrink-0">
+              <Key className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-base sm:text-lg text-text font-bengali">
+                  অ্যাডমিন লগইন ও সিকিউরিটি ক্রেডেনশিয়াল
+                </h3>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20 font-bengali">
+                  সরাসরি পরিবর্তন
+                </span>
+              </div>
+              <p className="text-xs text-text-muted font-bengali mt-0.5">
+                অ্যাডমিন প্যানেলে লগইন করার মূল ইমেইল বা নতুন পাসওয়ার্ড এখান থেকেই সরাসরি পরিবর্তন ও সেট করুন।
+              </p>
+            </div>
+          </div>
+
+          <div className="text-left sm:text-right px-3.5 py-1.5 rounded-xl bg-surface-secondary/70 border border-border">
+            <div className="text-[10px] text-text-muted font-bengali">বর্তমান লগইন ইমেইল:</div>
+            <div className="text-xs font-mono font-bold text-primary truncate max-w-[220px]">
+              {currentAdminEmail || "লোড হচ্ছে..."}
+            </div>
+          </div>
+        </div>
+
+        {credSuccessMsg && (
+          <div className="mt-4 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs font-bengali text-emerald-700 dark:text-emerald-300 flex items-center gap-2.5 animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span>{credSuccessMsg}</span>
+          </div>
+        )}
+
+        {credErrorMsg && (
+          <div className="mt-4 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-xs font-bengali text-rose-700 dark:text-rose-300 flex items-center gap-2.5 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>{credErrorMsg}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleUpdateCredentials} className="mt-5 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* New Email */}
+            <div>
+              <label className="block text-xs font-semibold text-text font-bengali mb-1.5">
+                নতুন অ্যাডমিন ইমেইল (Admin Email)
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={(e) => setNewAdminEmail(e.target.value)}
+                  placeholder="admin@ormission.com"
+                  className="input pl-9 text-xs font-mono w-full"
+                />
+              </div>
+              <p className="text-[10px] text-text-muted font-bengali mt-1">
+                ইমেইল পরিবর্তন করতে চাইলে নতুন ইমেইল লিখুন।
+              </p>
+            </div>
+
+            {/* New Password */}
+            <div>
+              <label className="block text-xs font-semibold text-text font-bengali mb-1.5">
+                নতুন পাসওয়ার্ড (New Password)
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={newAdminPassword}
+                  onChange={(e) => setNewAdminPassword(e.target.value)}
+                  placeholder="কমপক্ষে ৬ অক্ষর..."
+                  className="input pl-9 pr-9 text-xs font-mono w-full"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text p-1 cursor-pointer"
+                  title={showNewPassword ? "পাসওয়ার্ড লুকান" : "পাসওয়ার্ড দেখুন"}
+                >
+                  {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-[10px] text-text-muted font-bengali mt-1">
+                পাসওয়ার্ড পরিবর্তন না করতে চাইলে খালি রাখুন।
+              </p>
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-xs font-semibold text-text font-bengali mb-1.5">
+                কনফার্ম পাসওয়ার্ড (Confirm)
+              </label>
+              <div className="relative">
+                <Lock className="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type={showNewPassword ? "text" : "password"}
+                  value={confirmAdminPassword}
+                  onChange={(e) => setConfirmAdminPassword(e.target.value)}
+                  placeholder="পুনরায় পাসওয়ার্ড লিখুন..."
+                  className="input pl-9 text-xs font-mono w-full"
+                />
+              </div>
+              {newAdminPassword && confirmAdminPassword && (
+                <p className={`text-[10px] font-bengali mt-1 ${newAdminPassword === confirmAdminPassword ? "text-emerald-500 font-bold" : "text-rose-500 font-bold"}`}>
+                  {newAdminPassword === confirmAdminPassword ? "✓ পাসওয়ার্ড মিলেছে" : "✕ পাসওয়ার্ড মিলছে না"}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-border">
+            <div className="text-[11px] text-text-muted font-bengali flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>ইমেইল বা পাসওয়ার্ড পরিবর্তন সাথে সাথে ডাটাবেজে আপডেট হবে এবং পরবর্তী লগইনে কার্যকর হবে।</span>
+            </div>
+
+            <button
+              type="submit"
+              disabled={updatingCreds || (!newAdminPassword && newAdminEmail.trim() === currentAdminEmail)}
+              className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-2 whitespace-nowrap shadow-xs disabled:opacity-50 cursor-pointer"
+            >
+              {updatingCreds ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>আপডেট হচ্ছে...</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>লগইন ক্রেডেনশিয়াল সেভ করুন</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
 
       {loading ? (
@@ -503,6 +732,144 @@ export default function AdminSettingsPage() {
               <span className="text-[11px] text-text-muted shrink-0">
                 পরিবর্তন করে নিচে &quot;সেটিংস সংরক্ষণ করুন&quot; বাটনে চাপুন
               </span>
+            </div>
+          </div>
+
+          {/* Admin Login Credentials & Security Card */}
+          <div id="security" className="bg-surface rounded-xl border-2 border-primary/25 dark:border-primary/35 p-6 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-blue-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Key className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-sm sm:text-base text-text font-bengali">
+                      অ্যাডমিন লগইন ইমেইল ও পাসওয়ার্ড পরিবর্তন (Admin Credentials)
+                    </h3>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                      Security & Auth
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-muted font-bengali mt-0.5">
+                    আপনার বর্তমান অ্যাডমিন অ্যাকাউন্টের লগইন ইমেইল ও নতুন পাসওয়ার্ড এখান থেকে সরাসরি আপডেট করুন।
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {credSuccessMsg && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2.5 text-xs text-emerald-600 dark:text-emerald-400 font-bengali animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{credSuccessMsg}</span>
+              </div>
+            )}
+
+            {credErrorMsg && (
+              <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/25 flex items-center gap-2.5 text-xs text-rose-500 font-bengali animate-in fade-in">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{credErrorMsg}</span>
+              </div>
+            )}
+
+            <div className="p-3 rounded-xl bg-surface-secondary/60 border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-bengali">
+              <span className="text-text-muted">বর্তমানে লগইন থাকা অ্যাডমিন ইমেইল:</span>
+              <span className="font-mono font-bold text-text bg-surface px-2.5 py-1 rounded border border-border">
+                {currentAdminEmail || "admin@ormission.com"}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* New Email */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text font-bengali">
+                  অ্যাডমিন ইমেইল এড্রেস
+                </label>
+                <div className="relative">
+                  <Mail className="w-4 h-4 absolute left-3 top-2.5 text-text-muted pointer-events-none" />
+                  <input
+                    type="email"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    placeholder="admin@ormission.com"
+                    className="input text-xs font-mono w-full pl-9"
+                  />
+                </div>
+                <p className="text-[10px] text-text-muted font-bengali">
+                  নতুন ইমেইল দিলে পরবর্তী সময়ে এই ইমেইল দিয়ে লগইন করতে হবে।
+                </p>
+              </div>
+
+              {/* New Password */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text font-bengali">
+                  নতুন পাসওয়ার্ড (কমপক্ষে ৬ অক্ষর)
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3 top-2.5 text-text-muted pointer-events-none" />
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newAdminPassword}
+                    onChange={(e) => setNewAdminPassword(e.target.value)}
+                    placeholder="নতুন পাসওয়ার্ড লিখুন"
+                    className="input text-xs font-mono w-full pl-9 pr-9"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2.5 top-2.5 text-text-muted hover:text-text cursor-pointer"
+                  >
+                    {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-text-muted font-bengali">
+                  পাসওয়ার্ড পরিবর্তন না করতে চাইলে ঘরটি ফাঁকা রাখুন।
+                </p>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-semibold text-text font-bengali">
+                  পাসওয়ার্ড নিশ্চিত করুন
+                </label>
+                <div className="relative">
+                  <Lock className="w-4 h-4 absolute left-3 top-2.5 text-text-muted pointer-events-none" />
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={confirmAdminPassword}
+                    onChange={(e) => setConfirmAdminPassword(e.target.value)}
+                    placeholder="পাসওয়ার্ড পুনরায় লিখুন"
+                    className="input text-xs font-mono w-full pl-9"
+                  />
+                </div>
+                <p className="text-[10px] text-text-muted font-bengali">
+                  উপরে দেওয়া পাসওয়ার্ডটি হুবহু পুনরায় লিখুন।
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+              <span className="text-[11px] text-text-muted font-bengali">
+                💡 নিরাপত্তা সতর্কতা: আপডেট করার সাথে সাথে নতুন পাসওয়ার্ড বা ইমেইল কার্যকর হবে।
+              </span>
+              <button
+                type="button"
+                onClick={handleUpdateCredentials}
+                disabled={updatingCreds}
+                className="btn btn-primary btn-sm font-bengali font-bold flex items-center gap-1.5 shadow-sm"
+              >
+                {updatingCreds ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>আপডেট হচ্ছে...</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>অ্যাডমিন ক্রেডেনশিয়াল আপডেট করুন</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
 
