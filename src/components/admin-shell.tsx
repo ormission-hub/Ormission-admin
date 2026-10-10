@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import brandLogoImg from "../../public/images/brand-logo-v2.png";
 import { supabase } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
@@ -84,6 +83,7 @@ const navGroups: NavGroup[] = [
     title: "Content & Marketing CMS",
     titleBn: "কন্টেন্ট ও মার্কেটিং CMS",
     items: [
+      { label: "Push & Notices", labelBn: "নোটিশ ও পুশ নোটিফিকেশন", href: "/notices", icon: Bell, badge: "New" },
       { label: "Hero Banner & CMS", labelBn: "হিরো ফটো ও ব্যানার", href: "/hero", icon: Layers, badge: "Live" },
       { label: "Social Media Links", labelBn: "সোশ্যাল ও কমিউনিটি লিংক", href: "/social", icon: Share2, badge: "Live" },
       { label: "Free Resources", labelBn: "ফ্রি রিসোর্স CMS", href: "/resources", icon: FileDown },
@@ -320,7 +320,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <div className="relative w-9 h-9 rounded-xl overflow-hidden shadow-xs border border-blue-600/30 bg-[#012c94] flex items-center justify-center group-hover:border-blue-500 transition-colors shrink-0">
               <Image
-                src={brandLogoImg}
+                src="/images/brand-logo-v2.png"
                 alt="Ormission Logo"
                 width={36}
                 height={36}
@@ -553,7 +553,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-[#012c94] p-0.5 border border-blue-600/40">
                 <Image
-                  src={brandLogoImg}
+                  src="/images/brand-logo-v2.png"
                   alt="Logo"
                   width={32}
                   height={32}
