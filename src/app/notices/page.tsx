@@ -264,6 +264,7 @@ export default function AdminNoticesPage() {
           provider: apiSettings.provider,
           oneSignalAppId: apiSettings.oneSignalAppId,
           oneSignalRestApiKey: apiSettings.oneSignalRestApiKey,
+          fcmServerKey: apiSettings.fcmServerKey,
         }),
       });
 
@@ -1028,6 +1029,21 @@ export default function AdminNoticesPage() {
                   value={apiSettings.oneSignalRestApiKey}
                   onChange={(e) =>
                     setApiSettings({ ...apiSettings, oneSignalRestApiKey: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-secondary text-xs font-mono focus:outline-hidden focus:border-primary"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-text font-sans">
+                  Firebase Cloud Messaging (FCM) Server Key / Token
+                </label>
+                <input
+                  type="password"
+                  placeholder="e.g. AAAA... (Project: ormission-1354a)"
+                  value={apiSettings.fcmServerKey}
+                  onChange={(e) =>
+                    setApiSettings({ ...apiSettings, fcmServerKey: e.target.value })
                   }
                   className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-secondary text-xs font-mono focus:outline-hidden focus:border-primary"
                 />

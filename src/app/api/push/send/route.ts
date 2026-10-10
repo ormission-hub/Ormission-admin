@@ -83,13 +83,58 @@ export async function POST(request: Request) {
         recipients: oneSignalData.recipients || 0,
         provider: "onesignal",
       };
-    } else {
-      // Direct Firebase / Webhook Provider Simulation
-      deliveryResult = {
-        notificationId: `fcm-${Date.now()}`,
-        recipients: "Broadcast",
-        provider: "firebase",
-      };
+    } else if (provider === "firebase") {
+      const { fcmServerKey } = body;
+      if (fcmServerKey && fcmServerKey.trim().length > 0) {
+        const fcmPayload: Record<string, any> = {
+          to: "/topics/all",
+          priority: "high",
+          notification: {
+            title,
+            body: message,
+          },
+          data: {
+            title,
+            body: message,
+            message,
+            target_url: targetUrl,
+          },
+        };
+
+        if (imageUrl && imageUrl.trim().length > 0) {
+          fcmPayload.notification.image = imageUrl.trim();
+          fcmPayload.data.image = imageUrl.trim();
+        }
+
+        const fcmRes = await fetch("https://fcm.googleapis.com/fcm/send", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `key=${fcmServerKey.trim()}`,
+          },
+          body: JSON.stringify(fcmPayload),
+        });
+
+        const fcmData = await fcmRes.json().catch(() => ({}));
+        if (!fcmRes.ok) {
+          return NextResponse.json(
+            { success: false, error: `Firebase Error: ${JSON.stringify(fcmData)}` },
+            { status: 500 }
+          );
+        }
+
+        deliveryResult = {
+          notificationId: fcmData.message_id || `fcm-${Date.now()}`,
+          recipients: "All Subscribers (/topics/all)",
+          provider: "firebase",
+        };
+      } else {
+        deliveryResult = {
+          notificationId: `fcm-${Date.now()}`,
+          recipients: "Broadcast (/topics/all)",
+          provider: "firebase",
+        };
+      }
     }
 
     // 2. Record notification in audit log in Supabase site_settings
