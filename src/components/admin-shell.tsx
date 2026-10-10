@@ -141,7 +141,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           session.user.email === "admin@ormission.com" ||
           session.user.email === "ohidrashed0@gmail.com" ||
           session.user.email === "anas226788@gmail.com" ||
-          session.user.email === "moirashed0@gmail.com";
+          session.user.email === "moirashed0@gmail.com" ||
+          session.user.email === "rimonaldohadi@gmail.com";
 
         if (!isAdmin) {
           await supabase.auth.signOut();

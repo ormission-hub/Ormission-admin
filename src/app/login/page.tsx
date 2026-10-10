@@ -28,7 +28,7 @@ export default function AdminLoginPage() {
             .eq("id", session.user.id)
             .maybeSingle();
 
-          if (profile?.role === "admin" || session.user.email?.includes("admin") || session.user.email === "ohidrashed0@gmail.com" || session.user.email === "anas226788@gmail.com") {
+          if (profile?.role === "admin" || session.user.email?.includes("admin") || session.user.email === "ohidrashed0@gmail.com" || session.user.email === "anas226788@gmail.com" || session.user.email === "rimonaldohadi@gmail.com") {
             router.replace("/");
             return;
           }
@@ -83,7 +83,8 @@ export default function AdminLoginPage() {
         data.user.email === "admin@ormission.com" ||
         data.user.email === "ohidrashed0@gmail.com" ||
         data.user.email === "anas226788@gmail.com" ||
-        data.user.email === "moirashed0@gmail.com";
+        data.user.email === "moirashed0@gmail.com" ||
+        data.user.email === "rimonaldohadi@gmail.com";
 
       if (!isAdmin) {
         // Sign out unauthorized user
