@@ -387,12 +387,25 @@ export default function CreateCourseWizardPage() {
 
     setSaved(true);
     try {
-      const slug = basicInfo.titleEn
-        ? basicInfo.titleEn
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .replace(/^-|-$/g, "")
-        : `course-${Date.now()}`;
+      let cleanSlug = (basicInfo.titleEn || "")
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      if (!cleanSlug && basicInfo.titleBn) {
+        cleanSlug = basicInfo.titleBn
+          .toString()
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      if (!cleanSlug) {
+        cleanSlug = `course-${Date.now()}`;
+      }
 
       const selectedInstIds = (basicInfo.instructorIds || []).map(Number).filter((n) => !isNaN(n) && n > 0);
       const primaryInstId = selectedInstIds[0] || (basicInfo.instructorId ? Number(basicInfo.instructorId) : null);
@@ -400,7 +413,7 @@ export default function CreateCourseWizardPage() {
       const res = await dbService.createCourse({
         title: basicInfo.titleEn || basicInfo.titleBn,
         title_bn: basicInfo.titleBn,
-        slug: slug,
+        slug: cleanSlug,
         short_description: basicInfo.subtitleBn,
         description: basicInfo.description,
         category_id: Number(basicInfo.categorySlug) || null,
@@ -440,7 +453,7 @@ export default function CreateCourseWizardPage() {
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "সংরক্ষণ ব্যর্থ হয়েছে";
-      alert("ত্রুটি: " + msg);
+      showToast("error", "সংরক্ষণ ত্রুটি", msg);
       setSaved(false);
     }
   };

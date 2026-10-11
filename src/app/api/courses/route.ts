@@ -10,7 +10,7 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
   if (!Array.isArray(curriculum)) return { success: true, sectionsCount: 0, lessonsCount: 0 };
 
   try {
-    // 1. Delete existing lesson_resources for lessons belonging to this course
+    // 1. Delete existing lesson_servers, lesson_resources and lessons belonging to this course
     const { data: oldLessons } = await supabaseAdmin
       .from("lessons")
       .select("id")
@@ -19,12 +19,22 @@ async function syncCurriculum(courseId: number | string, curriculum: any[]): Pro
     if (oldLessons && oldLessons.length > 0) {
       const oldLessonIds = oldLessons.map((l: any) => l.id);
       await supabaseAdmin
+        .from("lesson_servers")
+        .delete()
+        .in("lesson_id", oldLessonIds);
+
+      await supabaseAdmin
         .from("lesson_resources")
         .delete()
         .in("lesson_id", oldLessonIds);
+
+      await supabaseAdmin
+        .from("lessons")
+        .delete()
+        .in("id", oldLessonIds);
     }
 
-    // Delete existing sections (lessons cascade-delete via foreign key)
+    // Delete existing sections
     const { error: delErr } = await supabaseAdmin
       .from("course_sections")
       .delete()
@@ -430,10 +440,42 @@ export async function POST(request: Request) {
       instructor_ids: rawInstIds,
     };
 
+    // Ensure robust and unique slug
+    let cleanSlug = (rest.slug || "")
+      .toString()
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+
+    if (!cleanSlug && (rest.title || rest.title_bn)) {
+      cleanSlug = (rest.title || rest.title_bn)
+        .toString()
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    }
+
+    if (!cleanSlug) {
+      cleanSlug = `course-${Date.now()}`;
+    }
+
+    // Check if slug already exists to prevent duplicate key constraint failure
+    const { data: existingSlug } = await supabaseAdmin
+      .from("courses")
+      .select("id")
+      .eq("slug", cleanSlug)
+      .maybeSingle();
+
+    if (existingSlug) {
+      cleanSlug = `${cleanSlug}-${Date.now().toString().slice(-4)}`;
+    }
+
     const coursePayload = {
       title: rest.title || rest.title_bn,
       title_bn: rest.title_bn,
-      slug: rest.slug,
+      slug: cleanSlug,
       short_description: rest.short_description || "",
       description: rest.description || "",
       thumbnail_url: rest.thumbnail_url || null,
@@ -453,7 +495,7 @@ export async function POST(request: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    const { data, error } = await supabaseAdmin
+    let { data, error } = await supabaseAdmin
       .from("courses")
       .insert([coursePayload])
       .select(`
@@ -464,12 +506,26 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      console.error("Error creating course (admin):", error);
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      console.warn("Retrying course insert without joins:", error.message);
+      // Fallback: try basic insert without joins if relations failed
+      const basicInsert = await supabaseAdmin
+        .from("courses")
+        .insert([coursePayload])
+        .select("*")
+        .single();
+
+      if (basicInsert.error) {
+        console.error("Error creating course (admin):", basicInsert.error);
+        return NextResponse.json({ success: false, error: basicInsert.error.message }, { status: 500 });
+      }
+      data = basicInsert.data;
     }
 
-    if (curriculum && Array.isArray(curriculum) && curriculum.length > 0) {
-      await syncCurriculum(data.id, curriculum);
+    if (curriculum && Array.isArray(curriculum) && curriculum.length > 0 && data?.id) {
+      const syncRes = await syncCurriculum(data.id, curriculum);
+      if (!syncRes.success) {
+        console.error("Curriculum sync warning:", syncRes.error);
+      }
     }
 
     return NextResponse.json({ success: true, data });

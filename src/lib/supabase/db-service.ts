@@ -343,26 +343,33 @@ export const dbService = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(courseData),
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data) return json.data;
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success && json?.data) {
+        return json.data;
       }
-    } catch {
-      // fallback
+      if (json?.error) {
+        throw new Error(json.error);
+      }
+    } catch (apiErr) {
+      console.warn("API createCourse error:", apiErr);
+      if (apiErr instanceof Error && !apiErr.message.includes("fetch")) {
+        throw apiErr;
+      }
     }
 
     try {
+      const { curriculum, instructor_ids, ...directPayload } = courseData as any;
       const { data, error } = await supabase
         .from("courses")
-        .insert([courseData])
+        .insert([directPayload])
         .select()
         .single();
 
       if (error) throw error;
       return data;
     } catch (e) {
-      console.error("Error creating course in Supabase:", e);
-      return null;
+      console.error("Error creating course in Supabase fallback:", e);
+      throw e;
     }
   },
 
@@ -373,25 +380,32 @@ export const dbService = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, ...updates }),
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success) return true;
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        return true;
       }
-    } catch {
-      // fallback
+      if (json?.error) {
+        throw new Error(json.error);
+      }
+    } catch (apiErr) {
+      console.warn("API updateCourse error:", apiErr);
+      if (apiErr instanceof Error && !apiErr.message.includes("fetch")) {
+        throw apiErr;
+      }
     }
 
     try {
+      const { curriculum, instructor_ids, ...directPayload } = updates as any;
       const { error } = await supabase
         .from("courses")
-        .update(updates)
+        .update(directPayload)
         .eq("id", id);
 
       if (error) throw error;
       return true;
     } catch (e) {
-      console.error("Error updating course in Supabase:", e);
-      return false;
+      console.error("Error updating course in Supabase fallback:", e);
+      throw e;
     }
   },
 
