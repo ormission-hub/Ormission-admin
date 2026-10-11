@@ -217,6 +217,27 @@ export default function AdminNoticesPage() {
     await saveNoticesToDb(updated);
   };
 
+  const handleDeletePushHistory = async (id: string) => {
+    if (!confirm("আপনি কি নিশ্চিত এই পুশ নোটিফিকেশন হিস্ট্রি মুছে ফেলতে চান?")) return;
+    const updated = pushHistory.filter((item) => item.id !== id);
+    setPushHistory(updated);
+    try {
+      await dbService.updateSiteSetting("ormission_notifications_history", updated);
+    } catch (e) {
+      console.error("Error deleting push history:", e);
+    }
+  };
+
+  const handleClearAllPushHistory = async () => {
+    if (!confirm("আপনি কি নিশ্চিত সকল পুশ নোটিফিকেশন হিস্ট্রি মুছে ফেলতে চান?")) return;
+    setPushHistory([]);
+    try {
+      await dbService.updateSiteSetting("ormission_notifications_history", []);
+    } catch (e) {
+      console.error("Error clearing push history:", e);
+    }
+  };
+
   const handleToggleNoticeStatus = async (id: string) => {
     const updated = notices.map((n) =>
       n.id === id ? { ...n, isActive: !n.isActive } : n
@@ -932,29 +953,50 @@ export default function AdminNoticesPage() {
 
             {/* Recent Push History */}
             <div className="p-4 rounded-2xl border border-border bg-surface dark:bg-slate-900 space-y-2.5">
-              <h4 className="text-xs font-bold text-text font-bengali flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-primary" />
-                <span>সাম্প্রতিক পুশ হিস্ট্রি ({pushHistory.length})</span>
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-bold text-text font-bengali flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-primary" />
+                  <span>সাম্প্রতিক পুশ হিস্ট্রি ({pushHistory.length})</span>
+                </h4>
+                {pushHistory.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearAllPushHistory}
+                    className="text-[10px] text-rose-500 hover:text-rose-600 font-bengali font-bold hover:underline cursor-pointer"
+                  >
+                    সব মুছুন
+                  </button>
+                )}
+              </div>
 
               {pushHistory.length === 0 ? (
                 <p className="text-[11px] text-text-muted font-bengali">
                   এখনও কোনো পুশ নোটিফিকেশন পাঠানো হয়নি।
                 </p>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
-                  {pushHistory.slice(0, 5).map((item) => (
+                <div className="space-y-2 max-h-56 overflow-y-auto no-scrollbar">
+                  {pushHistory.map((item) => (
                     <div
                       key={item.id}
-                      className="p-2.5 rounded-xl border border-border/60 bg-surface-secondary/40 text-[11px] font-bengali space-y-1"
+                      className="p-2.5 rounded-xl border border-border/60 bg-surface-secondary/40 text-[11px] font-bengali space-y-1 group transition-colors hover:border-border"
                     >
                       <div className="flex items-center justify-between font-bold text-text">
-                        <span className="truncate">{item.title}</span>
-                        <span className="text-[9.5px] text-text-muted shrink-0 font-sans">
-                          {new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <span className="truncate pr-2">{item.title}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-[9.5px] text-text-muted font-sans">
+                            {new Date(item.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePushHistory(item.id)}
+                            className="text-text-muted hover:text-rose-500 p-0.5 rounded transition-colors cursor-pointer"
+                            title="মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <p className="text-text-muted truncate">{item.message}</p>
+                      <p className="text-text-muted line-clamp-2">{item.message}</p>
                     </div>
                   ))}
                 </div>
