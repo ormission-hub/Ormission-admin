@@ -43,10 +43,19 @@ export async function POST(request: Request) {
         included_segments: ["Total Subscriptions"],
         headings: { en: title, bn: title },
         contents: { en: message, bn: message },
-        url: targetUrl,
+        app_url: targetUrl,
+        web_url: targetUrl,
         data: {
           target_url: targetUrl,
         },
+        large_icon: "ic_app_logo",
+        small_icon: "ic_stat_onesignal_default",
+        android_accent_color: "FF012C94",
+        priority: 10,
+        android_channel_id: "ormission_updates_channel",
+        android_sound: "default",
+        android_visibility: 1,
+        chrome_web_icon: "https://www.ormission.com/images/brand-logo-v2.png",
       };
 
       if (imageUrl && imageUrl.trim().length > 0) {
