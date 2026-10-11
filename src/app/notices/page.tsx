@@ -32,13 +32,16 @@ export interface NoticeItem {
   content: string;
   contentBn?: string;
   type: "emergency" | "offer" | "exam" | "general";
-  showTopBanner: boolean;
-  showNoticeBoard: boolean;
+  displayType?: "popup" | "top_bar" | "bottom_bar";
+  targetPage?: string;
+  imageUrl?: string;
   actionText?: string;
   actionUrl?: string;
   isActive: boolean;
   pinned: boolean;
   createdAt: string;
+  showTopBanner?: boolean;
+  showNoticeBoard?: boolean;
 }
 
 export interface PushRecord {
@@ -65,13 +68,16 @@ export default function AdminNoticesPage() {
     titleBn: "",
     content: "",
     contentBn: "",
-    type: "general",
-    showTopBanner: true,
-    showNoticeBoard: true,
+    type: "offer",
+    displayType: "popup",
+    targetPage: "*",
+    imageUrl: "",
     actionText: "বিস্তারিত দেখুন",
     actionUrl: "/courses",
     isActive: true,
     pinned: false,
+    showTopBanner: false,
+    showNoticeBoard: false,
   });
 
   // Push Sender State
@@ -121,8 +127,11 @@ export default function AdminNoticesPage() {
             content: "সকল একাডেমিক ও ভর্তি কোর্সে সীমিত সময়ের জন্য বিশেষ ছাড় চলছে। এখনই এনরোল করুন।",
             contentBn: "সকল একাডেমিক ও ভর্তি কোর্সে সীমিত সময়ের জন্য বিশেষ ছাড় চলছে। এখনই এনরোল করুন।",
             type: "offer",
-            showTopBanner: true,
-            showNoticeBoard: true,
+            displayType: "popup",
+            targetPage: "*",
+            imageUrl: "",
+            showTopBanner: false,
+            showNoticeBoard: false,
             actionText: "কোর্সগুলো দেখুন",
             actionUrl: "/courses",
             isActive: true,
@@ -171,6 +180,9 @@ export default function AdminNoticesPage() {
           ? {
               ...n,
               ...noticeForm,
+              displayType: noticeForm.displayType || "popup",
+              targetPage: noticeForm.targetPage?.trim() || "*",
+              imageUrl: noticeForm.imageUrl?.trim() || "",
               titleBn: noticeForm.titleBn || noticeForm.title,
               contentBn: noticeForm.contentBn || noticeForm.content,
             }
@@ -180,6 +192,9 @@ export default function AdminNoticesPage() {
       const newNotice: NoticeItem = {
         ...noticeForm,
         id: `notice-${Date.now()}`,
+        displayType: noticeForm.displayType || "popup",
+        targetPage: noticeForm.targetPage?.trim() || "*",
+        imageUrl: noticeForm.imageUrl?.trim() || "",
         titleBn: noticeForm.titleBn || noticeForm.title,
         contentBn: noticeForm.contentBn || noticeForm.content,
         createdAt: new Date().toISOString(),
@@ -200,8 +215,11 @@ export default function AdminNoticesPage() {
       content: notice.content,
       contentBn: notice.contentBn || notice.content,
       type: notice.type,
-      showTopBanner: notice.showTopBanner,
-      showNoticeBoard: notice.showNoticeBoard,
+      displayType: notice.displayType || (notice.showTopBanner ? "top_bar" : "popup"),
+      targetPage: notice.targetPage || "*",
+      imageUrl: notice.imageUrl || "",
+      showTopBanner: !!notice.showTopBanner,
+      showNoticeBoard: !!notice.showNoticeBoard,
       actionText: notice.actionText || "",
       actionUrl: notice.actionUrl || "",
       isActive: notice.isActive,
@@ -251,9 +269,12 @@ export default function AdminNoticesPage() {
       titleBn: "",
       content: "",
       contentBn: "",
-      type: "general",
-      showTopBanner: true,
-      showNoticeBoard: true,
+      type: "offer",
+      displayType: "popup",
+      targetPage: "*",
+      imageUrl: "",
+      showTopBanner: false,
+      showNoticeBoard: false,
       actionText: "বিস্তারিত দেখুন",
       actionUrl: "/courses",
       isActive: true,
@@ -307,8 +328,11 @@ export default function AdminNoticesPage() {
           content: pushForm.message,
           contentBn: pushForm.message,
           type: pushForm.noticeType,
-          showTopBanner: true,
-          showNoticeBoard: true,
+          displayType: "popup",
+          targetPage: "*",
+          imageUrl: pushForm.imageUrl || "",
+          showTopBanner: false,
+          showNoticeBoard: false,
           actionText: "বিস্তারিত দেখুন",
           actionUrl: pushForm.targetUrl,
           isActive: true,
@@ -435,7 +459,7 @@ export default function AdminNoticesPage() {
                 ওয়েবসাইট ও অ্যাপের নোটিশ তালিকা
               </h2>
               <p className="text-xs text-text-muted font-bengali">
-                টপ অ্যানাউন্সমেন্ট বার, নোটিশ বোর্ড পেজ (`/notices`) এবং ড্রপডাউন বেল মেনুতে প্রদর্শনযোগ্য
+                পপআপ নোটিশ (Modal Popup), টপ ব্যানার (Top Bar) কিংবা বটম ফ্লোটিং বার (Bottom Bar) এবং পেজ-টার্গেটেড নোটিশ পরিচালনা করুন
               </p>
             </div>
             <button
@@ -503,6 +527,76 @@ export default function AdminNoticesPage() {
                   </div>
                 </div>
 
+                {/* Display Type & Target Page & Image URL */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text font-bengali">
+                      ডিসপ্লে ধরন (Display Format) *
+                    </label>
+                    <select
+                      value={noticeForm.displayType || "popup"}
+                      onChange={(e) =>
+                        setNoticeForm({ ...noticeForm, displayType: e.target.value as any })
+                      }
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm font-bengali focus:outline-hidden focus:border-primary"
+                    >
+                      <option value="popup">🌟 পপআপ মডাল (Popup Modal)</option>
+                      <option value="top_bar">📌 টপ ব্যানার (Top Announcement Bar)</option>
+                      <option value="bottom_bar">📢 বটম বার (Bottom Floating Bar)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text font-bengali">
+                      টার্গেট পেজ (Target Page) *
+                    </label>
+                    <select
+                      value={
+                        ["*", "/", "/courses", "/checkout", "/dashboard"].includes(noticeForm.targetPage || "*")
+                          ? (noticeForm.targetPage || "*")
+                          : "custom"
+                      }
+                      onChange={(e) => {
+                        if (e.target.value === "custom") {
+                          setNoticeForm({ ...noticeForm, targetPage: "" });
+                        } else {
+                          setNoticeForm({ ...noticeForm, targetPage: e.target.value });
+                        }
+                      }}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm font-bengali focus:outline-hidden focus:border-primary"
+                    >
+                      <option value="*">সকল পেজে (All Pages - *)</option>
+                      <option value="/">শুধুমাত্র হোমপেজে (Homepage - /)</option>
+                      <option value="/courses">কোর্স পেজে (/courses)</option>
+                      <option value="/checkout">চেকআউট পেজে (/checkout)</option>
+                      <option value="/dashboard">ড্যাশবোর্ডে (/dashboard)</option>
+                      <option value="custom">নির্দিষ্ট কাস্টম URL পাথ...</option>
+                    </select>
+                    {!["*", "/", "/courses", "/checkout", "/dashboard"].includes(noticeForm.targetPage || "*") && (
+                      <input
+                        type="text"
+                        placeholder="যেমন: /course/hsc-25"
+                        value={noticeForm.targetPage || ""}
+                        onChange={(e) => setNoticeForm({ ...noticeForm, targetPage: e.target.value })}
+                        className="w-full mt-1.5 px-3 py-1.5 rounded-xl border border-border bg-surface text-xs font-mono focus:outline-hidden focus:border-primary"
+                      />
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-text font-bengali">
+                      ব্যানার বা ছবির URL (ঐচ্ছিক)
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://.../banner.png"
+                      value={noticeForm.imageUrl || ""}
+                      onChange={(e) => setNoticeForm({ ...noticeForm, imageUrl: e.target.value })}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-secondary text-sm font-bengali focus:outline-hidden focus:border-primary"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-text font-bengali">
                     বিস্তারিত বিবরণ (Description)
@@ -546,30 +640,6 @@ export default function AdminNoticesPage() {
 
                 {/* Placement Options */}
                 <div className="p-3.5 rounded-xl bg-surface-secondary/50 border border-border/60 flex flex-wrap gap-5 text-xs font-bengali">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={noticeForm.showTopBanner}
-                      onChange={(e) =>
-                        setNoticeForm({ ...noticeForm, showTopBanner: e.target.checked })
-                      }
-                      className="rounded accent-primary"
-                    />
-                    <span>ওয়েবসাইটের টপ অ্যানাউন্সমেন্ট বারে দেখান</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={noticeForm.showNoticeBoard}
-                      onChange={(e) =>
-                        setNoticeForm({ ...noticeForm, showNoticeBoard: e.target.checked })
-                      }
-                      className="rounded accent-primary"
-                    />
-                    <span>নোটিশ বোর্ড পেজে (`/notices`) দেখান</span>
-                  </label>
-
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -646,15 +716,30 @@ export default function AdminNoticesPage() {
                     <div className="space-y-1.5 min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         {getTypeBadge(notice.type)}
+                        {/* Display Type Badge */}
+                        {notice.displayType === "top_bar" || (!notice.displayType && notice.showTopBanner) ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-500/15 text-violet-500 border border-violet-500/20">
+                            📌 টপ ব্যানার
+                          </span>
+                        ) : notice.displayType === "bottom_bar" ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-500/15 text-sky-500 border border-sky-500/20">
+                            📢 বটম বার
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-500 border border-amber-500/20">
+                            🌟 পপআপ নোটিশ
+                          </span>
+                        )}
+
+                        {/* Target Page Badge */}
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-text-muted border border-border">
+                          🎯 পেজ: {!notice.targetPage || notice.targetPage === "*" ? "সকল পেজ" : notice.targetPage}
+                        </span>
+
                         {notice.pinned && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary flex items-center gap-1">
                             <Pin className="w-3 h-3 fill-current" />
                             <span>Pinned</span>
-                          </span>
-                        )}
-                        {notice.showTopBanner && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-violet-500/15 text-violet-500">
-                            টপ ব্যানার
                           </span>
                         )}
                         <span className="text-[11px] text-text-muted flex items-center gap-1">
@@ -665,15 +750,27 @@ export default function AdminNoticesPage() {
                         </span>
                       </div>
 
-                      <h3 className="text-sm sm:text-base font-bold text-text font-bengali">
-                        {notice.title}
-                      </h3>
+                      <div className="flex items-start gap-3">
+                        {notice.imageUrl && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={notice.imageUrl}
+                            alt=""
+                            className="w-12 h-12 rounded-xl object-cover border border-border shrink-0 mt-0.5"
+                          />
+                        )}
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <h3 className="text-sm sm:text-base font-bold text-text font-bengali">
+                            {notice.title}
+                          </h3>
 
-                      {notice.content && (
-                        <p className="text-xs text-text-muted font-bengali line-clamp-2">
-                          {notice.content}
-                        </p>
-                      )}
+                          {notice.content && (
+                            <p className="text-xs text-text-muted font-bengali line-clamp-2">
+                              {notice.content}
+                            </p>
+                          )}
+                        </div>
+                      </div>
 
                       {notice.actionUrl && (
                         <div className="pt-1">
