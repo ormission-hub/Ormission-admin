@@ -621,22 +621,56 @@ export default function EditCourseStudioPage({
   };
 
   // --- Streaming Server Management ---
-  const addServer = (secId: string | number, lesId: string | number) => {
-    setSections(
-      sections.map((sec) => {
-        if (sec.id !== secId) return sec;
+  const toggleShowServers = (secId: string | number, lesId: string | number) => {
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (String(sec.id) !== String(secId)) return sec;
         return {
           ...sec,
-          lessons: sec.lessons.map((les) => {
-            if (les.id !== lesId) return les;
-            const newOrder = les.servers.length + 1;
+          lessons: (sec.lessons || []).map((les) => {
+            if (String(les.id) !== String(lesId)) return les;
+            const nextShow = !les.showServers;
+            let currentServers = Array.isArray(les.servers) ? les.servers : [];
+            if (nextShow && currentServers.length === 0) {
+              currentServers = [
+                {
+                  id: `srv-${Date.now()}`,
+                  serverName: "Server 1",
+                  serverType: "youtube",
+                  videoUrl: les.videoUrl || "",
+                  isEnabled: true,
+                  sortOrder: 1,
+                },
+              ];
+            }
+            return {
+              ...les,
+              showServers: nextShow,
+              servers: currentServers,
+            };
+          }),
+        };
+      })
+    );
+  };
+
+  const addServer = (secId: string | number, lesId: string | number) => {
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (String(sec.id) !== String(secId)) return sec;
+        return {
+          ...sec,
+          lessons: (sec.lessons || []).map((les) => {
+            if (String(les.id) !== String(lesId)) return les;
+            const currentServers = Array.isArray(les.servers) ? les.servers : [];
+            const newOrder = currentServers.length + 1;
             return {
               ...les,
               showServers: true,
               servers: [
-                ...les.servers,
+                ...currentServers,
                 {
-                  id: `srv-${Date.now()}`,
+                  id: `srv-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
                   serverName: `Server ${newOrder}`,
                   serverType: "youtube" as const,
                   videoUrl: "",
@@ -652,16 +686,16 @@ export default function EditCourseStudioPage({
   };
 
   const removeServer = (secId: string | number, lesId: string | number, srvId: string | number) => {
-    setSections(
-      sections.map((sec) => {
-        if (sec.id !== secId) return sec;
+    setSections((prev) =>
+      prev.map((sec) => {
+        if (String(sec.id) !== String(secId)) return sec;
         return {
           ...sec,
-          lessons: sec.lessons.map((les) => {
-            if (les.id !== lesId) return les;
+          lessons: (sec.lessons || []).map((les) => {
+            if (String(les.id) !== String(lesId)) return les;
             return {
               ...les,
-              servers: les.servers.filter((s) => s.id !== srvId),
+              servers: (les.servers || []).filter((s) => String(s.id) !== String(srvId)),
             };
           }),
         };
@@ -1346,8 +1380,8 @@ export default function EditCourseStudioPage({
                               </div>
                             </div>
 
-                            {/* Row 2: Video URL Input + Play Preview */}
-                            <div className="flex items-center gap-2">
+                            {/* Row 2: Video URL Input + Play Preview + Server Toggle */}
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                               <div className="relative flex-1">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-text-muted">
                                   <Video className="w-3.5 h-3.5" />
@@ -1358,25 +1392,164 @@ export default function EditCourseStudioPage({
                                   onChange={(e) => updateLessonField(section.id, lesson.id, "videoUrl", e.target.value)}
                                   placeholder="ভিডিও Embed / YouTube URL (যেমন: https://www.youtube.com/watch?v=...)"
                                   style={{ paddingLeft: "2.5rem" }}
-                                  className="input text-xs font-mono h-8 w-full rounded-lg bg-surface-secondary/40"
+                                  className="input text-xs font-mono h-9 sm:h-8 w-full rounded-xl sm:rounded-lg bg-surface-secondary/40"
                                 />
                               </div>
 
-                              {lesson.videoUrl && (
+                              <div className="flex items-center gap-2 shrink-0 justify-end">
+                                {lesson.videoUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPreviewVideoUrl(lesson.videoUrl);
+                                      setPreviewServerName(lesson.titleBn || "ভিডিও প্রিভিউ");
+                                    }}
+                                    className="h-8 px-2.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold flex items-center gap-1 transition-colors shrink-0 cursor-pointer"
+                                    title="ভিডিও প্লেয়ার টেস্ট করুন"
+                                  >
+                                    <Play className="w-3 h-3" />
+                                    <span>প্লে টেস্ট</span>
+                                  </button>
+                                )}
+
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setPreviewVideoUrl(lesson.videoUrl);
-                                    setPreviewServerName(lesson.titleBn || "ভিডিও প্রিভিউ");
-                                  }}
-                                  className="h-8 px-2.5 rounded-lg border border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold flex items-center gap-1 transition-colors shrink-0 cursor-pointer"
-                                  title="ভিডিও প্লেয়ার টেস্ট করুন"
+                                  onClick={() => toggleShowServers(section.id, lesson.id)}
+                                  className={`h-8 px-2.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all shrink-0 cursor-pointer ${
+                                    lesson.showServers || (lesson.servers && lesson.servers.length > 1)
+                                      ? "bg-purple-500/15 text-purple-400 border-purple-500/30 shadow-2xs"
+                                      : "bg-surface-secondary/60 border-border text-text-muted hover:text-text hover:border-purple-500/30"
+                                  }`}
+                                  title="একাধিক ভিডিও স্ট্রিমিং সার্ভার (YouTube, Streamtape, Abyss, HLS ইত্যাদি) কনফিগার করুন"
                                 >
-                                  <Play className="w-3 h-3" />
-                                  <span>প্লে টেস্ট</span>
+                                  <Server className="w-3 h-3 text-purple-400" />
+                                  <span>সার্ভার ({lesson.servers?.length || 0})</span>
                                 </button>
-                              )}
+                              </div>
                             </div>
+
+                            {/* Expandable Multi-Server Streaming Panel */}
+                            {(lesson.showServers || (lesson.servers && lesson.servers.length > 1)) && (
+                              <div className="p-3 sm:p-3.5 rounded-xl border border-purple-500/25 bg-purple-500/5 space-y-3">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-purple-500/15 pb-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <Server className="w-3.5 h-3.5 text-purple-400" />
+                                    <span className="text-xs font-bold text-text">ভিডিও সার্ভারসমূহ ({lesson.servers?.length || 0})</span>
+                                    <span className="text-[10px] text-text-muted">(স্টুডেন্টরা প্লেয়ারে সার্ভার পরিবর্তন করতে পারবে)</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => addServer(section.id, lesson.id)}
+                                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-500/15 text-purple-400 border border-purple-500/30 hover:bg-purple-500/25 transition-colors flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+                                  >
+                                    <Plus className="w-3 h-3" />
+                                    <span>+ নতুন সার্ভার</span>
+                                  </button>
+                                </div>
+
+                                {(!lesson.servers || lesson.servers.length === 0) ? (
+                                  <div className="text-center py-3 text-xs text-text-muted">
+                                    কোনো অতিরিক্ত সার্ভার যোগ করা হয়নি। &quot;+ নতুন সার্ভার&quot; বাটনে ক্লিক করুন।
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2.5">
+                                    {lesson.servers.map((srv, srvIdx) => (
+                                      <div
+                                        key={srv.id}
+                                        className={`p-2.5 sm:p-3 rounded-xl border transition-all flex flex-col md:flex-row md:items-center gap-2.5 ${
+                                          srv.isEnabled
+                                            ? "border-purple-500/25 bg-surface/90 shadow-2xs"
+                                            : "border-border bg-surface-secondary/40 opacity-60"
+                                        }`}
+                                      >
+                                        {/* Left: Server Order Badge + Server Name + Type Select */}
+                                        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+                                          <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 font-bold text-xs flex items-center justify-center shrink-0 font-mono">
+                                            #{srvIdx + 1}
+                                          </span>
+
+                                          <input
+                                            type="text"
+                                            value={srv.serverName}
+                                            onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverName", e.target.value)}
+                                            placeholder={`Server ${srvIdx + 1}...`}
+                                            className="input text-xs h-8 px-2.5 w-32 sm:w-36 font-semibold rounded-lg bg-surface"
+                                          />
+
+                                          <select
+                                            value={srv.serverType}
+                                            onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "serverType", e.target.value)}
+                                            className="h-8 px-2 text-xs rounded-lg border border-border bg-surface text-text cursor-pointer shrink-0"
+                                          >
+                                            <option value="youtube">YouTube</option>
+                                            <option value="streamtape">Streamtape</option>
+                                            <option value="abyss">Abyss Player (AdBlocked)</option>
+                                            <option value="hls">HLS Stream (.m3u8)</option>
+                                            <option value="embed">Embed (iframe)</option>
+                                            <option value="direct">Direct URL</option>
+                                          </select>
+                                        </div>
+
+                                        {/* Middle: Video URL Input */}
+                                        <div className="relative flex-1 min-w-0">
+                                          <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-text-muted">
+                                            <Globe className="w-3.5 h-3.5" />
+                                          </div>
+                                          <input
+                                            type="text"
+                                            value={srv.videoUrl}
+                                            onChange={(e) => updateServerField(section.id, lesson.id, srv.id, "videoUrl", e.target.value)}
+                                            placeholder="সার্ভার ভিডিও URL / Embed লিংক..."
+                                            style={{ paddingLeft: "2.2rem" }}
+                                            className="input text-xs font-mono h-8 w-full rounded-lg bg-surface"
+                                          />
+                                        </div>
+
+                                        {/* Right: Actions: Test Play, Toggle Active, Delete */}
+                                        <div className="flex items-center gap-1.5 justify-end shrink-0 self-end md:self-center">
+                                          {srv.videoUrl && (
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setPreviewVideoUrl(srv.videoUrl);
+                                                setPreviewServerName(srv.serverName || `Server ${srvIdx + 1}`);
+                                              }}
+                                              className="h-8 px-2.5 rounded-lg border border-purple-500/30 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                                              title="এই সার্ভার টেস্ট করুন"
+                                            >
+                                              <Play className="w-3 h-3" />
+                                              <span>টেস্ট</span>
+                                            </button>
+                                          )}
+
+                                          <button
+                                            type="button"
+                                            onClick={() => updateServerField(section.id, lesson.id, srv.id, "isEnabled", !srv.isEnabled)}
+                                            className={`p-1.5 rounded-lg border transition-colors cursor-pointer shrink-0 ${
+                                              srv.isEnabled
+                                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                                                : "border-border bg-surface text-text-muted hover:text-text"
+                                            }`}
+                                            title={srv.isEnabled ? "সচল (ক্লিক করে বন্ধ করুন)" : "বন্ধ (ক্লিক করে চালু করুন)"}
+                                          >
+                                            {srv.isEnabled ? <ToggleRight className="w-4 h-4 text-emerald-400" /> : <ToggleLeft className="w-4 h-4" />}
+                                          </button>
+
+                                          <button
+                                            type="button"
+                                            onClick={() => removeServer(section.id, lesson.id, srv.id)}
+                                            className="p-1.5 rounded-lg border border-border bg-surface text-text-muted hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/10 cursor-pointer transition-colors shrink-0"
+                                            title="সার্ভারটি মুছুন"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
 
                             {/* Row 3: Study Materials & Lecture Sheets */}
                             <LessonMaterialsManager
