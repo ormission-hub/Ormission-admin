@@ -89,12 +89,14 @@ export default function AdminTestimonialsPage() {
 
     const imgUrl = isImg
       ? (rawReview.startsWith("[IMAGE]:")
-          ? rawReview.replace("[IMAGE]:", "").split("||")[0].trim()
-          : rawReview.split("||")[0].trim())
+          ? rawReview.replace("[IMAGE]:", "").split("||")[0].split("|")[0].trim()
+          : rawReview.split("||")[0].split("|")[0].trim())
       : "";
 
     const textVal = rawReview.includes("||")
       ? rawReview.split("||")[1].trim()
+      : rawReview.includes("|") && isImg
+      ? rawReview.substring(rawReview.indexOf("|") + 1).trim()
       : (!isImg ? rawReview : "");
 
     setForm({
@@ -221,7 +223,7 @@ export default function AdminTestimonialsPage() {
         return;
       }
       finalReview = form.review.trim()
-        ? `[IMAGE]:${form.review_image.trim()}|${form.review.trim()}`
+        ? `[IMAGE]:${form.review_image.trim()}||${form.review.trim()}`
         : `[IMAGE]:${form.review_image.trim()}`;
     } else {
       if (!form.review.trim()) {
@@ -261,7 +263,7 @@ export default function AdminTestimonialsPage() {
           batch: form.batch.trim(),
           course_name: form.course_name.trim() || "অনলাইন এডমিশন প্রস্তুতি",
           rating: Number(form.rating) || 5,
-          review: form.review.trim(),
+          review: finalReview,
           student_photo: form.student_photo.trim() || null,
           display_order: Number(form.display_order) || list.length + 1,
           is_published: form.is_published,
@@ -446,11 +448,15 @@ export default function AdminTestimonialsPage() {
 
                   const imgUrl = isImg
                     ? (rawReview.startsWith("[IMAGE]:")
-                        ? rawReview.replace("[IMAGE]:", "").split("||")[0].trim()
-                        : rawReview.split("||")[0].trim())
+                        ? rawReview.replace("[IMAGE]:", "").split("||")[0].split("|")[0].trim()
+                        : rawReview.split("||")[0].split("|")[0].trim())
                     : "";
 
-                  const caption = rawReview.includes("||") ? rawReview.split("||")[1].trim() : "";
+                  const caption = rawReview.includes("||")
+                    ? rawReview.split("||")[1].trim()
+                    : rawReview.includes("|") && isImg
+                    ? rawReview.substring(rawReview.indexOf("|") + 1).trim()
+                    : "";
 
                   if (isImg && imgUrl) {
                     return (

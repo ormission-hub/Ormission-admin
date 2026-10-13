@@ -851,6 +851,18 @@ export const dbService = {
   // ---- TESTIMONIALS ----
   async getTestimonials(): Promise<DbTestimonial[]> {
     try {
+      const res = await fetch("/api/testimonials", { cache: "no-store" });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          return json.data;
+        }
+      }
+    } catch {
+      // fallback to direct client below
+    }
+
+    try {
       const { data, error } = await supabase
         .from("testimonials")
         .select("*")
@@ -865,21 +877,30 @@ export const dbService = {
   },
 
   async toggleTestimonialApproval(id: number | string, currentApproved: boolean): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from("testimonials")
-        .update({ is_published: !currentApproved })
-        .eq("id", id);
-
-      if (error) throw error;
-      return true;
-    } catch (e) {
-      console.error("Error toggling testimonial approval:", e);
-      return false;
-    }
+    return this.updateTestimonial(id, { is_published: !currentApproved });
   },
 
   async createTestimonial(data: Partial<DbTestimonial>): Promise<DbTestimonial | null> {
+    try {
+      const res = await fetch("/api/testimonials", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success && json?.data) {
+        return json.data;
+      }
+      if (json?.error) {
+        throw new Error(json.error);
+      }
+    } catch (apiErr) {
+      console.warn("API createTestimonial error:", apiErr);
+      if (apiErr instanceof Error && !apiErr.message.includes("fetch")) {
+        throw apiErr;
+      }
+    }
+
     try {
       const { data: created, error } = await supabase
         .from("testimonials")
@@ -890,12 +911,32 @@ export const dbService = {
       if (error) throw error;
       return created;
     } catch (e) {
-      console.error("Error creating testimonial in Supabase:", e);
-      return null;
+      console.error("Error creating testimonial in Supabase fallback:", e);
+      throw e;
     }
   },
 
   async updateTestimonial(id: number | string, updates: Partial<DbTestimonial>): Promise<boolean> {
+    try {
+      const res = await fetch("/api/testimonials", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...updates }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        return true;
+      }
+      if (json?.error) {
+        throw new Error(json.error);
+      }
+    } catch (apiErr) {
+      console.warn("API updateTestimonial error:", apiErr);
+      if (apiErr instanceof Error && !apiErr.message.includes("fetch")) {
+        throw apiErr;
+      }
+    }
+
     try {
       const { error } = await supabase
         .from("testimonials")
@@ -905,8 +946,8 @@ export const dbService = {
       if (error) throw error;
       return true;
     } catch (e) {
-      console.error("Error updating testimonial in Supabase:", e);
-      return false;
+      console.error("Error updating testimonial in Supabase fallback:", e);
+      throw e;
     }
   },
 
