@@ -22,6 +22,8 @@ import {
   Clock,
   ExternalLink,
   X,
+  Edit2,
+  Trash2,
 } from "lucide-react";
 import { dbService, type DbStudent } from "@/lib/supabase/db-service";
 
@@ -33,6 +35,17 @@ export default function AdminStudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<DbStudent | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // Edit Student Modal state
+  const [editingStudent, setEditingStudent] = useState<DbStudent | null>(null);
+  const [editForm, setEditForm] = useState({
+    full_name: "",
+    phone: "",
+    address: "",
+    academic_level: "",
+    is_active: true,
+  });
+  const [submittingEdit, setSubmittingEdit] = useState(false);
 
   const loadStudents = async () => {
     setLoading(true);
@@ -78,6 +91,126 @@ export default function AdminStudentsPage() {
       } finally {
         setActionLoading(null);
       }
+    }
+  };
+
+  const handleOpenEdit = (std: DbStudent) => {
+    setEditingStudent(std);
+    setEditForm({
+      full_name: std.full_name || "",
+      phone: std.phone || "",
+      address: std.address || "",
+      academic_level: std.academic_level || "",
+      is_active: std.is_active ?? true,
+    });
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStudent) return;
+    if (!editForm.full_name.trim()) {
+      alert("শিক্ষার্থীর নাম অবশ্যই লিখুন।");
+      return;
+    }
+    setSubmittingEdit(true);
+    try {
+      const ok = await dbService.updateStudent(editingStudent.id, editForm);
+      if (ok) {
+        alert("শিক্ষার্থীর তথ্য সফলভাবে আপডেট করা হয়েছে!");
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.id === editingStudent.id
+              ? {
+                  ...s,
+                  full_name: editForm.full_name.trim(),
+                  phone: editForm.phone.trim(),
+                  address: editForm.address.trim(),
+                  academic_level: editForm.academic_level.trim(),
+                  is_active: editForm.is_active,
+                }
+              : s
+          )
+        );
+        if (selectedStudent && selectedStudent.id === editingStudent.id) {
+          setSelectedStudent((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  full_name: editForm.full_name.trim(),
+                  phone: editForm.phone.trim(),
+                  address: editForm.address.trim(),
+                  academic_level: editForm.academic_level.trim(),
+                  is_active: editForm.is_active,
+                }
+              : null
+          );
+        }
+        setEditingStudent(null);
+      } else {
+        alert("তথ্য আপডেট করতে সমস্যা হয়েছে।");
+      }
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
+
+  const handleDeleteStudent = async (id: string, name: string) => {
+    if (
+      !confirm(
+        `আপনি কি নিশ্চিত যে '${name}'-এর শিক্ষার্থী অ্যাকাউন্ট এবং সম্পর্কিত সকল এনরোলমেন্ট মুছে ফেলতে চান?\n\nসতর্কতা: মুছে ফেললে এই অ্যাকাউন্ট ও ভর্তি রিপোর্ট থেকে তা স্থায়ীভাবে চলে যাবে!`
+      )
+    ) {
+      return;
+    }
+
+    setActionLoading(id);
+    try {
+      const ok = await dbService.deleteStudent(id);
+      if (ok) {
+        setStudents((prev) => prev.filter((s) => s.id !== id));
+        if (selectedStudent && selectedStudent.id === id) {
+          setSelectedStudent(null);
+        }
+        alert(`'${name}'-এর অ্যাকাউন্ট সফলভাবে মুছে ফেলা হয়েছে।`);
+      } else {
+        alert("অ্যাকাউন্ট মুছে ফেলতে সমস্যা হয়েছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।");
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteEnrollment = async (enrollmentId: string | number, courseName: string) => {
+    if (!confirm(`আপনি কি '${courseName}' কোর্সের এনরোলমেন্টটি মুছে ফেলতে চান?`)) {
+      return;
+    }
+    const ok = await dbService.deleteEnrollment(enrollmentId);
+    if (ok) {
+      alert("এনরোলমেন্ট সফলভাবে মুছে ফেলা হয়েছে।");
+      if (selectedStudent) {
+        setSelectedStudent((prev) =>
+          prev
+            ? {
+                ...prev,
+                enrollments: (prev.enrollments || []).filter((e: any) => e.id !== enrollmentId),
+                enrollments_count: Math.max(0, (prev.enrollments_count || 1) - 1),
+              }
+            : null
+        );
+        setStudents((prev) =>
+          prev.map((s) =>
+            s.id === selectedStudent.id
+              ? {
+                  ...s,
+                  enrollments: (s.enrollments || []).filter((e: any) => e.id !== enrollmentId),
+                  enrollments_count: Math.max(0, (s.enrollments_count || 1) - 1),
+                }
+              : s
+          )
+        );
+      }
+    } else {
+      alert("এনরোলমেন্ট মুছে ফেলতে সমস্যা হয়েছে।");
     }
   };
 
@@ -334,6 +467,25 @@ export default function AdminStudentsPage() {
 
                         <button
                           type="button"
+                          onClick={() => handleOpenEdit(std)}
+                          className="p-1.5 rounded-lg border border-border text-text-muted hover:text-primary hover:border-primary/50 transition-colors cursor-pointer"
+                          title="শিক্ষার্থীর তথ্য সম্পাদনা করুন"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={actionLoading === std.id}
+                          onClick={() => handleDeleteStudent(std.id, std.full_name)}
+                          className="p-1.5 rounded-lg border border-rose-500/20 text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="শিক্ষার্থী অ্যাকাউন্ট মুছে ফেলুন"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          type="button"
                           disabled={actionLoading === std.id}
                           onClick={() => toggleStatus(std.id, std.is_active, std.full_name)}
                           className={`btn btn-sm text-[11px] font-bold cursor-pointer transition-all ${
@@ -582,9 +734,19 @@ export default function AdminStudentsPage() {
                             {enr.enrolled_at ? new Date(enr.enrolled_at).toLocaleDateString("bn-BD") : "—"}
                           </div>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
-                          {enr.is_active !== false ? "অ্যাক্টিভ" : "মেয়াদোত্তীর্ণ"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shrink-0">
+                            {enr.is_active !== false ? "অ্যাক্টিভ" : "মেয়াদোত্তীর্ণ"}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEnrollment(enr.id, enr.courses?.title_bn || "কোর্স")}
+                            className="p-1 rounded text-text-muted hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                            title="এই কোর্সের এনরোলমেন্ট মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -653,28 +815,171 @@ export default function AdminStudentsPage() {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 sm:p-5 border-t border-border bg-surface-secondary/40 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                disabled={actionLoading === selectedStudent.id}
-                onClick={() => toggleStatus(selectedStudent.id, selectedStudent.is_active, selectedStudent.full_name)}
-                className={`btn btn-sm font-bold text-xs cursor-pointer ${
-                  selectedStudent.is_active
-                    ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
-                    : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
-                }`}
-              >
-                {selectedStudent.is_active ? "অ্যাকাউন্ট স্থগিত করুন" : "অ্যাকাউন্ট পুনরায় সক্রিয় করুন"}
-              </button>
+            <div className="p-4 sm:p-5 border-t border-border bg-surface-secondary/40 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleOpenEdit(selectedStudent)}
+                  className="btn btn-outline btn-sm font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer hover:border-primary hover:text-primary"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  <span>তথ্য এডিট করুন</span>
+                </button>
 
+                <button
+                  type="button"
+                  disabled={actionLoading === selectedStudent.id}
+                  onClick={() => handleDeleteStudent(selectedStudent.id, selectedStudent.full_name)}
+                  className="btn btn-sm font-bold text-xs bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 border border-rose-500/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>অ্যাকাউন্ট মুছে ফেলুন</span>
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  disabled={actionLoading === selectedStudent.id}
+                  onClick={() => toggleStatus(selectedStudent.id, selectedStudent.is_active, selectedStudent.full_name)}
+                  className={`btn btn-sm font-bold text-xs cursor-pointer ${
+                    selectedStudent.is_active
+                      ? "bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 border border-rose-500/20"
+                      : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20"
+                  }`}
+                >
+                  {selectedStudent.is_active ? "অ্যাকাউন্ট স্থগিত করুন" : "অ্যাকাউন্ট পুনরায় সক্রিয় করুন"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudent(null)}
+                  className="btn btn-outline btn-sm text-xs cursor-pointer"
+                >
+                  বন্ধ করুন
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* EDIT STUDENT MODAL                                            */}
+      {/* ============================================================ */}
+      {editingStudent && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150"
+          onClick={() => setEditingStudent(null)}
+        >
+          <div
+            className="bg-surface rounded-2xl border border-border shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 sm:p-5 border-b border-border bg-surface-secondary/40 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <Edit2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-text">শিক্ষার্থীর তথ্য সম্পাদনা</h3>
+                  <p className="text-[11px] text-text-muted">নাম, মোবাইল নম্বর, ঠিকানা ও অ্যাকাডেমিক বিবরণ পরিবর্তন করুন</p>
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => setSelectedStudent(null)}
-                className="btn btn-outline btn-sm text-xs cursor-pointer"
+                onClick={() => setEditingStudent(null)}
+                className="p-1.5 rounded-lg hover:bg-surface-secondary text-text-muted hover:text-text cursor-pointer"
               >
-                বন্ধ করুন
+                <X className="w-4 h-4" />
               </button>
             </div>
+
+            <form onSubmit={handleSaveEdit} className="p-4 sm:p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-xs font-bold text-text mb-1">শিক্ষার্থীর পূর্ণ নাম *</label>
+                <input
+                  type="text"
+                  required
+                  value={editForm.full_name}
+                  onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                  className="input w-full text-xs"
+                  placeholder="উদা: সাদমান ইসলাম"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-text mb-1">মোবাইল নম্বর</label>
+                  <input
+                    type="text"
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="input w-full text-xs font-sans"
+                    placeholder="017xxxxxxxx"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-text mb-1">অ্যাকাডেমিক স্তর / টার্গেট</label>
+                  <input
+                    type="text"
+                    value={editForm.academic_level}
+                    onChange={(e) => setEditForm({ ...editForm, academic_level: e.target.value })}
+                    className="input w-full text-xs"
+                    placeholder="উদা: HSC 2026 / ভর্তি পরীক্ষার্থী"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-text mb-1">ঠিকানা / জেলা</label>
+                <textarea
+                  rows={2}
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  className="input w-full text-xs py-2 resize-none"
+                  placeholder="উদা: ধানমন্ডি, ঢাকা"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="editIsActive"
+                  checked={editForm.is_active}
+                  onChange={(e) => setEditForm({ ...editForm, is_active: e.target.checked })}
+                  className="checkbox checkbox-primary w-4 h-4 rounded"
+                />
+                <label htmlFor="editIsActive" className="text-xs font-bold text-text cursor-pointer select-none">
+                  অ্যাকাউন্ট সক্রিয় রাখুন (Active)
+                </label>
+              </div>
+
+              <div className="pt-3 border-t border-border flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setEditingStudent(null)}
+                  className="btn btn-outline btn-sm text-xs cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingEdit}
+                  className="btn btn-primary btn-sm text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  {submittingEdit ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>সংরক্ষণ হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <span>পরিবর্তন সংরক্ষণ করুন</span>
+                  )}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

@@ -252,3 +252,38 @@ export async function GET() {
     return NextResponse.json({ success: false, error: msg }, { status: 500 });
   }
 }
+
+// DELETE: Cancel / remove a student enrollment
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    const userId = searchParams.get("userId");
+    const courseId = searchParams.get("courseId");
+
+    if (!id && (!userId || !courseId)) {
+      return NextResponse.json(
+        { success: false, error: "এনরোলমেন্ট আইডি প্রদান করা আবশ্যক।" },
+        { status: 400 }
+      );
+    }
+
+    let query = supabaseAdmin.from("enrollments").delete();
+    if (id) {
+      query = query.eq("id", id);
+    } else {
+      query = query.eq("user_id", userId!).eq("course_id", courseId!);
+    }
+
+    const { error } = await query;
+    if (error) {
+      console.error("Error deleting enrollment:", error);
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, message: "এনরোলমেন্ট সফলভাবে বাতিল বা মুছে ফেলা হয়েছে।" });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Internal Server Error";
+    return NextResponse.json({ success: false, error: msg }, { status: 500 });
+  }
+}

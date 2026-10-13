@@ -21,7 +21,9 @@ import {
   Mail,
   Calendar,
   CreditCard,
+  Trash2,
 } from "lucide-react";
+import { dbService } from "@/lib/supabase/db-service";
 import {
   CourseReportItem,
   EnrollmentSummaryData,
@@ -47,11 +49,54 @@ export default function CourseEnrollmentsReportPage() {
   const [rosterCourse, setRosterCourse] = useState<CourseReportItem | null>(null);
   const [rosterSearch, setRosterSearch] = useState("");
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null);
+  const [deletingEnrollmentId, setDeletingEnrollmentId] = useState<string | number | null>(null);
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedPhone(text);
     setTimeout(() => setCopiedPhone(null), 2000);
+  };
+
+  const handleDeleteEnrollment = async (enrollmentId: string | number, studentName: string) => {
+    if (!enrollmentId) {
+      alert("এনরোলমেন্ট আইডি পাওয়া যায়নি");
+      return;
+    }
+    const confirmed = window.confirm(
+      `আপনি কি নিশ্চিত যে "${studentName}" এর এই কোর্সের ভর্তি/এনরোলমেন্ট বাতিল ও ডিলিট করতে চান?\n\nএটি ডিলিট করলে কোর্সের তালিকা ও পিডিএফ রিপোর্ট থেকে এই এনরোলমেন্ট মুছে যাবে।`
+    );
+    if (!confirmed) return;
+
+    setDeletingEnrollmentId(enrollmentId);
+    try {
+      const ok = await dbService.deleteEnrollment(enrollmentId);
+      if (!ok) {
+        throw new Error("এনরোলমেন্ট ডিলিট করতে ব্যর্থ হয়েছে");
+      }
+
+      // Update current roster modal state in-memory
+      if (rosterCourse) {
+        const removedStd = rosterCourse.enrolled_students?.find((s) => s.id === enrollmentId);
+        const removedAmount = removedStd ? removedStd.amountPaid : 0;
+        const updatedStudents = (rosterCourse.enrolled_students || []).filter(
+          (s) => s.id !== enrollmentId
+        );
+        setRosterCourse({
+          ...rosterCourse,
+          total_enrolled: Math.max(0, rosterCourse.total_enrolled - 1),
+          total_revenue: Math.max(0, rosterCourse.total_revenue - removedAmount),
+          enrolled_students: updatedStudents,
+        });
+      }
+
+      // Refresh global background data
+      fetchReportData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "এনরোলমেন্ট ডিলিট করতে ত্রুটি হয়েছে";
+      alert(msg);
+    } finally {
+      setDeletingEnrollmentId(null);
+    }
   };
 
   const fetchReportData = async () => {
@@ -732,6 +777,7 @@ export default function CourseEnrollmentsReportPage() {
                       <th className="py-2.5 px-3 text-center">অর্ডার নং</th>
                       <th className="py-2.5 px-3 text-right">পরিশোধ</th>
                       <th className="py-2.5 px-3 text-center">অবস্থা</th>
+                      <th className="py-2.5 px-3 text-center w-14">অ্যাকশন</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
@@ -787,6 +833,17 @@ export default function CourseEnrollmentsReportPage() {
                             </span>
                           )}
                         </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteEnrollment(std.id, std.name)}
+                            disabled={deletingEnrollmentId === std.id}
+                            className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition-colors cursor-pointer"
+                            title="এই কোর্সের এনরোলমেন্ট ডিলিট করুন"
+                          >
+                            <Trash2 className={`w-3.5 h-3.5 ${deletingEnrollmentId === std.id ? "animate-spin" : ""}`} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -820,15 +877,26 @@ export default function CourseEnrollmentsReportPage() {
                         )}
                       </div>
 
-                      {std.isActive ? (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold shrink-0">
-                          সক্রিয়
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">
-                          নিষ্ক্রিয়
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {std.isActive ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold shrink-0">
+                            সক্রিয়
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 text-[10px] font-bold shrink-0">
+                            নিষ্ক্রিয়
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEnrollment(std.id, std.name)}
+                          disabled={deletingEnrollmentId === std.id}
+                          className="p-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="এনরোলমেন্ট ডিলিট করুন"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between text-[11px] border-t border-border/50 pt-2 text-text-muted">

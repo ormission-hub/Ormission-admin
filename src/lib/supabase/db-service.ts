@@ -666,6 +666,53 @@ export const dbService = {
     }
   },
 
+  async updateStudent(id: string, updates: Partial<DbStudent>): Promise<boolean> {
+    try {
+      const res = await fetch("/api/students", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, ...updates }),
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to update student:", json?.error);
+      return false;
+    } catch (e) {
+      console.error("Error updating student via API:", e);
+      return false;
+    }
+  },
+
+  async deleteStudent(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/students?id=${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete student:", json?.error);
+      return false;
+    } catch (e) {
+      console.error("Error deleting student via API:", e);
+      return false;
+    }
+  },
+
+  async deleteEnrollment(id: string | number): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/courses/enrollments?id=${id}`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (res.ok && json.success) return true;
+      console.error("Failed to delete enrollment:", json?.error);
+      return false;
+    } catch (e) {
+      console.error("Error deleting enrollment via API:", e);
+      return false;
+    }
+  },
+
   // ---- ORDERS ----
   async getOrders(): Promise<DbOrder[]> {
     try {

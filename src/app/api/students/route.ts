@@ -165,3 +165,104 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ success: false, error: err?.message || "Internal Server Error" }, { status: 500 });
   }
 }
+
+// PUT: Update student profile and metadata
+export async function PUT(req: Request) {
+  try {
+    const body = await req.json();
+    const { id, full_name, phone, address, academic_level, is_active } = body;
+    if (!id) {
+      return NextResponse.json({ success: false, error: "শিক্ষার্থী আইডি আবশ্যক।" }, { status: 400 });
+    }
+
+    // 1. Update profiles table
+    const profileUpdates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (full_name !== undefined) profileUpdates.full_name = String(full_name).trim();
+    if (phone !== undefined) profileUpdates.phone = phone ? String(phone).trim() : null;
+    if (is_active !== undefined) profileUpdates.is_active = Boolean(is_active);
+
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .upsert({ id, ...profileUpdates }, { onConflict: "id" });
+
+    if (profErr) {
+      console.error("Error updating profile:", profErr);
+      return NextResponse.json({ success: false, error: `প্রোফাইল আপডেট ব্যর্থ: ${profErr.message}` }, { status: 500 });
+    }
+
+    // 2. Update auth user metadata
+    try {
+      const { data: userObj } = await supabaseAdmin.auth.admin.getUserById(id);
+      const currentMeta = userObj?.user?.user_metadata || {};
+      const newMeta = {
+        ...currentMeta,
+        ...(full_name !== undefined ? { full_name: String(full_name).trim(), name: String(full_name).trim() } : {}),
+        ...(phone !== undefined ? { phone: phone ? String(phone).trim() : "" } : {}),
+        ...(address !== undefined ? { address: address ? String(address).trim() : "", district: address ? String(address).trim() : "" } : {}),
+        ...(academic_level !== undefined ? { academic_level: academic_level ? String(academic_level).trim() : "" } : {}),
+      };
+
+      await supabaseAdmin.auth.admin.updateUserById(id, {
+        user_metadata: newMeta,
+        ...(phone ? { phone: String(phone).trim() } : {}),
+      });
+    } catch (authErr) {
+      console.warn("Auth user update warning:", authErr);
+    }
+
+    return NextResponse.json({ success: true, message: "শিক্ষার্থীর তথ্য সফলভাবে আপডেট করা হয়েছে।" });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err?.message || "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// DELETE: Delete student account completely (enrollments, orders, profile, and auth user)
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ success: false, error: "শিক্ষার্থী আইডি আবশ্যক।" }, { status: 400 });
+    }
+
+    // 1. Delete all enrollments
+    const { error: enrErr } = await supabaseAdmin
+      .from("enrollments")
+      .delete()
+      .eq("user_id", id);
+    if (enrErr) console.warn("Enrollment delete warning:", enrErr);
+
+    // 2. Delete all orders
+    const { error: ordErr } = await supabaseAdmin
+      .from("orders")
+      .delete()
+      .eq("user_id", id);
+    if (ordErr) console.warn("Orders delete warning:", ordErr);
+
+    // 3. Delete notifications
+    const { error: notifErr } = await supabaseAdmin
+      .from("notifications")
+      .delete()
+      .eq("user_id", id);
+    if (notifErr) console.warn("Notifications delete warning:", notifErr);
+
+    // 4. Delete profile
+    const { error: profErr } = await supabaseAdmin
+      .from("profiles")
+      .delete()
+      .eq("id", id);
+    if (profErr) console.warn("Profile delete warning:", profErr);
+
+    // 5. Delete auth user
+    const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(id);
+    if (authErr) {
+      console.warn("Auth user delete warning:", authErr);
+    }
+
+    return NextResponse.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err?.message || "Internal Server Error" }, { status: 500 });
+  }
+}
