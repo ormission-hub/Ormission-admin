@@ -853,6 +853,19 @@ export default function EditCourseStudioPage({
         `কোর্সের তথ্য, মোট ${sections.length}টি অধ্যায়ে ${totalLessonsCount}টি ক্লাস (${freeLessonsCount}টি আনলক, ${paidLessonsCount}টি লক) Supabase ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে।`
       );
 
+      // Instant on-demand revalidation on student web app
+      try {
+        const webUrl = process.env.NEXT_PUBLIC_WEB_URL || "https://ormission.com";
+        const slug = detailsForm.slug;
+        if (slug) {
+          fetch(`${webUrl}/api/revalidate?path=/course/${slug}`, { mode: "no-cors" }).catch(() => {});
+        }
+        fetch(`${webUrl}/api/revalidate?path=/courses`, { mode: "no-cors" }).catch(() => {});
+        fetch(`${webUrl}/api/revalidate?path=/`, { mode: "no-cors" }).catch(() => {});
+      } catch {
+        // ignore network error
+      }
+
       setTimeout(() => setSaveSuccess(false), 5000);
       await loadCourseData(false); // Background sync without page unmount!
     } catch (err: unknown) {
